@@ -1,0 +1,17 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.pixel-btn, .pixel-btn-green, .pixel-btn-red {
+  transition: all 0.2s ease-in-out;
+}
+
+.body-text {
+  font-family: 'Inter', sans-serif;
+  letter-spacing: normal;
+  text-transform: none;
+  font-size: 14px;
+}
