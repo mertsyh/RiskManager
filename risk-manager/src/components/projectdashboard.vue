@@ -1,8 +1,8 @@
 <template>
-  <div style="flex:1;display:flex;flex-direction:column;gap:6px;min-height:0;overflow:hidden">
+  <div style="flex:1;display:flex;flex-direction:row;gap:6px;min-height:0;overflow:hidden">
 
-    <!-- ═══ OFFICE MAP ═══ -->
-    <div class="office-panel" :style="{ backgroundColor: theme.panelBg, borderColor: theme.panelBorder }" style="flex:1;min-height:0;display:flex;flex-direction:column;">
+    <!-- ═══ OFFICE MAP (LEFT) ═══ -->
+    <div class="office-panel" :style="{ backgroundColor: theme.panelBg, borderColor: theme.panelBorder }" style="flex:3;min-height:0;display:flex;flex-direction:column;">
       <div class="office-titlebar" :style="{ backgroundColor: theme.titleBarBg, color: theme.titleText }">
         <span style="font-size:10px;letter-spacing:2px">🏢 OFİS — CANLI GÖRÜNÜM</span>
         <div style="display:flex;gap:10px;align-items:center">
@@ -12,16 +12,10 @@
       </div>
 
       <!-- MAP CONTAINER -->
-      <div ref="mapContainer" class="map-container"
-        @mousemove="onContainerMouseMove"
-        @mouseup="onDragEnd"
-        @mouseleave="onDragEnd">
+      <div ref="mapContainer" class="map-container">
 
-        <!-- 1. Office background: oda1 + oda2 side by side -->
-        <div class="bg-rooms">
-          <img src="/oda1.png" class="room-img" draggable="false" />
-          <img src="/oda2.png" class="room-img" draggable="false" />
-        </div>
+        <!-- 1. Office background -->
+        <img src="/ofisgörsel2.png" class="bg-img" draggable="false" />
 
         <!-- 2. Danger vignette -->
         <div v-if="dangerLevel>0.3" class="danger-vignette"
@@ -30,10 +24,7 @@
         <!-- 3. CHARACTER SPRITES -->
         <div v-for="(desk, i) in DESKS" :key="i"
           class="desk-slot"
-          :class="{ 'dragging': draggingIdx === i }"
-          :style="{ left: desk.x+'%', top: desk.y+'%', width: desk.w+'%', cursor: 'grab' }"
-          @mousedown.prevent="onDragStart($event, i)"
-          @wheel.prevent="onWheel($event, i)">
+          :style="{ left: desk.x+'%', top: desk.y+'%', width: desk.w+'%' }">
 
           <template v-if="employees[i]?.hired">
             <div v-if="hasSynergyAt(i)" class="synergy-glow"></div>
@@ -77,8 +68,11 @@
       </div>
     </div>
 
-    <!-- ═══ PROJECT STATS ═══ -->
-    <div class="stats-panel">
+    <!-- ═══ RIGHT COLUMN: STATS & BUTTON ═══ -->
+    <div style="flex:1; display:flex; flex-direction:column; gap:6px; min-width:360px; max-width:440px;">
+      
+      <!-- ═══ PROJECT STATS ═══ -->
+      <div class="stats-panel" style="flex:1; display:flex; flex-direction:column;">
       <div class="stats-titlebar">
         <span style="font-size:10px;color:#ffe4a0;letter-spacing:2px">PROJECT: NEON</span>
         <span :style="{fontSize:'12px',fontWeight:'bold',
@@ -86,8 +80,14 @@
           {{ progressPercent }}%
         </span>
       </div>
-      <div style="padding:10px;display:flex;flex-direction:column;gap:8px">
+      <div style="padding:10px; flex:1; display:flex; flex-direction:column; justify-content:space-between; gap:8px">
 
+        <!-- ═══ DASHBOARD CONTROLS (SLOT) ═══ -->
+        <div style="display:flex; flex-direction:column; gap:6px; flex-shrink:0;">
+          <slot name="controls"></slot>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:8px;">
         <!-- Progress bar -->
         <div>
           <div style="display:flex;justify-content:space-between;font-size:11px;color:#b08050;margin-bottom:5px">
@@ -157,20 +157,24 @@
             </span>
           </div>
         </div>
+        </div>
       </div>
     </div>
 
+
+
     <!-- ═══ ADVANCE DAY BUTTON ═══ -->
-    <button @click="$emit('nextDay',$event)" :disabled="processing"
-      class="day-btn"
-      :style="{
-        color: processing ? '#504840' : (T.btnDayText||'#d0f0a0'),
-        background: processing ? '#181410' : (T.btnDayBg||'#1c5014'),
-        borderColor: processing ? '#100e08' : '#0c2c08',
-        boxShadow: processing ? 'none' : '0 7px 0 #081008,inset 0 1px 0 rgba(255,255,255,0.15)',
-        cursor: processing ? 'wait' : 'pointer',
-      }"
-    >{{ processing ? '⏳  İŞLENİYOR...' : '▶▶  SONRAKİ GÜNÜ BAŞLAT' }}</button>
+      <button @click="$emit('nextDay',$event)" :disabled="processing"
+        class="day-btn"
+        :style="{
+          color: processing ? '#504840' : (T.btnDayText||'#d0f0a0'),
+          background: processing ? '#181410' : (T.btnDayBg||'#1c5014'),
+          borderColor: processing ? '#100e08' : '#0c2c08',
+          boxShadow: processing ? 'none' : '0 7px 0 #081008,inset 0 1px 0 rgba(255,255,255,0.15)',
+          cursor: processing ? 'wait' : 'pointer',
+        }"
+      >{{ processing ? '⏳ İŞLENİYOR' : '▶▶ SONRAKİ GÜN' }}</button>
+    </div>
   </div>
 </template>
 
@@ -204,62 +208,17 @@ const dangerLevel = computed(() => {
 const SPRITES = ['employee1.png', 'employee2.png', 'employee3.png', 'employee4.png', 'employee5.png', 'a1.png', 'a2.png', 'a3.png']
 function getSprite(idx) { return SPRITES[idx % SPRITES.length] }
 
-// ── DESK SLOT POSITIONS (reactive for drag) ──
-const DESKS = ref([
-  { x: 4.0,  y: 38.0, w: 9.0 },  // Alice   — oda1 sol
-  { x: 13.0, y: 48.0, w: 9.5 },  // Bob     — oda1 orta-sol
-  { x: 13.5, y: 24.0, w: 9.0 },  // Charlie — oda1 orta-sağ
-  { x: 23.0, y: 35.0, w: 9.5 },  // Diana   — oda1 sağ
-  { x: 54.0, y: 38.0, w: 9.0 },  // Eve     — oda2 sol
-  { x: 63.0, y: 48.0, w: 9.5 },  // Frank   — oda2 orta-sol
-  { x: 63.5, y: 24.0, w: 9.0 },  // Grace   — oda2 orta-sağ
-  { x: 73.0, y: 35.0, w: 9.5 },  // Hank    — oda2 sağ
-])
-
-// ── DRAG STATE ──
-const draggingIdx    = ref(-1)
-const copied         = ref(false)
-const dragStartMouse = { x:0, y:0 }
-const dragStartDesk  = { x:0, y:0 }
-
-function onDragStart(e, idx) {
-  draggingIdx.value   = idx
-  dragStartMouse.x    = e.clientX
-  dragStartMouse.y    = e.clientY
-  dragStartDesk.x     = DESKS.value[idx].x
-  dragStartDesk.y     = DESKS.value[idx].y
-}
-
-function onContainerMouseMove(e) {
-  if (draggingIdx.value < 0) return
-  const container = mapContainer.value
-  if (!container) return
-  const rect = container.getBoundingClientRect()
-  const dx = ((e.clientX - dragStartMouse.x) / rect.width)  * 100
-  const dy = ((e.clientY - dragStartMouse.y) / rect.height) * 100
-  const desk = DESKS.value[draggingIdx.value]
-  desk.x = Math.max(0, Math.min(95, dragStartDesk.x + dx))
-  desk.y = Math.max(0, Math.min(95, dragStartDesk.y + dy))
-}
-
-function onDragEnd() { draggingIdx.value = -1 }
-
-function onWheel(e, idx) {
-  const delta = e.deltaY > 0 ? -0.5 : 0.5
-  const desk = DESKS.value[idx]
-  desk.w = Math.max(4, Math.min(45, desk.w + delta))
-}
-
-function copyCoords() {
-  const lines = DESKS.value.map((d,i) =>
-    `  { x: ${d.x.toFixed(1)}, y: ${d.y.toFixed(1)}, w: ${d.w.toFixed(1)} },  // ${props.employees?.[i]?.name||'Emp'+i}`
-  ).join('\n')
-  const text = `const DESKS = ref([\n${lines}\n])`
-  navigator.clipboard.writeText(text).then(() => {
-    copied.value = true
-    setTimeout(() => copied.value = false, 2000)
-  })
-}
+// ── DESK SLOT POSITIONS (fixed) ──
+const DESKS = [
+  { x: 33.8, y: 34.0, w: 23.0 },  // Alice
+  { x: 3.1, y: 56.8, w: 22.0 },  // Bob
+  { x: 39.9, y: 66.1, w: 22.0 },  // Charlie
+  { x: 44.9, y: 42.3, w: 24.0 },  // Diana
+  { x: 28.0, y: 73.0, w: 23.0 },  // Eve
+  { x: 64.1, y: 50.9, w: 10.0 },  // Frank
+  { x: 29.1, y: 45.3, w: 10.5 },  // Grace
+  { x: 20.1, y: 66.4, w: 10.0 },  // Hank
+]
 
 // ── SYNERGY PAIRS (desk indices) ──
 const SYNERGY_PAIRS = [[0,2],[1,7],[2,5],[3,0],[3,1],[3,2],[3,5],[5,6]]
@@ -401,20 +360,11 @@ onUnmounted(() => {
   position:relative; overflow:hidden; flex:1; min-height:0; background:#0a0604;
 }
 /* ─── ROOM BACKGROUNDS ─── */
-.bg-rooms {
-  position:absolute;inset:0;
-  display:flex;
-  flex-direction:row;
-  pointer-events:none;
-}
-.room-img {
-  flex:1;
-  min-width:0;
-  height:100%;
-  object-fit:contain;
-  object-position:center center;
+.bg-img {
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:contain;object-position:center center;
   image-rendering:pixelated;
-  display:block;
+  pointer-events:none;
 }
 .fx-canvas {
   position:absolute;inset:0;width:100%;height:100%;pointer-events:none;

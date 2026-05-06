@@ -127,17 +127,6 @@
       <main class="flex-1 min-h-0 overflow-hidden w-full px-2 pt-2"
             style="display:flex;flex-direction:column;gap:6px">
 
-        <!-- DASHBOARD CONTROLS -->
-        <div class="flex gap-2 w-full shrink-0">
-          <button @click="showTeamShop = true" class="pixel-btn-green flex-1 py-3 text-sm flex items-center justify-center gap-2">
-            <span>💼</span> EKİP VE YÜKSELTME
-          </button>
-          <button @click="showRiskCenter = true" class="pixel-btn-red flex-1 py-3 text-sm flex items-center justify-center gap-2 relative">
-            <span>⚠️</span> RİSK & OLAYLAR
-            <span v-if="pendingRisks.length" class="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs border-2 border-white" style="animation: pulse 2s infinite">{{ pendingRisks.length }}</span>
-          </button>
-        </div>
-
         <!-- DASHBOARD -->
         <div class="w-full flex-1 overflow-hidden" style="display:flex;flex-direction:column;gap:6px">
           <ProjectDashboard
@@ -148,7 +137,21 @@
             :synergyBonus="synergyBonus"
             :lastCritSuccess="lastCritSuccess"
             :lastBugEvent="lastBugEvent"
-            @nextDay="handleNextDay" />
+            @nextDay="handleNextDay">
+            
+            <template #controls>
+              <div class="flex flex-col gap-2 w-full shrink-0">
+                <button @click="showTeamShop = true" class="pixel-btn-green w-full py-3 text-sm flex items-center justify-center gap-2">
+                  <span>💼</span> EKİP VE YÜKSELTME
+                </button>
+                <button @click="showRiskCenter = true" class="pixel-btn-red w-full py-3 text-sm flex items-center justify-center gap-2 relative">
+                  <span>⚠️</span> RİSK & OLAYLAR
+                  <span v-if="pendingRisks.length" class="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs border-2 border-white" style="animation: pulse 2s infinite">{{ pendingRisks.length }}</span>
+                </button>
+              </div>
+            </template>
+            
+          </ProjectDashboard>
         </div>
       </main>
 
