@@ -1,8 +1,8 @@
 <template>
-  <div style="flex:1;display:flex;flex-direction:column;gap:6px;min-height:0">
+  <div style="flex:1;display:flex;flex-direction:column;gap:6px;min-height:0;overflow:hidden">
 
     <!-- ═══ OFFICE MAP ═══ -->
-    <div class="office-panel" :style="{ backgroundColor: theme.panelBg, borderColor: theme.panelBorder }">
+    <div class="office-panel" :style="{ backgroundColor: theme.panelBg, borderColor: theme.panelBorder }" style="flex:1;min-height:0;display:flex;flex-direction:column;">
       <div class="office-titlebar" :style="{ backgroundColor: theme.titleBarBg, color: theme.titleText }">
         <span style="font-size:10px;letter-spacing:2px">🏢 OFİS — CANLI GÖRÜNÜM</span>
         <div style="display:flex;gap:10px;align-items:center">
@@ -17,8 +17,11 @@
         @mouseup="onDragEnd"
         @mouseleave="onDragEnd">
 
-        <!-- 1. Office background -->
-        <img src="/office_bg.png" class="bg-img" draggable="false" />
+        <!-- 1. Office background: oda1 + oda2 side by side -->
+        <div class="bg-rooms">
+          <img src="/oda1.png" class="room-img" draggable="false" />
+          <img src="/oda2.png" class="room-img" draggable="false" />
+        </div>
 
         <!-- 2. Danger vignette -->
         <div v-if="dangerLevel>0.3" class="danger-vignette"
@@ -87,7 +90,7 @@
 
         <!-- Progress bar -->
         <div>
-          <div style="display:flex;justify-content:space-between;font-size:10px;color:#b08050;margin-bottom:4px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:#b08050;margin-bottom:5px">
             <span>İLERLEME</span>
             <span style="color:#c8a060">{{ Math.floor(project.progress) }} / {{ project.totalEffort }}</span>
           </div>
@@ -144,12 +147,12 @@
 
         <!-- Daily progress row -->
         <div class="daily-row">
-          <span style="font-size:10px;color:#6a4828;letter-spacing:1px">GÜNLÜK İLERLEME</span>
+          <span style="font-size:11px;color:#6a4828;letter-spacing:1px">GÜNLÜK İLERLEME</span>
           <div style="display:flex;align-items:center;gap:8px">
             <span v-if="lastCritSuccess" class="badge-crit">⭐ 2×</span>
             <span v-if="lastBugEvent"    class="badge-bug">🐛 BUG</span>
             <span v-if="synergyBonus>0"  class="badge-syn">🤝 +{{ synergyBonus }}</span>
-            <span style="font-size:14px;color:#58c840;font-weight:bold">
+            <span style="font-size:18px;color:#58c840;font-weight:bold">
               +{{ Math.max(0,dailyProgress) }}
             </span>
           </div>
@@ -198,20 +201,19 @@ const dangerLevel = computed(() => {
 })
 
 // ── SPRITE ASSIGNMENT ──
-// 4 sprites for 8 employees — assign by index
-const SPRITES = ['a1.png','a2.png','a3.png','a4.png','a2.png','a1.png','a4.png','a3.png']
+const SPRITES = ['employee1.png', 'employee2.png', 'employee3.png', 'employee4.png', 'employee5.png', 'a1.png', 'a2.png', 'a3.png']
 function getSprite(idx) { return SPRITES[idx % SPRITES.length] }
 
 // ── DESK SLOT POSITIONS (reactive for drag) ──
 const DESKS = ref([
-  { x: 9.3, y: 38.8, w: 9.0 },  // Alice
-  { x: 18.0, y: 47.7, w: 10.0 },  // Bob
-  { x: 18.9, y: 24.7, w: 9.5 },  // Charlie
-  { x: 28.4, y: 34.2, w: 10.0 },  // Diana
-  { x: 36.1, y: 66.6, w: 10.0 },  // Eve
-  { x: 44.7, y: 52.9, w: 10.0 },  // Frank
-  { x: 51.4, y: 69.3, w: 10.0 },  // Grace
-  { x: 59.2, y: 57.8, w: 10.0 },  // Hank
+  { x: 4.0,  y: 38.0, w: 9.0 },  // Alice   — oda1 sol
+  { x: 13.0, y: 48.0, w: 9.5 },  // Bob     — oda1 orta-sol
+  { x: 13.5, y: 24.0, w: 9.0 },  // Charlie — oda1 orta-sağ
+  { x: 23.0, y: 35.0, w: 9.5 },  // Diana   — oda1 sağ
+  { x: 54.0, y: 38.0, w: 9.0 },  // Eve     — oda2 sol
+  { x: 63.0, y: 48.0, w: 9.5 },  // Frank   — oda2 orta-sol
+  { x: 63.5, y: 24.0, w: 9.0 },  // Grace   — oda2 orta-sağ
+  { x: 73.0, y: 35.0, w: 9.5 },  // Hank    — oda2 sağ
 ])
 
 // ── DRAG STATE ──
@@ -377,6 +379,8 @@ onUnmounted(() => {
   border:4px solid #0a0602;
   box-shadow:inset 2px 2px 0 #2a1808, 3px 3px 0 #060402;
   overflow:hidden;
+  flex:1; min-height:0;
+  display:flex; flex-direction:column;
 }
 .office-titlebar {
   background:#2a1408;border-bottom:3px solid #1a0804;
@@ -394,13 +398,23 @@ onUnmounted(() => {
 
 /* ─── MAP ─── */
 .map-container {
-  position:relative; overflow:hidden; height:640px; background:#0a0604;
+  position:relative; overflow:hidden; flex:1; min-height:0; background:#0a0604;
 }
-.bg-img {
-  position:absolute;inset:0;width:100%;height:100%;
-  object-fit:cover;object-position:center center;
-  image-rendering:pixelated;
+/* ─── ROOM BACKGROUNDS ─── */
+.bg-rooms {
+  position:absolute;inset:0;
+  display:flex;
+  flex-direction:row;
   pointer-events:none;
+}
+.room-img {
+  flex:1;
+  min-width:0;
+  height:100%;
+  object-fit:contain;
+  object-position:center center;
+  image-rendering:pixelated;
+  display:block;
 }
 .fx-canvas {
   position:absolute;inset:0;width:100%;height:100%;pointer-events:none;
@@ -481,14 +495,14 @@ onUnmounted(() => {
 }
 .char-name {
   font-family:'Press Start 2P',monospace;
-  font-size:5px; color:#ffe4a0;
-  background:rgba(10,6,2,0.82);
+  font-size:7px; color:#ffe4a0;
+  background:rgba(10,6,2,0.85);
   border:1px solid rgba(90,48,24,0.8);
-  padding:2px 5px;white-space:nowrap;
+  padding:3px 6px;white-space:nowrap;
   text-shadow:1px 1px 0 #000;
 }
 .energy-track {
-  width:80%;height:4px;
+  width:80%;height:6px;
   background:rgba(0,0,0,0.6);
   border:1px solid rgba(0,0,0,0.8);
   overflow:hidden;
@@ -554,22 +568,22 @@ onUnmounted(() => {
 @keyframes shimmer{from{transform:translateX(-100%)}to{transform:translateX(200%)}}
 .ms-tick{position:absolute;top:0;bottom:0;width:3px;transform:translateX(-50%)}
 .progress-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:rgba(255,255,255,0.8)}
-.ms-chip{flex:1;text-align:center;padding:5px 3px;border:2px solid;font-size:8px;font-family:'Press Start 2P',monospace}
+.ms-chip{flex:1;text-align:center;padding:6px 4px;border:2px solid;font-size:9px;font-family:'Press Start 2P',monospace}
 
 /* ─── STAT BOXES ─── */
-.stat-box{background:#180c04;border:3px solid #301808;box-shadow:inset 2px 2px 0 #100802;padding:8px;text-align:center}
-.stat-label{font-size:8px;color:#6a4828;margin-bottom:4px;line-height:1.8}
-.stat-value{font-size:12px}
-.daily-row{background:#180c04;border:3px solid #301808;padding:7px 10px;display:flex;justify-content:space-between;align-items:center}
+.stat-box{background:#180c04;border:3px solid #301808;box-shadow:inset 2px 2px 0 #100802;padding:10px;text-align:center}
+.stat-label{font-size:9px;color:#6a4828;margin-bottom:5px;line-height:1.8}
+.stat-value{font-size:16px}
+.daily-row{background:#180c04;border:3px solid #301808;padding:9px 12px;display:flex;justify-content:space-between;align-items:center}
 
 /* ─── BADGES ─── */
-.badge-crit{font-size:8px;color:#ffe040;font-family:'Press Start 2P',monospace;animation:blinkanim 0.5s step-start 4}
-.badge-bug {font-size:8px;color:#f04040;font-family:'Press Start 2P',monospace}
-.badge-syn {font-size:8px;color:#60d0c0;font-family:'Press Start 2P',monospace}
+.badge-crit{font-size:9px;color:#ffe040;font-family:'Press Start 2P',monospace;animation:blinkanim 0.5s step-start 4}
+.badge-bug {font-size:9px;color:#f04040;font-family:'Press Start 2P',monospace}
+.badge-syn {font-size:9px;color:#60d0c0;font-family:'Press Start 2P',monospace}
 @keyframes blinkanim{50%{opacity:0}}
 
 /* ─── DAY BUTTON ─── */
-.day-btn{font-family:'Press Start 2P',monospace;font-size:10px;padding:16px;border:4px solid;width:100%;letter-spacing:2px;flex-shrink:0;transition:transform 0.1s,box-shadow 0.1s}
+.day-btn{font-family:'Press Start 2P',monospace;font-size:13px;padding:20px;border:4px solid;width:100%;letter-spacing:3px;flex-shrink:0;transition:transform 0.1s,box-shadow 0.1s}
 .day-btn:hover:not(:disabled){filter:brightness(1.15)}
 .day-btn:active:not(:disabled){transform:translateY(7px);box-shadow:none!important}
 </style>

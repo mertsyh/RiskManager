@@ -5,6 +5,14 @@
 @tailwind components;
 @tailwind utilities;
 
+html, body, #app {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
 .pixel-btn, .pixel-btn-green, .pixel-btn-red {
   transition: all 0.2s ease-in-out;
 }

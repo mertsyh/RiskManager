@@ -27,7 +27,7 @@
   <!-- ══ PARTICLE CANVAS ══ -->
   <canvas ref="particleCanvas" class="particle-canvas" style="position:fixed;inset:0;z-index:30;pointer-events:none"></canvas>
 
-<div class="min-h-screen flex flex-col" style="font-family:'Press Start 2P',monospace;image-rendering:pixelated" :style="{filter: mainFilter}" :class="{shakeanim: fx.shake}">
+<div class="h-screen flex flex-col overflow-hidden" style="font-family:'Press Start 2P',monospace;image-rendering:pixelated" :style="{filter: mainFilter}" :class="{shakeanim: fx.shake}">
 
     <!-- ══════════ MENU ══════════ -->
     <Transition name="fade">
@@ -123,28 +123,23 @@
         </div>
       </header>
 
-      <!-- MAIN GRID (3 COLUMNS) -->
-      <main class="flex-1 p-2 gap-2 overflow-hidden w-full"
-            style="display:grid;grid-template-columns:260px 1fr 260px; max-width: 1400px; margin: 0 auto;">
-        
-        <!-- LEFT: Educational Sidebar -->
-        <EducationalSidebar side="left" :theme="theme" />
+      <!-- MAIN (SINGLE COLUMN) -->
+      <main class="flex-1 min-h-0 overflow-hidden w-full px-2 pt-2"
+            style="display:flex;flex-direction:column;gap:6px">
 
-        <!-- CENTER: Dashboard & Controls -->
-        <div class="flex flex-col gap-2 overflow-hidden h-full">
-          <!-- DASHBOARD CONTROLS -->
-          <div class="flex gap-2 w-full shrink-0">
-            <button @click="showTeamShop = true" class="pixel-btn-green flex-1 py-3 text-sm flex items-center justify-center gap-2">
-              <span>💼</span> EKİP VE YÜKSELTME
-            </button>
-            <button @click="showRiskCenter = true" class="pixel-btn-red flex-1 py-3 text-sm flex items-center justify-center gap-2 relative">
-              <span>⚠️</span> RİSK & OLAYLAR
-              <span v-if="pendingRisks.length" class="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs border-2 border-white" style="animation: pulse 2s infinite">{{ pendingRisks.length }}</span>
-            </button>
-          </div>
+        <!-- DASHBOARD CONTROLS -->
+        <div class="flex gap-2 w-full shrink-0">
+          <button @click="showTeamShop = true" class="pixel-btn-green flex-1 py-3 text-sm flex items-center justify-center gap-2">
+            <span>💼</span> EKİP VE YÜKSELTME
+          </button>
+          <button @click="showRiskCenter = true" class="pixel-btn-red flex-1 py-3 text-sm flex items-center justify-center gap-2 relative">
+            <span>⚠️</span> RİSK & OLAYLAR
+            <span v-if="pendingRisks.length" class="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs border-2 border-white" style="animation: pulse 2s infinite">{{ pendingRisks.length }}</span>
+          </button>
+        </div>
 
-          <!-- CENTER DASHBOARD -->
-          <div class="w-full flex-1 overflow-hidden" style="display:flex;flex-direction:column;gap:6px">
+        <!-- DASHBOARD -->
+        <div class="w-full flex-1 overflow-hidden" style="display:flex;flex-direction:column;gap:6px">
           <ProjectDashboard
             :project="project" :morale="gs.morale" :day="gs.day"
             :milestones="milestones" :dailyProgress="lastDailyProgress"
@@ -154,11 +149,7 @@
             :lastCritSuccess="lastCritSuccess"
             :lastBugEvent="lastBugEvent"
             @nextDay="handleNextDay" />
-          </div>
         </div>
-
-        <!-- RIGHT: Educational Sidebar -->
-        <EducationalSidebar side="right" :theme="theme" />
       </main>
 
       <!-- TICKER -->
@@ -175,6 +166,9 @@
     <!-- ═══ MODALS ═══ -->
     <Transition name="fade"><RiskModal v-if="triggeredRisk" :risk="triggeredRisk" @close="closeModal" /></Transition>
     <Transition name="fade"><DaySummary v-if="showDaySummary" :summary="daySummaryData" @close="closeDaySummary" /></Transition>
+    <Transition name="fade">
+      <DayInsightModal v-if="showDayInsight && daySummaryData" :summary="daySummaryData" :day="daySummaryData?.day" @close="closeDayInsight" />
+    </Transition>
     <Transition name="fade">
       <DilemmaModal v-if="showDilemma && currentDilemma" :dilemma="currentDilemma"
         @choose="handleDilemmaChoice" @close="showDilemma=false" />
@@ -221,7 +215,7 @@ import KnowledgeBase from './components/KnowledgeBase.vue'
 import PostMortemReport from './components/PostMortemReport.vue'
 import TeamShopModal from './components/TeamShopModal.vue'
 import RiskCenterModal from './components/RiskCenterModal.vue'
-import EducationalSidebar from './components/EducationalSidebar.vue'
+import DayInsightModal from './components/DayInsightModal.vue'
 import { newTheme } from './design.js'
 
 const originalTheme = {
@@ -251,7 +245,7 @@ function toggleTheme() {
 }
 
 // ─── REFS & STATE ───
-const showTeamShop = ref(false), showRiskCenter = ref(false)
+const showTeamShop = ref(false), showRiskCenter = ref(false), showDayInsight = ref(false)
 const triggeredRisk = ref(null), showDaySummary = ref(false), daySummaryData = ref(null)
 const isProcessing = ref(false), lastDailyProgress = ref(0), lastDailyCost = ref(0)
 const gameOverReason = ref(''), bgCanvas = ref(null), particleCanvas = ref(null)
@@ -338,21 +332,36 @@ const activeRiskPool = ref([])
 
 // ─── DILEMMAS ───
 const allDilemmas = [
-  { id:1, icon:'📈', title:'KAPSAM KAYMASI (Scope Creep)', desc:"Müşteri sözleşmede olmayan ufak ama 'şık' bir özellik (Gold Plating) istiyor.",
-    optA:{ text:'✅ Kabul Et  +20 Moral, -3G', effect:()=>{ updateMorale(20); project.deadline-=3; addLog('[PMBOK]: Müşteri mutlu ama proje takvimi sıkıştı! (Scope Creep)','warning') } },
-    optB:{ text:'🚫 Reddet (Change Request İste)', effect:()=>{ addLog('[PMBOK]: Ek kapsam talebi reddedildi, temel çizgi (baseline) korundu.','success') } } },
-  { id:2, icon:'💼', title:'KAYNAK RİSKİ (Turnover)', desc:'Kıdemli bir geliştirici rakip firmadan %30 zamlı teklif aldı.',
-    optA:{ text:'💰 Zam Ver  -$8K',          effect:()=>{ updateMoney(-8000); addLog("[PMBOK]: Bütçeden feragat edilerek kilit kaynak elde tutuldu.",'success') } },
-    optB:{ text:'🚪 Reddet  -20 Moral',       effect:()=>{ updateMorale(-20); addLog("[PMBOK]: Geliştirici ayrıldı, takım morali ve hız düştü.",'warning') } } },
-  { id:3, icon:'⚡', title:'HIZLANDIRMA (Crashing)', desc:'Teslimatı hızlandırmak için ekibe fazla mesai yaptırmalı mıyız? (Schedule Compression)',
-    optA:{ text:'⏰ Mesaiye Kal +$15K / -20M', effect:()=>{ updateMoney(15000); updateMorale(-20); project.deadline-=1; addLog('[PMBOK]: Crashing uygulandı: Bütçe eklendi ama ekip yoruldu.','warning') } },
-    optB:{ text:'🛑 Hayır (Statüko Koru)',    effect:()=>{ addLog('[PMBOK]: Normal tempoda devam ediliyor.','info') } } },
-  { id:4, icon:'🔍', title:'KALİTE GÜVENCESİ (QA)', desc:'Bir alt yüklenicinin kodunda potansiyel hatalar (Defects) var.',
-    optA:{ text:'🛡️ Testleri Sıkılaştır -$5K', effect:()=>{ updateMoney(-5000); activeRiskPool.value.forEach(r=>{ if(r.type==='bug') r.prob=Math.max(5,r.prob-15) }); addLog('[PMBOK]: Kalite Kontrol (Prevention) maliyeti arttı ama Bug riski düştü.','success') } },
-    optB:{ text:'🤫 Kabul Et (Risk Primi Artar)', effect:()=>{ activeRiskPool.value.forEach(r=>{ if(r.type==='bug') r.prob=Math.min(95,r.prob+20) }); addLog('[PMBOK]: Teknik borç kabul edildi, son kullanıcı hata riski yükseldi!','danger') } } },
-  { id:5, icon:'📜', title:'SÖZLEŞME RİSKİ',    desc:'Tedarikçi firma lisans yenilemesi için sözleşme dışı ek ücret talep ediyor.',
-    optA:{ text:'⚖️ İtiraz Et (Riskli)',      effect:()=>{ if(Math.random()<0.5){ addLog('[PMBOK]: İtiraz başarılı, sözleşme korundu.','success') } else { updateMoney(-10000); addLog('[PMBOK]: İtiraz başarısız, hukuki masraflar bütçeyi deldi!','danger') } } },
-    optB:{ text:'💸 Öde ve Geç -$4K',         effect:()=>{ updateMoney(-4000); addLog('[PMBOK]: Risk kabul edildi ve Contingency Reserve (Yedek Akçe) kullanıldı.','warning') } } },
+  { id:1, icon:'📈', title:'KAPSAM KAYMASI (Scope Creep)', 
+    desc:"Müşteri sözleşmede olmayan ufak ama 'şık' bir özellik (Gold Plating) istiyor.",
+    pmbokTag: 'Kapsam Yönetimi → Değişiklik Kontrol Süreci (Change Control)',
+    pmContext: 'Kapsam Kayması (Scope Creep), proje başarısızlığının #1 sebebidir. Her ek istek resmi Change Request sürecinden geçmeli ve Baseline güncellenmeli.',
+    optA:{ text:'✅ Kabul Et  +20 Moral, -3G', pmLabel:'⚠ Scope Creep kabul → Baseline bozulur', effect:()=>{ updateMorale(20); project.deadline-=3; addLog('[PMBOK]: Müşteri mutlu ama proje takvimi sıkıştı! (Scope Creep)','warning') } },
+    optB:{ text:'🚫 Reddet (Change Request İste)', pmLabel:'✅ Change Control → Baseline korunur', effect:()=>{ addLog('[PMBOK]: Ek kapsam talebi reddedildi, temel çizgi (baseline) korundu.','success') } } },
+  { id:2, icon:'💼', title:'KAYNAK RİSKİ (Turnover)', 
+    desc:'Kıdemli bir geliştirici rakip firmadan %30 zamlı teklif aldı.',
+    pmbokTag: 'İnsan Kaynakları Yönetimi → Kaynak Tutma (Retention)',
+    pmContext: 'Kilit kaynak kaybı (Turnover) hem kısa vadede verim hem uzun vadede bilgi (Knowledge Transfer) kaybına neden olur. Risk matrisi: Yüksek Etki / Orta Olasılık.',
+    optA:{ text:'💰 Zam Ver  -$8K', pmLabel:'✅ Risk Mitigate → Kaynağı tut', effect:()=>{ updateMoney(-8000); addLog("[PMBOK]: Bütçeden feragat edilerek kilit kaynak elde tutuldu.",'success') } },
+    optB:{ text:'🚪 Reddet  -20 Moral', pmLabel:'⚠ Risk Accept → Moral ve hız düşer', effect:()=>{ updateMorale(-20); addLog("[PMBOK]: Geliştirici ayrıldı, takım morali ve hız düştü.",'warning') } } },
+  { id:3, icon:'⚡', title:'HIZLANDIRMA (Crashing)', 
+    desc:'Teslimatı hızlandırmak için ekibe fazla mesai yaptırmalı mıyız? (Schedule Compression)',
+    pmbokTag: 'Zaman Yönetimi → Crashing (Schedule Compression Tekniği)',
+    pmContext: 'Crashing: Takvimi sıkıştırmak için maliyet eklemek. Fast Tracking ise görevleri paralel yürütmektir. Her ikisi de risk taşır. Crashing → Maliyet artar, moral düşer.',
+    optA:{ text:'⏰ Mesaiye Kal +$15K / -20M', pmLabel:'⚡ Crashing → Süre kısalır, maliyet+burnout', effect:()=>{ updateMoney(15000); updateMorale(-20); project.deadline-=1; addLog('[PMBOK]: Crashing uygulandı: Bütçe eklendi ama ekip yoruldu.','warning') } },
+    optB:{ text:'🛑 Hayır (Statüko Koru)', pmLabel:'🛡 Risk Accept → Normal tempo devam', effect:()=>{ addLog('[PMBOK]: Normal tempoda devam ediliyor.','info') } } },
+  { id:4, icon:'🔍', title:'KALİTE GÜVENCESİ (QA)', 
+    desc:'Bir alt yüklenicinin kodunda potansiyel hatalar (Defects) var.',
+    pmbokTag: 'Kalite Yönetimi → Prevention vs Inspection maliyeti',
+    pmContext: 'PMBOK ilkesi: Hataları önlemek (Prevention), tespit etmekten (Inspection) ve düzeltmekten (Correction) her zaman daha ucuzdur. Teknik borç faiz gibi birikir.',
+    optA:{ text:'🛡️ Testleri Sıkılaştır -$5K', pmLabel:'✅ Prevention maliyet → Bug riski azalır', effect:()=>{ updateMoney(-5000); activeRiskPool.value.forEach(r=>{ if(r.type==='bug') r.prob=Math.max(5,r.prob-15) }); addLog('[PMBOK]: Kalite Kontrol (Prevention) maliyeti arttı ama Bug riski düştü.','success') } },
+    optB:{ text:'🤫 Kabul Et (Risk Primi Artar)', pmLabel:'⚠ Teknik Borç → Bug olasılığı +%20', effect:()=>{ activeRiskPool.value.forEach(r=>{ if(r.type==='bug') r.prob=Math.min(95,r.prob+20) }); addLog('[PMBOK]: Teknik borç kabul edildi, son kullanıcı hata riski yükseldi!','danger') } } },
+  { id:5, icon:'📜', title:'SÖZLEŞME RİSKİ',    
+    desc:'Tedarikçi firma lisans yenilemesi için sözleşme dışı ek ücret talep ediyor.',
+    pmbokTag: 'Tedarik Yönetimi → Sözleşme Türleri ve Risk Paylaşımı',
+    pmContext: 'Sabit fiyatlı (Fixed Price) sözleşmelerde tedarikçi riski taşır. Maliyet artı (Cost-Plus) sözleşmelerde ise alıcı taşır. Bu senaryo: Tedarikçi sözleşme dışı ücret istiyor.',
+    optA:{ text:'⚖️ İtiraz Et (Riskli)', pmLabel:'🎲 %50 şans → Başarılı veya $10k kayıp', effect:()=>{ if(Math.random()<0.5){ addLog('[PMBOK]: İtiraz başarılı, sözleşme korundu.','success') } else { updateMoney(-10000); addLog('[PMBOK]: İtiraz başarısız, hukuki masraflar bütçeyi deldi!','danger') } } },
+    optB:{ text:'💸 Öde ve Geç -$4K', pmLabel:'✅ Contingency Reserve kullan → Devam et', effect:()=>{ updateMoney(-4000); addLog('[PMBOK]: Risk kabul edildi ve Contingency Reserve (Yedek Akçe) kullanıldı.','warning') } } },
 ]
 
 // ─── POSITIVE / NEGATIVE EVENTS ───
@@ -715,7 +724,13 @@ async function processNextDay() {
 
 function closeDaySummary() {
   showDaySummary.value = false
-  // Maybe trigger dilemma after summary
+  // Show PM insight popup based on today's events
+  showDayInsight.value = true
+}
+
+function closeDayInsight() {
+  showDayInsight.value = false
+  // Maybe trigger dilemma after insight
   setTimeout(tryTriggerDilemma, 300)
 }
 
