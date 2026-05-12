@@ -141,6 +141,72 @@ const insights = computed(() => {
     }
   }
 
+  // ── NEW: Reserve Usage ───────────────────────────────────
+  if (s.usedReserve) {
+    result.push({
+      type: 'info', icon: '🛡️',
+      category: 'PMBOK · MALİYET YÖNETİMİ',
+      term: 'Yedek Akçe (Contingency Reserve)',
+      explanation: 'Contingency Reserve, bilinen riskler (known-unknowns) için ayrılır ve proje yöneticisinin kontrolündedir. Management Reserve ise bilinmeyen riskler (unknown-unknowns) içindir ve sponsor kontrolündedir.',
+      gameNote: 'Bugün bir risk tetiklendi ve hasar ana bütçe yerine Contingency Reserve\'den karşılandı. Bu, proaktif bütçelemenin (Risk Response Planning) sonucudur.',
+    })
+  }
+
+  // ── NEW: High Risk Count ─────────────────────────────────
+  if (s.activeRiskCount >= 3 && !s.triggeredRisk) {
+    result.push({
+      type: 'warning', icon: '📋',
+      category: 'PMBOK · RİSK İZLEME',
+      term: 'Risk Register Şişkinliği',
+      explanation: 'Risk Register\'da (Risk Kayıt Defteri) çok sayıda açık risk birikmesi, risk yanıt planlarının (Risk Response) zamanında uygulanmadığı anlamına gelebilir.',
+      gameNote: `Şu an ${s.activeRiskCount} adet açık risk var. Risk Merkezi'ni açıp bazılarını Mitigate, Avoid veya Transfer etmelisin, aksi takdirde peş peşe tetiklenebilirler.`,
+    })
+  }
+
+  // ── NEW: Zero Synergy ────────────────────────────────────
+  if (s.synergyBonus === 0 && s.day > 5) {
+    result.push({
+      type: 'neutral', icon: '🧩',
+      category: 'PMBOK · İNSAN KAYNAKLARI',
+      term: 'Takım Oluşturma (Team Building)',
+      explanation: 'Tuckman\'ın takım gelişim modeline göre (Forming, Storming, Norming, Performing), doğru yetkinliklerin bir araya gelmesi performansı üstel artırır.',
+      gameNote: 'Şu an sıfır sinerji bonusun var. İşe alım yaparken çalışanların açıklamalarındaki "X ile sinerji" notlarına dikkat et. Örn: Alice + Charlie.',
+    })
+  }
+
+  // ── NEW: Schedule Variance (SV) ──────────────────────────
+  if (s.day >= 15 && (s.totalProgress / s.totalEffort) < 0.40) {
+    result.push({
+      type: 'danger', icon: '⏳',
+      category: 'PMBOK · ZAMAN YÖNETİMİ',
+      term: 'Schedule Variance (SV) Negatif!',
+      explanation: 'Kazanılan Değer (EV) < Planlanan Değer (PV) durumu. Projenin takvimin çok gerisinde olduğunu ve gecikme riski taşıdığını gösterir.',
+      gameNote: 'Sürenin yarısı geçti ama işin %40\'ı bile bitmedi. Crashing (mesai) veya Fast Tracking kararları alman ya da yeni eleman alman gerekebilir.',
+    })
+  }
+
+  // ── NEW: Cost Performance Index (CPI) ────────────────────
+  if (s.money < 30000 && s.day < 20) {
+    result.push({
+      type: 'danger', icon: '💸',
+      category: 'PMBOK · MALİYET YÖNETİMİ',
+      term: 'CPI (Cost Performance Index) Uyarısı',
+      explanation: 'CPI < 1.0 olması, projede harcanan paraya kıyasla üretilen değerin düşük olduğunu gösterir. Bütçe aşımı (Cost Overrun) riski çok yüksektir.',
+      gameNote: 'Nakit $30k altına düştü. Kalan günlerdeki personel giderlerini hesapla. Gerekirse pahalı ama az verimli çalışanları işten çıkar (Fire).',
+    })
+  }
+
+  // ── NEW: No Upgrades ─────────────────────────────────────
+  if (!s.hasAnyUpgrade && s.day >= 7) {
+    result.push({
+      type: 'info', icon: '⚙️',
+      category: 'PMBOK · KALİTE YÖNETİMİ',
+      term: 'Önleyici Faaliyet (Preventive Action)',
+      explanation: 'Önleyici faaliyetler, gelecekteki proje performansının proje yönetim planıyla hizalanmasını sağlamak için yapılan proaktif yatırımlardır.',
+      gameNote: '7. güne geldin ama hiç Yükseltme (Upgrade) almadın. CI/CD Pipeline veya Code Review gibi yatırımlar uzun vadede hem hız kazandırır hem hata riskini (Defect) azaltır.',
+    })
+  }
+
   return result.slice(0, 3) // Max 3 insight göster
 })
 </script>
@@ -154,8 +220,8 @@ const insights = computed(() => {
 }
 
 .insight-panel {
-  width: 580px;
-  max-height: 88vh;
+  width: 660px;
+  max-height: 90vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -170,35 +236,35 @@ const insights = computed(() => {
 .insight-header {
   background: #0e1830;
   border-bottom: 3px solid #1a2c50;
-  padding: 12px 16px;
+  padding: 16px 20px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   flex-shrink: 0;
 }
-.header-icon { font-size: 24px; }
+.header-icon { font-size: 32px; }
 .header-sub {
   font-family: 'Press Start 2P', monospace;
-  font-size: 7px; color: #5080c0; letter-spacing: 3px; margin-bottom: 5px;
+  font-size: 8px; color: #5080c0; letter-spacing: 3px; margin-bottom: 7px;
 }
 .header-title {
   font-family: 'Press Start 2P', monospace;
-  font-size: 12px; color: #80b0f0;
+  font-size: 14px; color: #80b0f0;
 }
 
 .insights-list {
-  padding: 12px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   overflow-y: auto;
   flex: 1;
 }
 
 .insight-card {
   display: flex;
-  gap: 12px;
-  padding: 12px;
+  gap: 14px;
+  padding: 14px;
   border: 2px solid;
 }
 .insight-danger  { background: #200808; border-color: #501010; }
@@ -207,13 +273,13 @@ const insights = computed(() => {
 .insight-info    { background: #081020; border-color: #103050; }
 .insight-neutral { background: #141008; border-color: #302818; }
 
-.insight-icon { font-size: 22px; flex-shrink: 0; line-height: 1; padding-top: 2px; }
+.insight-icon { font-size: 28px; flex-shrink: 0; line-height: 1; padding-top: 2px; }
 
 .insight-body { display: flex; flex-direction: column; gap: 5px; }
 
 .insight-category {
   font-family: 'Press Start 2P', monospace;
-  font-size: 7px; letter-spacing: 2px;
+  font-size: 8px; letter-spacing: 2px;
 }
 .insight-danger  .insight-category { color: #c06060; }
 .insight-warning .insight-category { color: #c09040; }
@@ -223,7 +289,7 @@ const insights = computed(() => {
 
 .insight-term {
   font-family: 'Press Start 2P', monospace;
-  font-size: 9px; line-height: 1.7;
+  font-size: 11px; line-height: 1.8;
 }
 .insight-danger  .insight-term { color: #f08080; }
 .insight-warning .insight-term { color: #f0a060; }
@@ -233,22 +299,22 @@ const insights = computed(() => {
 
 .insight-explanation {
   font-family: 'Press Start 2P', monospace;
-  font-size: 7px; color: #a09080; line-height: 2.2;
+  font-size: 8px; color: #a09080; line-height: 2.4;
 }
 
 .insight-gamenote {
   font-family: 'Press Start 2P', monospace;
-  font-size: 7px; color: #508070;
+  font-size: 8px; color: #508070;
   background: rgba(0,80,60,0.2);
   border-left: 3px solid #206050;
-  padding: 6px 10px;
-  line-height: 2.2;
+  padding: 8px 12px;
+  line-height: 2.4;
 }
 
 .insight-close-btn {
   font-family: 'Press Start 2P', monospace;
-  font-size: 11px;
-  padding: 18px;
+  font-size: 14px;
+  padding: 22px;
   width: 100%;
   background: #1c4010;
   color: #80d050;
@@ -257,6 +323,7 @@ const insights = computed(() => {
   cursor: pointer;
   transition: background 0.1s, transform 0.1s;
   flex-shrink: 0;
+  letter-spacing: 2px;
 }
 .insight-close-btn:hover  { background: #2a5818; }
 .insight-close-btn:active { transform: translateY(2px); }

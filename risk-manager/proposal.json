@@ -1,0 +1,507 @@
+{
+  "gppt_version": "2.0.0",
+  "exported_at": "2026-05-12T09:56:33.677Z",
+  "state": {
+    "ideaBrief": {
+      "title": "Risk Manager",
+      "domain": "Project Management and Risk Assessment",
+      "audience": "University students in computer science and project management courses",
+      "coreMetaphor": "Managing a software project as a high-stakes adventure filled with risks and challenges",
+      "successVision": "Players develop practical risk management skills through immersive gameplay while enjoying a retro-themed simulation"
+    },
+    "projectTitle": "Risk Manager",
+    "organisation": "Anthropic Ventures",
+    "courseCode": "CS406 - Project Risk Management",
+    "domain": "Software Project Risk Management",
+    "deliverableArea": "Educational Game Development",
+    "proposalDate": "2026-05-12",
+    "startDate": "2026-05-12",
+    "teamMembers": [
+      {
+        "name": "Mehmet Mert Seyhan",
+        "role": "Proposer",
+        "phone": "5056327389"
+      },
+      {
+        "name": "Ali Yılmaz",
+        "role": "Developer",
+        "phone": "5375751787"
+      }
+    ],
+    "problemStatement": "Students lack hands-on experience in identifying, assessing, and mitigating project risks in software development",
+    "targetPopulation": "Undergraduate and graduate students in computer science, software engineering, and project management programs",
+    "successCriteria": [
+      "Deliver PROJECT: NEON within 30 days",
+      "Maintain team morale above 30%",
+      "Successfully mitigate all major risks",
+      "Achieve positive synergy bonuses through team composition"
+    ],
+    "bloomOutcomes": [
+      "Apply risk assessment techniques in project scenarios",
+      "Analyze the impact of team morale on project success",
+      "Evaluate different strategies for risk mitigation",
+      "Create contingency plans for project challenges"
+    ],
+    "theories": [
+      "Self-Determination Theory (SDT)",
+      "Hexad Player Types",
+      "Octalysis Gamification Framework"
+    ],
+    "narrativeTheme": "Futuristic software development in 2026 where project managers navigate technical risks, team dynamics, and deadline pressures",
+    "gameOverview": "Risk Manager is a 30-day simulation game where players manage a software development project called PROJECT: NEON. Players must hire and manage a team, handle daily risks and events, make strategic decisions through dilemmas, and deliver the project on time while maintaining budget and morale.",
+    "sdtAutonomy": "Players have freedom to choose team composition, risk mitigation strategies, and daily management decisions",
+    "sdtCompetence": "Success in risk mitigation and project delivery builds player competence through skill-based challenges",
+    "sdtRelatedness": "Team synergy mechanics and morale systems create social connections between virtual team members",
+    "hexad": {
+      "Achiever": true,
+      "Socialiser": true,
+      "Philanthropist": false,
+      "Free Spirit": true,
+      "Player": true,
+      "Disruptor": false
+    },
+    "rewardStructure": {
+      "milestone_completion": "Points and money rewards for completing project milestones",
+      "risk_mitigation": "Bonus money and morale boosts for successful risk handling",
+      "synergy_bonuses": "Extra productivity from complementary team skills",
+      "critical_successes": "Random chance events that provide significant advantages"
+    },
+    "octalysis": {
+      "core_drives": [
+        "Epic Meaning & Calling (saving the project)",
+        "Development & Accomplishment (progress milestones)",
+        "Empowerment of Creativity & Feedback (strategic decisions)",
+        "Ownership & Possession (team building)",
+        "Social Influence & Relatedness (team morale)",
+        "Scarcity & Impatience (deadline pressure)",
+        "Unpredictability & Curiosity (random events)",
+        "Loss & Avoidance (risk consequences)"
+      ]
+    },
+    "mechanics": [
+      "Risk Cards: Daily random risk events that must be addressed",
+      "Employee Management: Hire, fire, and manage team members with different skills",
+      "Daily Progress System: Advance project through daily actions",
+      "Morale System: Maintain team motivation through various means",
+      "Budget Management: Allocate money for hires, upgrades, and risk mitigation",
+      "Dilemma Choices: Make tough decisions that affect project outcomes",
+      "Critical Success Events: Random positive events that boost progress",
+      "Bug Outbreaks: Special risk events that require immediate attention",
+      "Upgrade System: Purchase permanent improvements to team capabilities",
+      "Contingency Reserve: Emergency fund for critical risk payments"
+    ],
+    "conceptMappings": [
+      "Risk Identification -> Risk Cards and Events",
+      "Risk Assessment -> Cost and Impact Evaluation",
+      "Risk Mitigation -> Strategic Choices and Upgrades",
+      "Team Dynamics -> Employee Synergy and Morale",
+      "Project Planning -> Milestone Tracking and Deadline Management",
+      "Budget Control -> Money and Contingency Reserve Management",
+      "Decision Making -> Dilemma Choices and Daily Actions"
+    ],
+    "mdaAnalysis": {
+      "Mechanics": [
+        "Turn-based daily progression",
+        "Resource management (money, morale)",
+        "Event-driven risk system",
+        "Team composition strategy",
+        "Upgrade progression"
+      ],
+      "Dynamics": [
+        "Escalating difficulty through time pressure",
+        "Interdependent systems (morale affects productivity)",
+        "Risk accumulation and mitigation cycles",
+        "Strategic planning vs reactive management",
+        "Team synergy emergence"
+      ],
+      "Aesthetics": [
+        "Retro pixel art visual style",
+        "Immersive office environment simulation",
+        "Tense atmosphere during high-risk periods",
+        "Satisfying progress feedback",
+        "Narrative-driven event descriptions"
+      ]
+    },
+    "scenarios": [
+      "Bug Outbreak: Multiple bugs appear simultaneously, requiring immediate fixes",
+      "Deadline Crunch: Final days with multiple risks and low morale",
+      "Team Conflict: Low morale leads to productivity drops",
+      "Budget Crisis: Insufficient funds for necessary risk mitigation",
+      "Synergy Opportunity: Hiring complementary skills creates bonuses",
+      "Critical Success Chain: Multiple positive events in sequence"
+    ],
+    "gamePhases": [
+      "Planning Phase: Initial team hiring and upgrade purchases",
+      "Early Development: Building momentum with risk management",
+      "Mid-Game Challenges: Complex dilemmas and risk combinations",
+      "Endgame Pressure: Final push with deadline approaching",
+      "Post-Mortem: Review of decisions and outcomes"
+    ],
+    "userStories": [
+      "As a project manager, I want to hire employees with complementary skills so that I can achieve synergy bonuses",
+      "As a player, I want to see daily risk events so that I can make informed mitigation decisions",
+      "As a student, I want clear feedback on my decisions so that I can learn from mistakes",
+      "As a player, I want to manage my budget carefully so that I can afford critical risk payments",
+      "As a learner, I want to experience realistic project challenges so that I can apply concepts in real work"
+    ],
+    "frs": [
+      "Display daily HUD with money, morale, day counter, and deadline",
+      "Generate random risk events each day with mitigation options",
+      "Allow hiring/firing of employees with different skill sets",
+      "Track project progress through milestone completion",
+      "Present dilemmas requiring player choice with consequences",
+      "Manage team morale through various game mechanics",
+      "Provide upgrade system for permanent improvements",
+      "Implement critical success and bug outbreak events",
+      "Show post-mortem report with detailed statistics",
+      "Support theme customization for visual preferences"
+    ],
+    "nfrs": [
+      "Game should run smoothly in web browser",
+      "Response time for actions should be under 100ms",
+      "Visual style should maintain retro pixel aesthetic",
+      "Game state should persist during session",
+      "Educational content should be accurate and relevant"
+    ],
+    "gameDuration": "30-45 minutes per session",
+    "sessionSteps": [
+      "Introduction and planning phase (5 minutes)",
+      "Daily management loop (20-30 minutes)",
+      "Final delivery and post-mortem (5-10 minutes)",
+      "Debrief and discussion (facilitator-led)"
+    ],
+    "kpis": [
+      "Project completion rate",
+      "Average days to completion",
+      "Risk mitigation success rate",
+      "Final morale levels",
+      "Budget efficiency (money spent vs milestones achieved)"
+    ],
+    "logPrivacy": "All gameplay data is anonymized and aggregated for educational research purposes only",
+    "dataCollectionPlan": "Game logs player decisions, risk outcomes, and completion metrics for analysis of learning effectiveness",
+    "tuslerRisks": [
+      "Technical complexity leading to bugs",
+      "Scope creep from feature additions",
+      "Team burnout from overtime demands",
+      "Budget overruns from unexpected risks",
+      "Integration issues with new hires",
+      "Time pressure reducing decision quality"
+    ],
+    "supportTeam": [
+      "Lead Facilitator: Guides gameplay and debrief",
+      "Technical Support: Assists with game technical issues",
+      "Educational Coordinator: Ensures learning objectives are met"
+    ],
+    "facilitatorRole": "Introduce the game mechanics, observe student decision-making, facilitate post-game discussion on risk management strategies, and connect gameplay to real-world project management concepts",
+    "risks": [
+      {
+        "id": 1,
+        "name": "Server Crash",
+        "description": "Database overloads under sprint pressure",
+        "probability": 45,
+        "cost": 15000,
+        "delay": 3,
+        "level": "high",
+        "type": "server",
+        "moralDamage": 0
+      },
+      {
+        "id": 2,
+        "name": "API Rate Limit",
+        "description": "External services blocking requests",
+        "probability": 60,
+        "cost": 3000,
+        "delay": 1,
+        "level": "medium",
+        "type": "api",
+        "moralDamage": 0
+      },
+      {
+        "id": 3,
+        "name": "Security Vulnerability",
+        "description": "Critical zero-day discovered",
+        "probability": 30,
+        "cost": 20000,
+        "delay": 2,
+        "level": "high",
+        "type": "security",
+        "moralDamage": 0
+      },
+      {
+        "id": 4,
+        "name": "Scope Creep",
+        "description": "Client requests unplanned features",
+        "probability": 55,
+        "cost": 5000,
+        "delay": 2,
+        "level": "medium",
+        "type": "scope",
+        "moralDamage": 0
+      },
+      {
+        "id": 5,
+        "name": "Team Conflict",
+        "description": "Personality clashes reduce productivity",
+        "probability": 40,
+        "cost": 0,
+        "delay": 1,
+        "level": "medium",
+        "type": "human",
+        "moralDamage": 25
+      },
+      {
+        "id": 6,
+        "name": "Critical Bug",
+        "description": "Show-stopping defect in core functionality",
+        "probability": 50,
+        "cost": 8000,
+        "delay": 2,
+        "level": "high",
+        "type": "bug",
+        "moralDamage": 0
+      },
+      {
+        "id": 7,
+        "name": "Vendor Delay",
+        "description": "Third-party supplier misses deadline",
+        "probability": 35,
+        "cost": 4000,
+        "delay": 3,
+        "level": "medium",
+        "type": "vendor",
+        "moralDamage": 0
+      },
+      {
+        "id": 8,
+        "name": "Resource Shortage",
+        "description": "Insufficient hardware or cloud capacity",
+        "probability": 45,
+        "cost": 6000,
+        "delay": 1,
+        "level": "medium",
+        "type": "resource",
+        "moralDamage": 0
+      },
+      {
+        "id": 9,
+        "name": "Integration Issue",
+        "description": "API incompatibilities between systems",
+        "probability": 50,
+        "cost": 7000,
+        "delay": 2,
+        "level": "high",
+        "type": "integration",
+        "moralDamage": 0
+      },
+      {
+        "id": 10,
+        "name": "Change Request",
+        "description": "Stakeholder demands mid-project changes",
+        "probability": 40,
+        "cost": 3000,
+        "delay": 1,
+        "level": "low",
+        "type": "change",
+        "moralDamage": 0
+      },
+      {
+        "id": 11,
+        "name": "Communication Breakdown",
+        "description": "Misunderstandings between team and client",
+        "probability": 30,
+        "cost": 2000,
+        "delay": 1,
+        "level": "low",
+        "type": "communication",
+        "moralDamage": 15
+      },
+      {
+        "id": 12,
+        "name": "Technical Debt",
+        "description": "Accumulated shortcuts cause failures",
+        "probability": 25,
+        "cost": 10000,
+        "delay": 3,
+        "level": "high",
+        "type": "debt",
+        "moralDamage": 0
+      },
+      {
+        "id": 13,
+        "name": "Regulatory Change",
+        "description": "New compliance requirements emerge",
+        "probability": 20,
+        "cost": 15000,
+        "delay": 4,
+        "level": "high",
+        "type": "regulatory",
+        "moralDamage": 0
+      },
+      {
+        "id": 14,
+        "name": "Burnout",
+        "description": "Overworked team members lose productivity",
+        "probability": 35,
+        "cost": 0,
+        "delay": 2,
+        "level": "medium",
+        "type": "human",
+        "moralDamage": 30
+      },
+      {
+        "id": 15,
+        "name": "Market Shift",
+        "description": "Competitive landscape changes project requirements",
+        "probability": 15,
+        "cost": 5000,
+        "delay": 2,
+        "level": "low",
+        "type": "market",
+        "moralDamage": 0
+      }
+    ],
+    "wf_dash": "Project dashboard showing progress bars, milestone status, team composition, and current risks",
+    "wf_asset": "Employee skills and upgrade inventory management interface",
+    "wf_portfolio": "Overall project portfolio view with completed milestones and remaining tasks",
+    "inScope": "Core single-player simulation mechanics, risk management system, team management, progress tracking, and educational debrief features",
+    "outScope": "Multiplayer features, advanced AI opponents, mobile app versions, integration with learning management systems, and real-time collaboration tools",
+    "whyMotivation": "Traditional lectures on risk management lack engagement and practical application. This game provides experiential learning through simulated project challenges.",
+    "howEthics": "Students provide informed consent for gameplay data collection, data is anonymized, and findings are used only for educational research and improvement of the learning experience."
+  },
+  "_audit": {
+    "sysLog": [
+      {
+        "ts": "2026-05-12T09:56:16.558Z",
+        "level": "L2",
+        "msg": "GPPT v2.0.10 booting",
+        "ctx": {}
+      },
+      {
+        "ts": "2026-05-12T09:56:16.592Z",
+        "level": "L2",
+        "msg": "Ontology loaded: 38 Components / 5 Bonuses / 3 Penalties",
+        "ctx": {}
+      },
+      {
+        "ts": "2026-05-12T09:56:16.620Z",
+        "level": "L2",
+        "msg": "Recompute: 0.0/800 in 2.1ms (119 steps)",
+        "ctx": {
+          "trigger": "boot"
+        }
+      },
+      {
+        "ts": "2026-05-12T09:56:16.621Z",
+        "level": "L2",
+        "msg": "GPPT v2.0.10 ready",
+        "ctx": {
+          "scoringMethods": 40
+        }
+      },
+      {
+        "ts": "2026-05-12T09:56:24.707Z",
+        "level": "L2",
+        "msg": "Proposal exported (HTML)",
+        "ctx": {}
+      }
+    ],
+    "changeLog": [],
+    "lastEvaluation": {
+      "totalScore": 0,
+      "dimensionScores": {
+        "D1": {
+          "dim": "D1",
+          "componentSum": 0,
+          "bonus": 0,
+          "penalty": 0,
+          "raw": 0,
+          "score": 0,
+          "componentCount": 4
+        },
+        "D2": {
+          "dim": "D2",
+          "componentSum": 0,
+          "bonus": 0,
+          "penalty": 0,
+          "raw": 0,
+          "score": 0,
+          "componentCount": 5
+        },
+        "D3": {
+          "dim": "D3",
+          "componentSum": 0,
+          "bonus": 0,
+          "penalty": 0,
+          "raw": 0,
+          "score": 0,
+          "componentCount": 4
+        },
+        "D4": {
+          "dim": "D4",
+          "componentSum": 0,
+          "bonus": 0,
+          "penalty": 0,
+          "raw": 0,
+          "score": 0,
+          "componentCount": 6
+        },
+        "D5": {
+          "dim": "D5",
+          "componentSum": 0,
+          "bonus": 0,
+          "penalty": 0,
+          "raw": 0,
+          "score": 0,
+          "componentCount": 7
+        },
+        "D6": {
+          "dim": "D6",
+          "componentSum": 0,
+          "bonus": 0,
+          "penalty": 0,
+          "raw": 0,
+          "score": 0,
+          "componentCount": 4
+        },
+        "D7": {
+          "dim": "D7",
+          "componentSum": 0,
+          "bonus": 0,
+          "penalty": 0,
+          "raw": 0,
+          "score": 0,
+          "componentCount": 3
+        },
+        "D8": {
+          "dim": "D8",
+          "componentSum": 0,
+          "bonus": 0,
+          "penalty": 0,
+          "raw": 0,
+          "score": 0,
+          "componentCount": 5
+        }
+      },
+      "evaluationId": "eval_mp2gh6qy",
+      "evaluatedAt": "2026-05-12T09:56:16.620Z",
+      "logCount": 119
+    },
+    "scoreHistory": [
+      {
+        "ts": "2026-05-12T09:56:16.620Z",
+        "total": 0,
+        "dimScores": {
+          "D1": 0,
+          "D2": 0,
+          "D3": 0,
+          "D4": 0,
+          "D5": 0,
+          "D6": 0,
+          "D7": 0,
+          "D8": 0
+        },
+        "trigger": "boot"
+      }
+    ]
+  }
+}

@@ -61,6 +61,26 @@
           </ul>
         </div>
 
+        <!-- Risk Management Score & Competition Score -->
+        <div class="grid grid-cols-2 gap-4">
+          <div class="p-3 border rounded" :style="{ borderColor: theme.panelBorder, background: '#0a0c18' }">
+            <h3 class="text-sm mb-3" :style="{ color: '#80a0f0' }">🎯 RM Puanı</h3>
+            <div class="flex items-center gap-4 mb-3">
+              <div class="text-3xl font-bold" :style="{ color: riskScoreLabel.color }">{{ riskManagementScore }}</div>
+              <div>
+                <div class="text-xs mb-1" :style="{ color: riskScoreLabel.color }">{{ riskScoreLabel.label }}</div>
+              </div>
+            </div>
+          </div>
+          <div class="p-3 border rounded" :style="{ borderColor: '#4a2060', background: '#1a0c20' }">
+            <h3 class="text-sm mb-3" :style="{ color: '#d0a0f0' }">🏆 YARIŞMA SKORU</h3>
+            <div class="flex items-center gap-4 mb-3">
+              <div class="text-4xl font-bold text-white" style="text-shadow: 2px 2px 0 #d0a0f0">{{ gs.score.toLocaleString() }}</div>
+            </div>
+            <div class="text-[9px]" style="color:#a080c0">Kararlar, riskler ve bütçe performansınızın toplamı!</div>
+          </div>
+        </div>
+
         <!-- AI Feedback -->
         <div class="p-3 bg-[#0a141a] border border-[#1a3040] rounded flex gap-3 items-start mt-2">
           <div class="text-2xl">🤖</div>
@@ -72,11 +92,30 @@
           </div>
         </div>
 
-        <!-- Action Button -->
-        <div class="mt-4 text-center">
-          <button @click="$emit('restart')" class="pixel-btn py-3 px-6 text-sm" :class="isVictory ? 'pixel-btn-green' : ''">
-            ↺ YENİ PROJE (RESTART)
-          </button>
+        <!-- Action Button & Leaderboard -->
+        <div class="mt-4 border-t pt-4" :style="{ borderColor: theme.panelBorder }">
+          <div v-if="!scoreSaved" class="flex flex-col gap-3 items-center">
+            <div class="text-xs text-white" style="color:#d0a0f0">Skorunu liderlik tablosuna kaydet!</div>
+            <div class="flex gap-2 w-full justify-center">
+              <input v-model="playerName" type="text" placeholder="Adınız..." class="pixel-input px-3 py-2 text-sm bg-black border-2 text-white" style="border-color:#4a2060; outline:none; max-width:200px" maxlength="15">
+              <button @click="saveScore" :disabled="!playerName.trim()" class="pixel-btn bg-[#4a2060] text-white py-2 px-4 text-sm border-2 disabled:opacity-50 disabled:cursor-not-allowed" style="border-color:#6a4080">KAYDET</button>
+            </div>
+            <button @click="$emit('restart')" class="pixel-btn py-2 px-6 text-xs mt-2 text-gray-400">KAYDETMEDEN ÇIK</button>
+          </div>
+          <div v-else class="flex flex-col gap-3">
+            <div class="text-center text-sm font-bold" style="color:#d0a0f0">🏆 LİDERLİK TABLOSU 🏆</div>
+            <div class="bg-black/50 border rounded p-2" :style="{ borderColor: '#4a2060' }">
+              <div v-for="(entry, idx) in leaderboard" :key="idx" class="flex justify-between items-center py-2 px-2 border-b border-gray-800 last:border-0" :class="entry.isCurrent ? 'bg-[#2a1438] font-bold rounded' : ''">
+                <span class="text-xs text-gray-300">{{ idx + 1 }}. {{ entry.name }}</span>
+                <span class="text-xs text-[#d0a0f0]">{{ entry.score.toLocaleString() }}</span>
+              </div>
+            </div>
+            <div class="text-center mt-2">
+              <button @click="$emit('restart')" class="pixel-btn py-3 px-6 text-sm" :class="isVictory ? 'pixel-btn-green' : ''">
+                ↺ YENİ PROJE (RESTART)
+              </button>
+            </div>
+          </div>
         </div>
 
       </div>
@@ -85,7 +124,29 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, onMounted } from 'vue'
+
+const playerName = ref('')
+const scoreSaved = ref(false)
+const leaderboard = ref([])
+
+function saveScore() {
+  if (!playerName.value.trim()) return
+  const currentScores = JSON.parse(localStorage.getItem('rm_leaderboard') || '[]')
+  currentScores.push({ name: playerName.value.trim().toUpperCase(), score: props.gs.score, date: new Date().toISOString() })
+  currentScores.sort((a, b) => b.score - a.score)
+  // Keep top 5
+  const topScores = currentScores.slice(0, 5)
+  localStorage.setItem('rm_leaderboard', JSON.stringify(topScores))
+  
+  // Update view
+  leaderboard.value = topScores.map(x => ({ ...x, isCurrent: x.name === playerName.value.trim().toUpperCase() && x.score === props.gs.score }))
+  scoreSaved.value = true
+}
+
+onMounted(() => {
+  leaderboard.value = JSON.parse(localStorage.getItem('rm_leaderboard') || '[]')
+})
 
 const props = defineProps({
   status: String,
@@ -99,6 +160,27 @@ const props = defineProps({
 defineEmits(['restart'])
 
 const isVictory = computed(() => props.status === 'victory')
+
+const riskManagementScore = computed(() => {
+  let score = 50 // baseline
+  score += (props.stats.risksProactivelyHandled || 0) * 10
+  score += (props.stats.critSuccesses || 0) * 8
+  score -= (props.stats.bugsFixed || 0) * 12
+  // Contingency reserve remaining = good planning
+  const reserveRatio = (props.gs.contingencyReserve || 0) / 15000
+  score += Math.floor(reserveRatio * 15)
+  if (props.gs.morale > 60) score += 10
+  if (props.status === 'victory') score += 20
+  return Math.max(0, Math.min(100, score))
+})
+
+const riskScoreLabel = computed(() => {
+  const s = riskManagementScore.value
+  if (s >= 85) return { label: 'PMP SEVİYESİ', color: '#60e060', desc: 'Mükemmel risk yönetimi!' }
+  if (s >= 65) return { label: 'DENEYIMLI PM', color: '#a0d060', desc: 'Güçlü bir yönetim performansı.' }
+  if (s >= 45) return { label: 'GELİŞEN PM', color: '#f0c040', desc: 'Proaktif adımlar atabilirdiniz.' }
+  return { label: 'ÇAYLAK PM', color: '#f08060', desc: 'Risk yönetimi becerileri geliştirmeli.' }
+})
 
 function generateFeedback() {
   let feedback = ''

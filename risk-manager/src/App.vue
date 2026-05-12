@@ -51,7 +51,7 @@
               <div class="pixel-inset p-3 text-center" :style="{ backgroundColor: theme.panelBg, color: '#c080f0' }"><div class="text-2xl">❓</div>İKİLEM SİSTEMİ</div>
               <div class="pixel-inset p-3 text-center" :style="{ backgroundColor: theme.panelBg, color: '#f06060' }"><div class="text-2xl">🐛</div>BUG RİSKİ</div>
             </div>
-            <button @click="startGame" class="pixel-btn-green py-4 text-lg tracking-widest">▶  SİSTEMİ BAŞLAT</button>
+            <button @click="showPlanningModal = true" class="pixel-btn-green py-4 text-lg tracking-widest">▶  SİSTEMİ BAŞLAT</button>
           </div>
           <div class="pixel-title-bar px-4 py-2 text-center text-xs" :style="{ backgroundColor: theme.titleBarBg, color: theme.titleText }">
             ANTHROPIC VENTURES © 2026
@@ -82,6 +82,10 @@
           <span style="font-size:18px">🏢</span> RM 2026
         </div>
         <div style="display:flex;gap:5px;align-items:center">
+          <!-- Score -->
+          <div class="pixel-hud-chip" style="background:#2a1438;color:#d0a0f0;border-color:#4a2060" title="Yarışma Skoru">
+            🏆 SKOR: {{ gs.score.toLocaleString() }}
+          </div>
           <!-- Money -->
           <div class="pixel-hud-chip" :class="fx.moneyFlash?'hud-chip-red':''"
             :style="!fx.moneyFlash?{background:theme.chipGreen,color:theme.chipGreenText,borderColor:theme.chipGreen}:{}">
@@ -105,6 +109,10 @@
           <div class="pixel-hud-chip" :class="project.deadline<=5?'blinkanim':''"
             :style="project.deadline<=5?{background:theme.chipRed,color:'#f08080',borderColor:theme.chipRed}:{background:theme.chipBrown,color:'#c8a070',borderColor:theme.chipBrown}">
             ⏱ {{ project.deadline }}G KALDI
+          </div>
+          <!-- Contingency Reserve -->
+          <div class="pixel-hud-chip" :style="{background:'#1a2840',color:'#80b0e0',borderColor:'#1a2840'}" title="Contingency Reserve: Acil risk ödemeleri için ayrılan yedek bütçe">
+            🛡 YEDEK ${{ gs.contingencyReserve.toLocaleString() }}
           </div>
           <!-- Synergy indicator -->
           <div v-if="synergyBonus > 0" class="pixel-hud-chip hud-chip-synergy">
@@ -195,10 +203,14 @@
     <Transition name="fade">
       <RiskCenterModal v-if="showRiskCenter" 
         :pendingRisks="pendingRisks" 
+        :allRisks="activeRiskPool"
         :eventLog="eventLog" 
         :theme="theme" 
         @action="handleRiskAction"
         @close="showRiskCenter=false" />
+    </Transition>
+    <Transition name="fade">
+      <ProjectPlanningModal v-if="showPlanningModal" :theme="theme" @planComplete="handlePlanComplete" />
     </Transition>
   </div>
 </template>
@@ -219,6 +231,7 @@ import PostMortemReport from './components/PostMortemReport.vue'
 import TeamShopModal from './components/TeamShopModal.vue'
 import RiskCenterModal from './components/RiskCenterModal.vue'
 import DayInsightModal from './components/DayInsightModal.vue'
+import ProjectPlanningModal from './components/ProjectPlanningModal.vue'
 import { newTheme } from './design.js'
 
 const originalTheme = {
@@ -253,13 +266,14 @@ const triggeredRisk = ref(null), showDaySummary = ref(false), daySummaryData = r
 const isProcessing = ref(false), lastDailyProgress = ref(0), lastDailyCost = ref(0)
 const gameOverReason = ref(''), bgCanvas = ref(null), particleCanvas = ref(null)
 const lastCritSuccess = ref(false), lastBugEvent = ref(false)
+const showPlanningModal = ref(false)
 const showDilemma = ref(false), currentDilemma = ref(null)
 const showKnowledgeBase = ref(false)
 const eventLog = ref([])
-const stats = reactive({ critSuccesses: 0, bugsFixed: 0, dilemmasResolved: 0 })
+const stats = reactive({ critSuccesses: 0, bugsFixed: 0, dilemmasResolved: 0, risksProactivelyHandled: 0 })
 
 const fx = reactive({ shake:false, moneyFlash:false, glitch:false, criticalSuccess:false, bugEvent:false })
-const gs = reactive({ status:'menu', money:100000, day:1, morale:75 })
+const gs = reactive({ status:'menu', money:100000, day:1, morale:75, contingencyReserve:15000, riskScore:0, score:0 })
 const project = reactive({ deadline:30, progress:0, totalEffort:1000 })
 const milestones = reactive([
   { pct:25, label:'+$10K', bonus:10000, reached:false, icon:'💰' },
@@ -269,7 +283,7 @@ const milestones = reactive([
 
 // ─── EMPLOYEES ───
 const defaultEmployees = () => [
-  { id:1, name:'Alice', role:'Senior Dev', icon:'🧑‍💻', dailyCost:2000, productivity:50, moralBonus:0, desc:'Bug -%20 | QA ile sinerji', hired:false, energy:100, overtime:false },
+  { id:1, name:'Mert', role:'Senior Dev', icon:'🧑‍💻', dailyCost:2000, productivity:50, moralBonus:0, desc:'Bug -%20 | QA/Data ile sinerji', hired:false, energy:100, overtime:false },
   { id:2, name:'Bob',   role:'DevOps',     icon:'🔧',   dailyCost:1500, productivity:30, moralBonus:0, desc:'Server -%25 | Güvenlik ile sinerji', hired:false, energy:100, overtime:false },
   { id:3, name:'Charlie',role:'QA',        icon:'🔍',   dailyCost:1200, productivity:20, moralBonus:0, desc:'Bug -%15 | Senior ile sinerji', hired:false, energy:100, overtime:false },
   { id:4, name:'Diana', role:'PM',         icon:'📊',   dailyCost:1000, productivity:15, moralBonus:8, desc:'+8 moral/gün | Tüm ekiple sinerji', hired:false, energy:100, overtime:false },
@@ -277,11 +291,13 @@ const defaultEmployees = () => [
   { id:6, name:'Frank', role:'Frontend',   icon:'🎨',   dailyCost:1100, productivity:35, moralBonus:5, desc:'+5 moral/gün | AI ile sinerji', hired:false, energy:100, overtime:false },
   { id:7, name:'Grace', role:'AI Müh.',    icon:'🤖',   dailyCost:1800, productivity:60, moralBonus:0, desc:'Süper verimli | Frontend ile sinerji', hired:false, energy:100, overtime:false },
   { id:8, name:'Hank',  role:'Stajyer',    icon:'👶',   dailyCost:400,  productivity:8,  moralBonus:0, desc:'Ucuz ama riskli', hired:false, energy:100, overtime:false },
+  { id:9, name:'İpek',  role:'BA',         icon:'📝',   dailyCost:1400, productivity:20, moralBonus:3, desc:'Scope -%25 | PM ile sinerji', hired:false, energy:100, overtime:false },
+  { id:10,name:'Kemal', role:'Data Eng.',  icon:'🗄️',   dailyCost:1600, productivity:40, moralBonus:0, desc:'Server -%20 | Senior ile sinerji', hired:false, energy:100, overtime:false },
 ]
 const employees = ref(defaultEmployees())
 
 // Sinerji çiftleri (id çiftleri)
-const SYNERGY_PAIRS = [[1,3],[2,5],[4,1],[4,2],[4,3],[4,5],[4,6],[4,7],[6,7]]
+const SYNERGY_PAIRS = [[1,3],[2,5],[4,1],[4,2],[4,3],[4,5],[4,6],[4,7],[4,9],[4,10],[6,7],[9,4],[10,1]]
 
 function getSynergyPartners(empId) {
   return SYNERGY_PAIRS
@@ -310,6 +326,10 @@ const defaultUpgrades = () => [
   { id:'monitor',name:'APM Monitor',     icon:'📡', cost:3500,  bought:false, desc:'Risk olasılık bilgisi' },
   { id:'ergonomic',name:'Ergonomik Masa',icon:'🪑', cost:2500,  bought:false, desc:'Enerji tüketimi -%30' },
   { id:'standup', name:'Daily Standup',  icon:'📋', cost:1000,  bought:false, desc:'Her gün +5 moral bonus' },
+  { id:'riskplan',name:'Risk Planı Belgesi',icon:'🛡️',cost:2000,  bought:false, desc:'Proaktif aksiyonda $1k iade' },
+  { id:'wbs',    name:'WBS Oluştur',     icon:'🗺️', cost:1500,  bought:false, desc:'+10 ilerleme, Scope -%15' },
+  { id:'burndown',name:'Burndown Chart', icon:'📉', cost:2000,  bought:false, desc:'Risk olasılığı -%5/gün' },
+  { id:'stakeholder',name:'Paydaş İletişimi',icon:'📞',cost:1800, bought:false, desc:'Scope/Çatışma -%20' },
 ]
 const upgrades = ref(defaultUpgrades())
 
@@ -330,6 +350,19 @@ const allRisksPool = [
   { id:13,name:'Stajyer Hatası',     desc:"Hank prod'a push etti!",               prob:70, cost:3000,  delay:1, level:'low',    type:'bug',      status:'pending', icon:'😱' },
   { id:14,name:'Lisans Sorunu',      desc:'Tedarikçi lisansı bitiyor.',            prob:30, cost:5000,  delay:1, level:'medium', type:'api',      status:'pending', icon:'📋' },
   { id:15,name:'İK Riski',           desc:'Kıdemli dev ayrılabilir!',             prob:35, cost:0,     delay:0, level:'high',   type:'conflict', status:'pending', icon:'🚪', moralDamage:30 },
+  { id:16,name:'Bulut Maliyet Patlaması', desc:'Gereksiz çalışan instance\'lar!', prob:40, cost:12000, delay:0, level:'high',   type:'server',   status:'pending', icon:'💸' },
+  { id:17,name:'Microservice Kaskadı', desc:'Bir servis diğerlerini kilitliyor.',  prob:30, cost:16000, delay:3, level:'high',   type:'server',   status:'pending', icon:'⛓️' },
+  { id:18,name:'Legacy Entegrasyon', desc:'Eski kod ile entegre olamıyoruz.',      prob:50, cost:9000,  delay:2, level:'medium', type:'bug',      status:'pending', icon:'🏛️' },
+  { id:19,name:'Mobil Uyumluluk Krizi', desc:'Yeni UI mobilde patladı.',           prob:45, cost:6000,  delay:1, level:'medium', type:'bug',      status:'pending', icon:'📱' },
+  { id:20,name:'SaaS Fiyat Artışı',  desc:'Tedarikçi %30 zam yaptı.',              prob:35, cost:8000,  delay:0, level:'medium', type:'api',      status:'pending', icon:'🧾' },
+  { id:21,name:'Open Source Güvenlik',desc:'Kullanılan kütüphanede açık çıktı!',   prob:20, cost:22000, delay:3, level:'high',   type:'security', status:'pending', icon:'🕷️' },
+  { id:22,name:'CDN Çöküşü',         desc:'Statik dosyalar yüklenmiyor.',          prob:30, cost:5000,  delay:1, level:'medium', type:'api',      status:'pending', icon:'🌍' },
+  { id:23,name:'Paydaş Çatışması',   desc:'Yatırımcı projeden memnun değil.',      prob:40, cost:0,     delay:1, level:'medium', type:'conflict', status:'pending', icon:'👔', moralDamage:20 },
+  { id:24,name:'Yönetim Değişimi',   desc:'Sponsor şirketten ayrıldı.',            prob:20, cost:10000, delay:2, level:'high',   type:'conflict', status:'pending', icon:'🌪️', moralDamage:15 },
+  { id:25,name:'Audit / Denetim',    desc:'Lisanssız kod tespiti!',                prob:25, cost:15000, delay:2, level:'high',   type:'scope',    status:'pending', icon:'🕵️' },
+  { id:26,name:'Ekip Burn-out',      desc:'Takım tükendi, moral sıfır.',           prob:55, cost:0,     delay:2, level:'medium', type:'conflict', status:'pending', icon:'🧟', moralDamage:35 },
+  { id:27,name:'Sosyal Mühendislik', desc:'Phishing ile şifre çalındı.',           prob:30, cost:12000, delay:1, level:'high',   type:'security', status:'pending', icon:'🎣' },
+  { id:28,name:'Veri İhlali (KVKK)', desc:'Müşteri datası sızdı, dev ceza!',       prob:15, cost:30000, delay:4, level:'high',   type:'security', status:'pending', icon:'🚨' },
 ]
 const activeRiskPool = ref([])
 
@@ -339,32 +372,74 @@ const allDilemmas = [
     desc:"Müşteri sözleşmede olmayan ufak ama 'şık' bir özellik (Gold Plating) istiyor.",
     pmbokTag: 'Kapsam Yönetimi → Değişiklik Kontrol Süreci (Change Control)',
     pmContext: 'Kapsam Kayması (Scope Creep), proje başarısızlığının #1 sebebidir. Her ek istek resmi Change Request sürecinden geçmeli ve Baseline güncellenmeli.',
-    optA:{ text:'✅ Kabul Et  +20 Moral, -3G', pmLabel:'⚠ Scope Creep kabul → Baseline bozulur', effect:()=>{ updateMorale(20); project.deadline-=3; addLog('[PMBOK]: Müşteri mutlu ama proje takvimi sıkıştı! (Scope Creep)','warning') } },
-    optB:{ text:'🚫 Reddet (Change Request İste)', pmLabel:'✅ Change Control → Baseline korunur', effect:()=>{ addLog('[PMBOK]: Ek kapsam talebi reddedildi, temel çizgi (baseline) korundu.','success') } } },
+    optA:{ text:'✅ Kabul Et  +20 Moral, -3G', pmLabel:'⚠ Scope Creep kabul → Baseline bozulur', effect:()=>{ updateScore(-500); updateMorale(20); project.deadline-=3; addLog('[PMBOK]: Müşteri mutlu ama proje takvimi sıkıştı! (Scope Creep)','warning') } },
+    optB:{ text:'🚫 Reddet (Change Request İste)', pmLabel:'✅ Change Control → Baseline korunur', effect:()=>{ updateScore(1000); addLog('[PMBOK]: Ek kapsam talebi reddedildi, temel çizgi (baseline) korundu.','success') } } },
   { id:2, icon:'💼', title:'KAYNAK RİSKİ (Turnover)', 
     desc:'Kıdemli bir geliştirici rakip firmadan %30 zamlı teklif aldı.',
     pmbokTag: 'İnsan Kaynakları Yönetimi → Kaynak Tutma (Retention)',
     pmContext: 'Kilit kaynak kaybı (Turnover) hem kısa vadede verim hem uzun vadede bilgi (Knowledge Transfer) kaybına neden olur. Risk matrisi: Yüksek Etki / Orta Olasılık.',
-    optA:{ text:'💰 Zam Ver  -$8K', pmLabel:'✅ Risk Mitigate → Kaynağı tut', effect:()=>{ updateMoney(-8000); addLog("[PMBOK]: Bütçeden feragat edilerek kilit kaynak elde tutuldu.",'success') } },
-    optB:{ text:'🚪 Reddet  -20 Moral', pmLabel:'⚠ Risk Accept → Moral ve hız düşer', effect:()=>{ updateMorale(-20); addLog("[PMBOK]: Geliştirici ayrıldı, takım morali ve hız düştü.",'warning') } } },
+    optA:{ text:'💰 Zam Ver  -$8K', pmLabel:'✅ Risk Mitigate → Kaynağı tut', effect:()=>{ updateScore(800); updateMoney(-8000); addLog("[PMBOK]: Bütçeden feragat edilerek kilit kaynak elde tutuldu.",'success') } },
+    optB:{ text:'🚪 Reddet  -20 Moral', pmLabel:'⚠ Risk Accept → Moral ve hız düşer', effect:()=>{ updateScore(-500); updateMorale(-20); addLog("[PMBOK]: Geliştirici ayrıldı, takım morali ve hız düştü.",'warning') } } },
   { id:3, icon:'⚡', title:'HIZLANDIRMA (Crashing)', 
     desc:'Teslimatı hızlandırmak için ekibe fazla mesai yaptırmalı mıyız? (Schedule Compression)',
     pmbokTag: 'Zaman Yönetimi → Crashing (Schedule Compression Tekniği)',
     pmContext: 'Crashing: Takvimi sıkıştırmak için maliyet eklemek. Fast Tracking ise görevleri paralel yürütmektir. Her ikisi de risk taşır. Crashing → Maliyet artar, moral düşer.',
-    optA:{ text:'⏰ Mesaiye Kal +$15K / -20M', pmLabel:'⚡ Crashing → Süre kısalır, maliyet+burnout', effect:()=>{ updateMoney(15000); updateMorale(-20); project.deadline-=1; addLog('[PMBOK]: Crashing uygulandı: Bütçe eklendi ama ekip yoruldu.','warning') } },
-    optB:{ text:'🛑 Hayır (Statüko Koru)', pmLabel:'🛡 Risk Accept → Normal tempo devam', effect:()=>{ addLog('[PMBOK]: Normal tempoda devam ediliyor.','info') } } },
+    optA:{ text:'⏰ Mesaiye Kal +$15K / -20M', pmLabel:'⚡ Crashing → Süre kısalır, maliyet+burnout', effect:()=>{ updateScore(500); updateMoney(15000); updateMorale(-20); project.deadline-=1; addLog('[PMBOK]: Crashing uygulandı: Bütçe eklendi ama ekip yoruldu.','warning') } },
+    optB:{ text:'🛑 Hayır (Statüko Koru)', pmLabel:'🛡 Risk Accept → Normal tempo devam', effect:()=>{ updateScore(200); addLog('[PMBOK]: Normal tempoda devam ediliyor.','info') } } },
   { id:4, icon:'🔍', title:'KALİTE GÜVENCESİ (QA)', 
     desc:'Bir alt yüklenicinin kodunda potansiyel hatalar (Defects) var.',
     pmbokTag: 'Kalite Yönetimi → Prevention vs Inspection maliyeti',
     pmContext: 'PMBOK ilkesi: Hataları önlemek (Prevention), tespit etmekten (Inspection) ve düzeltmekten (Correction) her zaman daha ucuzdur. Teknik borç faiz gibi birikir.',
-    optA:{ text:'🛡️ Testleri Sıkılaştır -$5K', pmLabel:'✅ Prevention maliyet → Bug riski azalır', effect:()=>{ updateMoney(-5000); activeRiskPool.value.forEach(r=>{ if(r.type==='bug') r.prob=Math.max(5,r.prob-15) }); addLog('[PMBOK]: Kalite Kontrol (Prevention) maliyeti arttı ama Bug riski düştü.','success') } },
-    optB:{ text:'🤫 Kabul Et (Risk Primi Artar)', pmLabel:'⚠ Teknik Borç → Bug olasılığı +%20', effect:()=>{ activeRiskPool.value.forEach(r=>{ if(r.type==='bug') r.prob=Math.min(95,r.prob+20) }); addLog('[PMBOK]: Teknik borç kabul edildi, son kullanıcı hata riski yükseldi!','danger') } } },
+    optA:{ text:'🛡️ Testleri Sıkılaştır -$5K', pmLabel:'✅ Prevention maliyet → Bug riski azalır', effect:()=>{ updateScore(1000); updateMoney(-5000); activeRiskPool.value.forEach(r=>{ if(r.type==='bug') r.prob=Math.max(5,r.prob-15) }); addLog('[PMBOK]: Kalite Kontrol (Prevention) maliyeti arttı ama Bug riski düştü.','success') } },
+    optB:{ text:'🤫 Kabul Et (Risk Primi Artar)', pmLabel:'⚠ Teknik Borç → Bug olasılığı +%20', effect:()=>{ updateScore(-800); activeRiskPool.value.forEach(r=>{ if(r.type==='bug') r.prob=Math.min(95,r.prob+20) }); addLog('[PMBOK]: Teknik borç kabul edildi, son kullanıcı hata riski yükseldi!','danger') } } },
   { id:5, icon:'📜', title:'SÖZLEŞME RİSKİ',    
     desc:'Tedarikçi firma lisans yenilemesi için sözleşme dışı ek ücret talep ediyor.',
     pmbokTag: 'Tedarik Yönetimi → Sözleşme Türleri ve Risk Paylaşımı',
     pmContext: 'Sabit fiyatlı (Fixed Price) sözleşmelerde tedarikçi riski taşır. Maliyet artı (Cost-Plus) sözleşmelerde ise alıcı taşır. Bu senaryo: Tedarikçi sözleşme dışı ücret istiyor.',
-    optA:{ text:'⚖️ İtiraz Et (Riskli)', pmLabel:'🎲 %50 şans → Başarılı veya $10k kayıp', effect:()=>{ if(Math.random()<0.5){ addLog('[PMBOK]: İtiraz başarılı, sözleşme korundu.','success') } else { updateMoney(-10000); addLog('[PMBOK]: İtiraz başarısız, hukuki masraflar bütçeyi deldi!','danger') } } },
-    optB:{ text:'💸 Öde ve Geç -$4K', pmLabel:'✅ Contingency Reserve kullan → Devam et', effect:()=>{ updateMoney(-4000); addLog('[PMBOK]: Risk kabul edildi ve Contingency Reserve (Yedek Akçe) kullanıldı.','warning') } } },
+    optA:{ text:'⚖️ İtiraz Et (Riskli)', pmLabel:'🎲 %50 şans → Başarılı veya $10k kayıp', effect:()=>{ updateScore(300); if(Math.random()<0.5){ addLog('[PMBOK]: İtiraz başarılı, sözleşme korundu.','success') } else { updateMoney(-10000); addLog('[PMBOK]: İtiraz başarısız, hukuki masraflar bütçeyi deldi!','danger') } } },
+    optB:{ text:'💸 Öde ve Geç -$4K', pmLabel:'✅ Contingency Reserve kullan → Devam et', effect:()=>{ updateScore(500); updateMoney(-4000); addLog('[PMBOK]: Risk kabul edildi ve Contingency Reserve (Yedek Akçe) kullanıldı.','warning') } } },
+  { id:6, icon:'👔', title:'PAYDAŞ YÖNETİMİ', 
+    desc:'Bir üst yönetici projeyi iptal etmek veya dondurmak istiyor.',
+    pmbokTag: 'Paydaş Yönetimi → Power/Interest Grid',
+    pmContext: 'Yüksek güçlü / yüksek ilgili paydaşları yakından yönetmek (Manage Closely) gerekir. Sponsoru ikna etmek projeyi kurtarabilir.',
+    optA:{ text:'📊 Sunum Yap (-2G, %60 Şans)', pmLabel:'🎲 İkna → Kurtar veya İptal', effect:()=>{ updateScore(800); project.deadline-=2; if(Math.random()<0.6){ addLog('[PMBOK]: Sponsor ikna edildi, proje güvende.','success') } else { updateMorale(-30); addLog('[PMBOK]: Sponsor ikna edilemedi, büyük moral kaybı!','danger') } } },
+    optB:{ text:'🛡️ Başka Sponsora İlet -$5K', pmLabel:'✅ Transfer → Hasarı önle', effect:()=>{ updateScore(500); updateMoney(-5000); addLog('[PMBOK]: Risk başka bir yöneticiye escalate edilerek bertaraf edildi.','info') } } },
+  { id:7, icon:'🏃', title:'FAST TRACKING (Paralel Çalışma)', 
+    desc:'İki bağımlı modülü aynı anda geliştirmeye başlayarak zaman kazanabilirsin.',
+    pmbokTag: 'Zaman Yönetimi → Fast Tracking',
+    pmContext: 'Fast tracking (Paralel çalışma), sırayla (sequential) yapılması gereken işleri aynı anda yapmaktır. Zaman kazandırır ama yeniden çalışma (rework) ve bug riskini artırır.',
+    optA:{ text:'⏩ Fast Track (+30 Üretim)', pmLabel:'⚠ Hız artar → Bug riski +%30', effect:()=>{ updateScore(500); lastDailyProgress.value+=30; project.progress+=30; activeRiskPool.value.forEach(r=>{ if(r.type==='bug') r.prob=Math.min(95,r.prob+30) }); addLog('[PMBOK]: Fast Tracking uygulandı. İlerleme arttı ama hata riski de fırladı!','warning') } },
+    optB:{ text:'🛑 Sıralı Devam Et', pmLabel:'✅ Güvenli → Risk yok', effect:()=>{ updateScore(200); addLog('[PMBOK]: Fast Tracking reddedildi, güvenli sıradan gidiliyor.','info') } } },
+  { id:8, icon:'💎', title:'KALİTE vs HIZLI TESLİMAT', 
+    desc:'Müşteri "yeter çalışsın" diyor. MVP mi gönderelim, kaliteye mi odaklanalım?',
+    pmbokTag: 'Kalite Yönetimi → Fitness for Use',
+    pmContext: 'MVP (Minimum Viable Product) hızlı değer teslimi sağlar ancak kaliteden ödün verilirse Teknik Borç birikir.',
+    optA:{ text:'📦 MVP Gönder (+30 İlerleme)', pmLabel:'⚠ Hız → Bug riski +%20', effect:()=>{ updateScore(300); project.progress+=30; activeRiskPool.value.forEach(r=>{ if(r.type==='bug') r.prob=Math.min(95,r.prob+20) }); addLog('[PMBOK]: MVP teslim edildi, hızlı ilerleme kaydedildi (Teknik Borç yükseldi).','warning') } },
+    optB:{ text:'🛡️ Kaliteli Gönder', pmLabel:'✅ Kalite Kontrol → Normal tempo', effect:()=>{ updateScore(800); addLog('[PMBOK]: Kaliteden ödün verilmedi, normal tempo.','info') } } },
+  { id:9, icon:'🛒', title:'MAKE or BUY (Outsource Kararı)', 
+    desc:'Kritik bir modülü sıfırdan mı yazalım, hazır bir çözüm mü satın alalım?',
+    pmbokTag: 'Tedarik Yönetimi → Make or Buy Analysis',
+    pmContext: 'Buy (Satın Al) kararı geliştirme riskini azaltır ve zaman kazandırır ancak tedarikçi (vendor) bağımlılığı riski yaratır.',
+    optA:{ text:'🛍️ Hazır Al (-$6K, +20 İlerl.)', pmLabel:'⚠ Zaman kazan → API Riski +%20', effect:()=>{ updateScore(500); updateMoney(-6000); project.progress+=20; activeRiskPool.value.forEach(r=>{ if(r.type==='api') r.prob=Math.min(95,r.prob+20) }); addLog('[PMBOK]: Modül outsource edildi. İlerleme arttı ama bağımlılık riski yükseldi.','warning') } },
+    optB:{ text:'💻 İçeride Yaz', pmLabel:'✅ Tam Kontrol → Risk yok', effect:()=>{ updateScore(800); addLog('[PMBOK]: İçeride geliştirme kararı alındı (Tam kontrol).','info') } } },
+  { id:10, icon:'🎲', title:'RİSK İŞTAHI (Risk Appetite)', 
+    desc:'Rakip firma benzer proje açıkladı. Agresif mi oynayalım?',
+    pmbokTag: 'Risk Yönetimi → Risk Appetite & Tolerance',
+    pmContext: 'Organizasyonun Risk İştahı yüksekse, fırsatları (opportunities) değerlendirmek için tehditleri (threats) göze alabilir.',
+    optA:{ text:'🔥 Hızlan (-2G, +$20K)', pmLabel:'⚠ Agresif → Tüm riskler +%10', effect:()=>{ updateScore(500); project.deadline-=2; updateMoney(20000); activeRiskPool.value.forEach(r=>{ r.prob=Math.min(95,r.prob+10) }); addLog('[PMBOK]: Agresif strateji! Bütçe eklendi ama proje takvimi sıkıştı ve riskler arttı!','warning') } },
+    optB:{ text:'🧘 Stabil Kal', pmLabel:'✅ Mevcut tempo korunur', effect:()=>{ updateScore(500); addLog('[PMBOK]: Risk toleransı aşılamadı, stabil tempo korunuyor.','info') } } },
+  { id:11, icon:'🚑', title:'KONTİNJAN PLAN AKTİVASYONU', 
+    desc:'Kritik bir sistem çöktü. Contingency Plan devreye girsin mi?',
+    pmbokTag: 'Risk Yönetimi → Contingency Plan Implementation',
+    pmContext: 'Contingency Plan, bir risk tetiklendiğinde uygulanacak B Planıdır. Contingency Reserve (Yedek Akçe) bu tür durumlar için ayrılır.',
+    optA:{ text:'🛡️ Reserve Kullan (-$8K)', pmLabel:'✅ Plan devrede → Hasar önlendi', effect:()=>{ updateScore(1000); const cost = Math.min(8000, gs.contingencyReserve); gs.contingencyReserve -= cost; const remain = 8000-cost; if(remain>0) updateMoney(-remain); addLog('[PMBOK]: Contingency Plan aktive edildi, hasar yedek akçeden karşılandı.','success') } },
+    optB:{ text:'🔧 Kurtarmaya Çalış', pmLabel:'🎲 %50 şans → Kurtul veya $15k hasar', effect:()=>{ updateScore(-500); if(Math.random()<0.5){ addLog('[PMBOK]: Sistem mucizevi şekilde kurtarıldı!','success') } else { updateMoney(-15000); addLog('[PMBOK]: Kurtarma başarısız, ağır hasar alındı!','danger') } } } },
+  { id:12, icon:'📝', title:'LESSONS LEARNED TOPLANTISI', 
+    desc:'Ekip yorgun ama PM bir Retrospective yapılmasını öneriyor.',
+    pmbokTag: 'Entegrasyon Yönetimi → Lessons Learned Register',
+    pmContext: 'Lessons Learned (Alınan Dersler) süreç iyileştirmenin temelidir. Kısa vadeli zaman kaybı, uzun vadeli kalite artışı sağlar.',
+    optA:{ text:'🗣️ Toplantı Yap (-1G)', pmLabel:'✅ Sürekli İyileşme → Moral+15, Bug -%10', effect:()=>{ updateScore(1200); project.deadline-=1; updateMorale(15); activeRiskPool.value.forEach(r=>{ if(r.type==='bug') r.prob=Math.max(5,r.prob-10) }); addLog('[PMBOK]: Lessons Learned yapıldı. Hata oranları düştü, moral yükseldi.','success') } },
+    optB:{ text:'⏭️ Atla (Zaman kazan)', pmLabel:'⚠ Status Quo', effect:()=>{ updateScore(-800); addLog('[PMBOK]: Retrospective atlandı, ders çıkarılmadı.','info') } } },
 ]
 
 // ─── POSITIVE / NEGATIVE EVENTS ───
@@ -373,10 +448,17 @@ const positiveEvents = [
   {msg:'🎉 Takım öğle yemeğine çıktı!',         moralDelta:15, moneyDelta:0,    progressDelta:8},
   {msg:'🚀 Yeni kütüphane işi hızlandırdı!',    moralDelta:5,  moneyDelta:0,    progressDelta:25},
   {msg:'💰 Müşteri ek bütçe onayladı!',          moralDelta:10, moneyDelta:8000, progressDelta:0},
-  {msg:'🌟 Alice gece kritik sorunu çözdü!',     moralDelta:8,  moneyDelta:0,    progressDelta:35},
+  {msg:'🌟 Mert gece kritik sorunu çözdü!',     moralDelta:8,  moneyDelta:0,    progressDelta:35},
   {msg:'📣 Blog yazısı viral oldu!',             moralDelta:22, moneyDelta:0,    progressDelta:0},
   {msg:'🎵 Ofise müzik sistemi kuruldu!',        moralDelta:18, moneyDelta:0,    progressDelta:0},
   {msg:'🏆 Ekip ödül aldı! Prestij yükseldi.',  moralDelta:20, moneyDelta:5000, progressDelta:0},
+  {msg:'🎯 Sprint hedefi erken tamamlandı!',    moralDelta:8,  moneyDelta:0,    progressDelta:30},
+  {msg:'📊 PM dashboard toplantısı verimli!',   moralDelta:12, moneyDelta:0,    progressDelta:0},
+  {msg:'🤝 Müşteri gereksinim netleştirdi.',     moralDelta:0,  moneyDelta:0,    progressDelta:20},
+  {msg:'🧪 Testler kritik bug yakaladı!',        moralDelta:10, moneyDelta:3000, progressDelta:0},
+  {msg:'🌐 Açık kaynak katkısı hızlandırdı!',    moralDelta:0,  moneyDelta:0,    progressDelta:40},
+  {msg:'📈 Yatırımcı milestone onayladı.',       moralDelta:0,  moneyDelta:12000,progressDelta:0},
+  {msg:'🏅 Ekip üyesi PMP aldı!',                moralDelta:20, moneyDelta:0,    progressDelta:15},
 ]
 const negativeEvents = [
   {msg:'🤧 Kritik dev hastalandı!',              moralDelta:-5,  moneyDelta:0,     progressDelta:-20},
@@ -386,6 +468,13 @@ const negativeEvents = [
   {msg:"🐛 Birisi prod'a test kodu push etti!", moralDelta:-12, moneyDelta:-2000, progressDelta:-10},
   {msg:'💤 Fazla mesai verim düşürdü.',          moralDelta:-10, moneyDelta:0,     progressDelta:-12},
   {msg:'🌧️ İstanbul\'da fırtına, ulaşım yok.', moralDelta:-8,  moneyDelta:0,     progressDelta:-15},
+  {msg:'📉 Enflasyon API maliyetini artırdı.',   moralDelta:0,   moneyDelta:-4000, progressDelta:0},
+  {msg:'🔄 Gereksinim belgesi çelişkili!',       moralDelta:-8,  moneyDelta:0,     progressDelta:-20},
+  {msg:'🧹 Teknik borç refactor zorunlu!',       moralDelta:0,   moneyDelta:0,     progressDelta:-25},
+  {msg:'😷 Ofiste grip salgını, 2 kişi yok.',    moralDelta:-20, moneyDelta:0,     progressDelta:-30},
+  {msg:'📋 Eksik dokümantasyon yavaşlattı.',     moralDelta:0,   moneyDelta:0,     progressDelta:-15},
+  {msg:'🔒 SSL sertifikası süresi doldu.',       moralDelta:0,   moneyDelta:-2000, progressDelta:-10},
+  {msg:'⚖️ Rakip firma patent ihlali iddiası!', moralDelta:-5,  moneyDelta:-8000, progressDelta:0},
 ]
 
 // ─── COMPUTED ───
@@ -495,6 +584,10 @@ function updateMoney(amount) {
   if (amount < 0) triggerFx('moneyFlash')
 }
 
+function updateScore(amount) {
+  gs.score += amount
+}
+
 function updateMorale(d) {
   gs.morale = Math.max(0, Math.min(100, gs.morale + d))
 }
@@ -515,7 +608,12 @@ function checkGameEnd() {
   if (gs.money <= 0)                          { gameOverReason.value='Bütçe tükendi!';        gs.status='gameover'; return true }
   if (project.deadline <= 0)                  { gameOverReason.value='Süre doldu!';            gs.status='gameover'; return true }
   if (gs.morale <= 0)                         { gameOverReason.value='Ekip istifa etti!';      gs.status='gameover'; return true }
-  if (project.progress >= project.totalEffort){ gs.status='victory'; return true }
+  if (project.progress >= project.totalEffort){ 
+    gs.status='victory'; 
+    const finalBonus = Math.floor(gs.money/100) + (project.deadline * 100) + (gs.morale * 10);
+    updateScore(finalBonus);
+    return true 
+  }
   return false
 }
 
@@ -557,11 +655,12 @@ function buyUpgrade(uid) {
 function handleRiskAction(riskId, actionType) {
   const risk = activeRiskPool.value.find(r=>r.id===riskId)
   if (!risk) return
+  stats.risksProactivelyHandled++
   const a = {
-    mitigate: ()=>{ updateMoney(-2000); risk.prob=Math.floor(risk.prob/2); risk.status='active'; addLog(`🛡️ [PM NOTU - Mitigate]: "${risk.name}" olasılığı yarıya indirildi (-$2k). Mantıklı bir savunma!`,'warning') },
-    avoid:    ()=>{ updateMoney(-5000); risk.status='resolved'; addLog(`🛑 [PM NOTU - Avoid]: "${risk.name}" tamamen önlendi (-$5k). Plandaki değişiklikle riski kökünden çözdünüz.`,'success') },
-    transfer: ()=>{ updateMoney(-3000); risk.cost=0; risk.moralDamage=0; risk.status='active'; addLog(`📄 [PM NOTU - Transfer]: "${risk.name}" aktarıldı (-$3k). Risk gerçekleşse bile hasar bize yansımayacak.`,'info') },
-    accept:   ()=>{ risk.status='active'; addLog(`✅ [PM NOTU - Accept]: "${risk.name}" kabul edildi. Proaktif bütçe harcanmadı, ancak pasif olarak tetikteyiz.`,'info') },
+    mitigate: ()=>{ updateScore(300); updateMoney(-2000); risk.prob=Math.floor(risk.prob/2); risk.status='active'; addLog(`🛡️ [PM NOTU - Mitigate]: "${risk.name}" olasılığı yarıya indirildi (-$2k). Mantıklı bir savunma!`,'warning') },
+    avoid:    ()=>{ updateScore(500); updateMoney(-5000); risk.status='resolved'; addLog(`🛑 [PM NOTU - Avoid]: "${risk.name}" tamamen önlendi (-$5k). Plandaki değişiklikle riski kökünden çözdünüz.`,'success') },
+    transfer: ()=>{ updateScore(400); updateMoney(-3000); risk.cost=0; risk.moralDamage=0; risk.status='active'; addLog(`📄 [PM NOTU - Transfer]: "${risk.name}" aktarıldı (-$3k). Risk gerçekleşse bile hasar bize yansımayacak.`,'info') },
+    accept:   ()=>{ updateScore(100); risk.status='active'; addLog(`✅ [PM NOTU - Accept]: "${risk.name}" kabul edildi. Proaktif bütçe harcanmadı, ancak pasif olarak tetikteyiz.`,'info') },
   }
   a[actionType]?.()
 }
@@ -644,6 +743,7 @@ async function processNextDay() {
     dp = Math.floor(dp * 2)
     lastCritSuccess.value = true
     stats.critSuccesses++
+    updateScore(300)
     triggerFx('criticalSuccess', 2000)
     ev.push({text:'⭐ KRİTİK BAŞARI! İlerleme 2x!', type:'success'})
     addLog('⭐ KRİTİK BAŞARI!', 'milestone')
@@ -657,6 +757,7 @@ async function processNextDay() {
     dp -= bugLoss
     lastBugEvent.value = true
     stats.bugsFixed++
+    updateScore(-200)
     triggerFx('bugEvent', 1800)
     triggerFx('glitch', 600)
     ev.push({text:`🐛 Moral düşük! Bug patlaması: -${bugLoss} puan`, type:'warning'})
@@ -702,27 +803,52 @@ async function processNextDay() {
   // Day advance glitch
   triggerFx('glitch', 500)
 
-  daySummaryData.value = {
-    day: gs.day, progress: dp, cost: dc, events: ev, morale: gs.morale,
-    triggeredRisk: trd, critSuccess: lastCritSuccess.value, bugEvent: lastBugEvent.value,
-    synergyBonus: syn,
-  }
-  showDaySummary.value = true
-  isProcessing.value = false
-
+  let usedReserve = false
   if (trd) {
     triggeredRisk.value = trd
     triggerFx('shake', 500)
     triggerFx('glitch', 700)
     if (trd.moralDamage) updateMorale(-trd.moralDamage)
-    updateMoney(-trd.cost)
+    // Contingency Reserve önce tüketilir, sonra ana bütçe
+    const totalDamage = trd.cost || 0
+    if (gs.contingencyReserve > 0 && totalDamage > 0) {
+      usedReserve = true
+      const fromReserve = Math.min(gs.contingencyReserve, totalDamage)
+      gs.contingencyReserve -= fromReserve
+      const remainder = totalDamage - fromReserve
+      if (remainder > 0) updateMoney(-remainder)
+      addLog(`🚨 RİSK TETİKLENDİ: "${trd.name}" — Contingency Reserve'den $${fromReserve.toLocaleString()} kullanıldı${remainder>0?', Ana bütçeden $'+remainder.toLocaleString()+' ek hasar':''}`, 'danger')
+    } else {
+      updateMoney(-totalDamage)
+      addLog(`🚨 RİSK TETİKLENDİ: "${trd.name}" -$${totalDamage.toLocaleString()} (Yedek bütçe bitti!)`, 'danger')
+    }
     project.deadline -= trd.delay
     trd.status = 'resolved'
-    addLog(`🚨 RİSK TETİKLENDİ: "${trd.name}" -$${trd.cost.toLocaleString()}`, 'danger')
     spawnParticles(window.innerWidth/2, window.innerHeight/2, 16, 'bug')
   }
 
-  checkGameEnd()
+  daySummaryData.value = {
+    day: gs.day, progress: dp, cost: dc, events: ev, morale: gs.morale,
+    triggeredRisk: trd, critSuccess: lastCritSuccess.value, bugEvent: lastBugEvent.value,
+    synergyBonus: syn,
+    usedReserve: usedReserve,
+    activeRiskCount: activeRiskPool.value.filter(r => r.status === 'active' || r.status === 'pending').length,
+    totalProgress: project.progress,
+    totalEffort: project.totalEffort,
+    money: gs.money,
+    hasAnyUpgrade: upgrades.value.some(u => u.bought)
+  }
+  const nothingHappened = (dc === 0) && (ev.length === 0) && !trd && !lastCritSuccess.value && !lastBugEvent.value;
+  
+  if (nothingHappened) {
+    isProcessing.value = false
+    checkGameEnd()
+    setTimeout(tryTriggerDilemma, 300)
+  } else {
+    showDaySummary.value = true
+    isProcessing.value = false
+    checkGameEnd()
+  }
 }
 
 function closeDaySummary() {
@@ -739,18 +865,52 @@ function closeDayInsight() {
 
 function closeModal() { triggeredRisk.value = null; checkGameEnd() }
 
-function startGame() {
+function handlePlanComplete(plan) {
+  showPlanningModal.value = false
+  startGame(plan)
+}
+
+function startGame(plan = null) {
   gs.status = 'playing'
-  activeRiskPool.value = [
-    JSON.parse(JSON.stringify(allRisksPool[0])),
-    JSON.parse(JSON.stringify(allRisksPool[1])),
-    JSON.parse(JSON.stringify(allRisksPool[5])),
-  ]
-  addLog('🟢 Sistem başlatıldı. PROJECT: NEON aktif.', 'success')
+  
+  if (plan) {
+    let baseMoney = 100000
+    let probMod = 0
+    if (plan.appetite === 'low') { baseMoney = 80000; probMod = -10 }
+    else if (plan.appetite === 'high') { baseMoney = 120000; probMod = 10 }
+    
+    gs.contingencyReserve = plan.reserve
+    gs.money = baseMoney - plan.reserve
+
+    activeRiskPool.value = [
+      JSON.parse(JSON.stringify(allRisksPool[0])), // Server
+      JSON.parse(JSON.stringify(allRisksPool[3])), // Scope
+      JSON.parse(JSON.stringify(allRisksPool[4])), // Conflict
+    ]
+    
+    activeRiskPool.value.forEach(r => {
+      r.prob = Math.max(5, Math.min(95, r.prob + probMod))
+      let isFocus = false
+      if (plan.focus === 'technical' && (r.type === 'server' || r.type === 'bug' || r.type === 'security')) isFocus = true
+      if (plan.focus === 'human' && r.type === 'conflict') isFocus = true
+      if (plan.focus === 'scope' && r.type === 'scope') isFocus = true
+      
+      if (isFocus) r.prob = Math.max(5, r.prob - 20)
+      else r.prob = Math.min(95, r.prob + 10)
+    })
+  } else {
+    activeRiskPool.value = [
+      JSON.parse(JSON.stringify(allRisksPool[0])),
+      JSON.parse(JSON.stringify(allRisksPool[1])),
+      JSON.parse(JSON.stringify(allRisksPool[5])),
+    ]
+  }
+
+  addLog('🟢 Sistem başlatıldı. Risk Management Planı devrede.', 'success')
 }
 
 function resetGame() {
-  Object.assign(gs, {status:'menu',money:100000,day:1,morale:75})
+  Object.assign(gs, {status:'menu',money:100000,day:1,morale:75,contingencyReserve:15000,riskScore:0})
   Object.assign(project, {progress:0,deadline:30})
   employees.value = defaultEmployees()
   upgrades.value = defaultUpgrades()
@@ -758,7 +918,7 @@ function resetGame() {
   eventLog.value = []
   milestones.forEach(m=>m.reached=false)
   lastDailyProgress.value = 0; lastDailyCost.value = 0
-  Object.assign(stats, {critSuccesses:0,bugsFixed:0,dilemmasResolved:0})
+  Object.assign(stats, {critSuccesses:0,bugsFixed:0,dilemmasResolved:0,risksProactivelyHandled:0})
   lastCritSuccess.value = false; lastBugEvent.value = false
 }
 

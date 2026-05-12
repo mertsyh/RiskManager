@@ -10,13 +10,16 @@
 
     <div style="padding:10px 10px 10px 14px;display:flex;flex-direction:column;gap:7px">
 
-      <!-- Header: icon + name + prob -->
+      <!-- Header: icon + name + prob + RBS category -->
       <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
         <div style="display:flex;align-items:center;gap:7px">
           <span style="font-size:20px;flex-shrink:0">{{ risk.icon }}</span>
           <div>
             <div style="font-size:7px;color:#ffe4a0;line-height:1.8">{{ risk.name }}</div>
-            <div :style="{fontSize:'6px',color:levelAccent,marginTop:'2px',letterSpacing:'1px'}">{{ levelLabel }}</div>
+            <div style="display:flex;gap:5px;align-items:center;margin-top:2px">
+              <div :style="{fontSize:'6px',color:levelAccent,letterSpacing:'1px'}">{{ levelLabel }}</div>
+              <div style="font-size:5px;color:#4a6080;padding:1px 4px;border:1px solid #1a2840;background:#080c18">{{ rbsCategory }}</div>
+            </div>
           </div>
         </div>
         <!-- Prob badge -->
@@ -57,13 +60,18 @@
         </div>
       </div>
 
+      <!-- PM Strategy Hint -->
+      <div style="font-size:6px;color:#4a7060;padding:5px 8px;border-left:3px solid #1a4030;background:#060e0a;line-height:1.8">
+        💡 <strong style="color:#5a9070">PM İpuçu:</strong> {{ strategyHint }}
+      </div>
+
       <!-- Action grid -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:2px">
         <button @click="$emit('action',risk.id,'mitigate')" class="rsk-btn rsk-yellow" title="AZALT (Mitigate): Riskin olasılığını veya etkisini kabul edilebilir seviyeye çeker. Maliyetlidir ancak riski hafifletir.">
           🛡️ AZALT <span style="font-size:5px;opacity:0.65">$2k</span>
         </button>
         <button @click="$emit('action',risk.id,'avoid')" class="rsk-btn rsk-red" title="KAÇIN (Avoid): Proje planını değiştirerek riski tamamen ortadan kaldırır. En pahalı ama en güvenli yöntemdir.">
-          🛑 ÖNLE <span style="font-size:5px;opacity:0.65">$5k</span>
+          🛑 ÖNLEM <span style="font-size:5px;opacity:0.65">$5k</span>
         </button>
         <button @click="$emit('action',risk.id,'transfer')" class="rsk-btn rsk-blue" title="AKTAR (Transfer): Riskin sorumluluğunu 3. bir partiye (sigorta/taşeron) devreder. Finansal riski korur.">
           📄 TRANSFER <span style="font-size:5px;opacity:0.65">$3k</span>
@@ -85,6 +93,29 @@ const levelBg     = computed(()=>({high:props.theme?.riskHighBg||'#280c0c',mediu
 const levelBorder = computed(()=>({high:props.theme?.riskHighBorder||'#602020',medium:props.theme?.riskMedBorder||'#604018',low:props.theme?.riskLowBorder||'#206020'}[props.risk.level]))
 const levelAccent = computed(()=>({high:props.theme?.riskHighAccent||'#e86050',medium:props.theme?.riskMedAccent||'#d8a830',low:props.theme?.riskLowAccent||'#58d058'}[props.risk.level]))
 const levelLabel  = computed(()=>({high:'⚠ KRİTİK RİSK',medium:'◆ ORTA RİSK',low:'• DÜŞÜK RİSK'}[props.risk.level]))
+
+// RBS (Risk Breakdown Structure) kategorisi
+const rbsCategory = computed(() => ({
+  server:   '⚙️ Teknik / Altyapı',
+  security: '🔒 Güvenlik',
+  bug:      '🐛 Kalite',
+  api:      '🔌 Dış Bağımlılık',
+  scope:    '📈 Kapsam',
+  conflict: '👥 İnsan Kaynakları',
+}[props.risk.type] || '❓ Diğer'))
+
+// Proaktif strateji önerisi
+const strategyHint = computed(() => {
+  const emv = (props.risk.prob / 100) * (props.risk.cost || 0)
+  if (props.risk.level === 'high' && emv > 5000) return 'Yüksek EMV! Önlem ($5k) veya Transfer ($3k) stratejişi ile riski önceden bertaraf edin.'
+  if (props.risk.type === 'server')   return 'Cloud Scaling yükseltmesi bu tür risklerin olasılığını %30 azaltır (Mitigate).'
+  if (props.risk.type === 'security') return 'Eve (🔒 Güvenlik) işe alımı bu riski pasif azaltır. Transfer sigorta gibi çalışır.'
+  if (props.risk.type === 'bug')      return 'Code Review ve Charlie (QA) işe alımı bug riskini mitigate eder. Düşük EMV ise Kabul Et.'
+  if (props.risk.type === 'api')      return 'Transfer ideal: 3. parti riskini sigorta/taşerona devrederek maliô koruyun.'
+  if (props.risk.type === 'scope')    return 'Kapsam risklerini Önlem ile çözün veya Change Request sürecine yönlendirin.'
+  if (props.risk.type === 'conflict') return 'Diana (PM) işe alımı çatışma riskini pasif azaltır. Azalt stratejisi önerilir.'
+  return 'EMV = %' + props.risk.prob + ' × $' + (props.risk.cost||0).toLocaleString() + ' = $' + Math.round(emv).toLocaleString() + '. Bu değeri baz alarak karar verin.'
+})
 </script>
 
 <style scoped>

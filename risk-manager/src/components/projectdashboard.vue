@@ -72,7 +72,7 @@
     <div style="flex:1; display:flex; flex-direction:column; gap:6px; min-width:360px; max-width:440px;">
       
       <!-- ═══ PROJECT STATS ═══ -->
-      <div class="stats-panel" style="flex:1; display:flex; flex-direction:column;">
+      <div class="stats-panel" style="display:flex; flex-direction:column;">
       <div class="stats-titlebar">
         <span style="font-size:10px;color:#ffe4a0;letter-spacing:2px">PROJECT: NEON</span>
         <span :style="{fontSize:'12px',fontWeight:'bold',
@@ -80,7 +80,7 @@
           {{ progressPercent }}%
         </span>
       </div>
-      <div style="padding:10px; flex:1; display:flex; flex-direction:column; justify-content:space-between; gap:8px">
+      <div style="padding:10px; display:flex; flex-direction:column; justify-content:flex-start; gap:8px">
 
         <!-- ═══ DASHBOARD CONTROLS (SLOT) ═══ -->
         <div style="display:flex; flex-direction:column; gap:6px; flex-shrink:0;">
