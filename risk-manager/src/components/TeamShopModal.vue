@@ -27,7 +27,7 @@
       <div class="p-4 overflow-y-auto pixel-scrollbar flex-1 bg-black/20">
         <div v-if="activeTab === 'EKİP'" class="flex flex-col gap-3">
           <EmployeePanel v-for="emp in employees" :key="emp.id"
-            :employee="emp" :canAfford="money >= emp.dailyCost" :theme="theme"
+            :employee="emp" :canAfford="money >= emp.hiringCost" :theme="theme"
             :synergyPartners="getSynergyPartners(emp.id)"
             @hire="e => $emit('hire', e)"
             @fire="e => $emit('fire', e)"

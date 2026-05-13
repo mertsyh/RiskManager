@@ -9,74 +9,125 @@
       "coreMetaphor": "Managing a software project as a high-stakes adventure filled with risks and challenges",
       "successVision": "Players develop practical risk management skills through immersive gameplay while enjoying a retro-themed simulation"
     },
-    "projectTitle": "Risk Manager",
-    "organisation": "Anthropic Ventures",
-    "courseCode": "CS406 - Project Risk Management",
-    "domain": "Software Project Risk Management",
-    "deliverableArea": "Educational Game Development",
-    "proposalDate": "2026-05-12",
-    "startDate": "2026-05-12",
+    "projectTitle": "Risk Manager: An IT Project Management Simulation Game",
+    "organisation": "Istanbul Kültür University",
+    "courseCode": "COM0463",
+    "domain": "pm",
+    "deliverableArea": "IT Risk Management Simulation — Browser-Based Serious Game",
+    "proposalDate": "2026-05-01",
+    "startDate": "2026-03-15",
     "teamMembers": [
       {
-        "name": "Mehmet Mert Seyhan",
-        "role": "Proposer",
+        "id": "2300007247",
+        "name": "Eren",
+        "surname": "Seyhan",
+        "email": "2300007247@stu.iku.edu.tr",
         "phone": "5056327389"
       },
       {
-        "name": "Ali Yılmaz",
-        "role": "Developer",
+        "id": "2300006459",
+        "name": "Bahattin Baran",
+        "surname": "Serin",
+        "email": "2300006459@stu.iku.edu.tr",
         "phone": "5375751787"
+      },
+      {
+        "id": "2300003761",
+        "name": "Elif Naz",
+        "surname": "Akdora",
+        "email": "2300003761@stu.iku.edu.tr",
+        "phone": "5060266944"
       }
     ],
     "problemStatement": "Students lack hands-on experience in identifying, assessing, and mitigating project risks in software development",
     "targetPopulation": "Undergraduate and graduate students in computer science, software engineering, and project management programs",
     "successCriteria": [
-      "Deliver PROJECT: NEON within 30 days",
-      "Maintain team morale above 30%",
-      "Successfully mitigate all major risks",
-      "Achieve positive synergy bonuses through team composition"
+      "≥15% improvement in pre/post quiz scores on risk response strategy and EMV calculation items",
+      "≥80% of students correctly match all four PMBOK risk response strategies to their definitions in the post-session quiz",
+      "≥20% improvement in Assignment 2 risk register completeness rubric score versus prior-semester control group",
+      "≥4.0/5.0 mean satisfaction score on L1 post-session survey measuring enjoyment and PM concept clarity",
+      "≥70% of students report at least one playthrough beyond the first, indicating replay and iterative learning behaviour",
+      "≥50% of students attempt a second playthrough within the 20-minute classroom session"
     ],
     "bloomOutcomes": [
-      "Apply risk assessment techniques in project scenarios",
-      "Analyze the impact of team morale on project success",
-      "Evaluate different strategies for risk mitigation",
-      "Create contingency plans for project challenges"
+      {
+        "level": "L1",
+        "bloom_k": "Identify",
+        "outcome": "Students will identify the four primary PMBOK risk response strategies and recognise their standard definitions.",
+        "activity": "Reviewing the Risk Card interface where Mitigate, Avoid, Transfer, and Accept options are explicitly defined with their associated financial costs and expected effects.",
+        "assessment": "Pre/post-session multiple-choice quiz requiring students to match each strategy name to its correct PMBOK definition and typical use case."
+      },
+      {
+        "level": "L2",
+        "bloom_k": "Explain",
+        "outcome": "Students will explain the Expected Monetary Value formula and describe how probability and financial impact jointly determine risk priority.",
+        "activity": "Reading the live EMV chip on every Risk Card (Probability% × Impact$) and using it to compare competing risks before selecting a response.",
+        "assessment": "Quiz item requiring students to compute EMV for a given risk scenario and rank two risks by priority using their calculated values."
+      },
+      {
+        "level": "L3",
+        "bloom_k": "Execute",
+        "outcome": "Students will apply appropriate PMBOK risk response strategies to simulated scenarios based on budget, schedule, and probability constraints.",
+        "activity": "Actively managing the daily project simulation by selecting responses for triggered risk cards within a finite $100,000 budget and 30-day deadline.",
+        "assessment": "Scenario-based quiz item requiring students to select the most mathematically optimal risk response given specific impact, probability, and remaining-budget data."
+      },
+      {
+        "level": "L4",
+        "bloom_k": "Deconstruct",
+        "outcome": "Students will analyse the interdependence between risk response investment decisions and downstream project budget, schedule, and morale outcomes.",
+        "activity": "Monitoring the Budget, Deadline, and Morale HUD counters across turns and observing how each risk response choice cascades into subsequent resource availability.",
+        "assessment": "Post-session written reflection (200 words) where students deconstruct one specific risk response decision and trace its systemic effect on project outcome."
+      },
+      {
+        "level": "L5",
+        "bloom_k": "Justify",
+        "outcome": "Students will evaluate competing risk response options under severe resource scarcity and justify their chosen strategy using EMV-based reasoning.",
+        "activity": "Resolving high-stakes risk events late in the simulation when budget is nearly exhausted, forcing explicit cost-benefit justification for each response selection.",
+        "assessment": "Assignment 2 rubric evaluation: assessing the rationale provided in the risk register for each documented response strategy."
+      },
+      {
+        "level": "L6",
+        "bloom_k": "Formulate",
+        "outcome": "Students will formulate a comprehensive, data-driven project risk register integrating probability, impact, EMV, and proactive PMBOK response strategies.",
+        "activity": "Synthesising gameplay experience — observed risk triggers, response costs, and outcome consequences — to anticipate and document risks in a structured register.",
+        "assessment": "Instructor evaluation of the final Project Charter submission, specifically scoring the completeness, probability/impact ratings, and response strategy rationale in the risk register."
+      }
     ],
     "theories": [
-      "Self-Determination Theory (SDT)",
-      "Hexad Player Types",
-      "Octalysis Gamification Framework"
+      "Self-Determination Theory",
+      "Mechanics-Dynamics-Aesthetics",
+      "Bloom Taxonomy",
+      "HEXAD",
+      "Kirkpatrick four-level evaluation"
     ],
-    "narrativeTheme": "Futuristic software development in 2026 where project managers navigate technical risks, team dynamics, and deadline pressures",
+    "narrativeTheme": "RiskManager: IT Project Management Simulation Game situates the player as a Project Manager responsible for delivering PROJECT: NEON — a real software product under simultaneous budget, deadline, and team-morale constraints. The game's design is governed by five evidence-based frameworks. Bloom Taxonomy structures the cognitive arc: early turns engage the Remember and Understand levels (naming the four PMBOK response strategies, reading the EMV formula on risk cards), mid-game escalates to Apply and Analyze (computing optimal responses under budget pressure, balancing the Iron Triangle), and the Post-Mortem report targets Evaluate (judging one's own decisions against measurable project outcomes). Self-Determination Theory shapes all motivational mechanics: Autonomy is embodied in the player's unrestricted choice of risk response strategy and team composition; Competence grows through the live EMV indicator and the personalised Post-Mortem feedback paragraph; Relatedness is built through the named employee roster, synergy bonuses, and the shared team-morale resource. Mechanics-Dynamics-Aesthetics disciplines the design layer: the Day Advance mechanic, four PMBOK response buttons, employee overtime, and upgrade purchases (Mechanics) produce emergent behaviours of risk prioritisation, budget triage, and Burnout avoidance (Dynamics) that yield aesthetics of Challenge and Discovery. HEXAD informs player-type coverage: Achiever types target the Victory milestone and budget surplus; Explorer types discover hidden synergy pairs and conditional event chains; Philanthropist types engage the eight-card educational sidebar; Disruptor types probe all three Game Over conditions deliberately. Kirkpatrick four-level evaluation governs outcome measurement across the deployment lifecycle: Level 1 Reaction is captured by a post-session satisfaction survey; Level 2 Learning by a short PMBOK quiz testing EMV recall and strategy mapping; Level 3 Behaviour by instructor observation of risk vocabulary use in subsequent coursework assignments; Level 4 Results by cohort-level project delivery rates in end-of-term capstone modules.",
     "gameOverview": "Risk Manager is a 30-day simulation game where players manage a software development project called PROJECT: NEON. Players must hire and manage a team, handle daily risks and events, make strategic decisions through dilemmas, and deliver the project on time while maintaining budget and morale.",
     "sdtAutonomy": "Players have freedom to choose team composition, risk mitigation strategies, and daily management decisions",
     "sdtCompetence": "Success in risk mitigation and project delivery builds player competence through skill-based challenges",
     "sdtRelatedness": "Team synergy mechanics and morale systems create social connections between virtual team members",
     "hexad": {
-      "Achiever": true,
-      "Socialiser": true,
-      "Philanthropist": false,
-      "Free Spirit": true,
-      "Player": true,
-      "Disruptor": false
+      "achiever": 40,
+      "freeSpirit": 25,
+      "philanthropist": 20,
+      "socialiser": 10,
+      "disruptor": 5,
+      "player": 0
     },
     "rewardStructure": {
-      "milestone_completion": "Points and money rewards for completing project milestones",
-      "risk_mitigation": "Bonus money and morale boosts for successful risk handling",
-      "synergy_bonuses": "Extra productivity from complementary team skills",
-      "critical_successes": "Random chance events that provide significant advantages"
+      "elite": "Players achieving a Victory Score of 80,000 or higher earn the Budget Master badge and classroom leaderboard recognition for exceptional risk management and resource efficiency.",
+      "professional": "Players scoring between 40,000 and 79,999 earn the standard completion certificate for successfully delivering the software project using a balanced PMBOK risk response strategy.",
+      "access": "Students who complete the 30-day simulation by reaching the 1,000 progress-point milestone — regardless of budget or morale depletion — earn the baseline learning outcome credit."
     },
     "octalysis": {
-      "core_drives": [
-        "Epic Meaning & Calling (saving the project)",
-        "Development & Accomplishment (progress milestones)",
-        "Empowerment of Creativity & Feedback (strategic decisions)",
-        "Ownership & Possession (team building)",
-        "Social Influence & Relatedness (team morale)",
-        "Scarcity & Impatience (deadline pressure)",
-        "Unpredictability & Curiosity (random events)",
-        "Loss & Avoidance (risk consequences)"
-      ]
+      "epicMeaning": 0.7,
+      "development": 0.8,
+      "accomplishment": 0.9,
+      "empowerment": 0.8,
+      "ownership": 0.7,
+      "social": 0.6,
+      "scarcity": 0.8,
+      "unpredictability": 0.7,
+      "avoidance": 0.9
     },
     "mechanics": [
       "Risk Cards: Daily random risk events that must be addressed",
@@ -91,106 +142,367 @@
       "Contingency Reserve: Emergency fund for critical risk payments"
     ],
     "conceptMappings": [
-      "Risk Identification -> Risk Cards and Events",
-      "Risk Assessment -> Cost and Impact Evaluation",
-      "Risk Mitigation -> Strategic Choices and Upgrades",
-      "Team Dynamics -> Employee Synergy and Morale",
-      "Project Planning -> Milestone Tracking and Deadline Management",
-      "Budget Control -> Money and Contingency Reserve Management",
-      "Decision Making -> Dilemma Choices and Daily Actions"
+      {
+        "concept": "Risk Response Strategies (PMBOK 11.5)",
+        "mechanic": "4 Buttons on Risk Cards (Mitigate $2k, Avoid $5k, Transfer $3k, Accept $0)",
+        "dynamic": "Player allocates finite budget against statistical probability, forcing cost-benefit reasoning per risk",
+        "aesthetic": "Challenge and Expression",
+        "rationale": "Forces practical application of PMBOK Ch. 11 response planning; each button's cost models real-world consulting and insurance fees."
+      },
+      {
+        "concept": "Expected Monetary Value — Quantitative Risk Analysis (PMBOK 11.4)",
+        "mechanic": "Live EMV chip on every Risk Card displaying Probability% × Impact$",
+        "dynamic": "Players compare EMV values across concurrent risks to triage which threats to address first with limited budget",
+        "aesthetic": "Challenge",
+        "rationale": "Operationalises PMBOK quantitative analysis; converts abstract probability theory into an actionable dollar figure visible during every decision."
+      },
+      {
+        "concept": "Risk Register and Risk Identification (PMBOK 11.2)",
+        "mechanic": "15 distinct risk event types spawning dynamically from Day 4 with probability, cost, delay, and morale fields",
+        "dynamic": "Player continuously encounters new threat categories requiring ongoing identification and assessment throughout the project lifecycle",
+        "aesthetic": "Discovery",
+        "rationale": "Demonstrates that risk identification is an iterative process — not a one-time setup — matching the PMBOK principle of continuous risk monitoring."
+      },
+      {
+        "concept": "Qualitative Risk Analysis — Probability-Impact Classification (PMBOK 11.3)",
+        "mechanic": "Risk Cards display High / Medium / Low severity level with colour-coded accent bars",
+        "dynamic": "Player must triage which risks are critical versus acceptable when budget cannot cover all responses simultaneously",
+        "aesthetic": "Challenge",
+        "rationale": "Replicates the Probability-Impact Matrix used in PMBOK qualitative analysis; forces prioritisation decisions identical to real project risk workshops."
+      },
+      {
+        "concept": "Contingency Reserve Management (PMBOK 11.5)",
+        "mechanic": "Maintaining a budget buffer above $0 across 30 simulation days",
+        "dynamic": "Player learns not to exhaust the entire $100k budget early, preserving reserves for late-game high-impact risk triggers",
+        "aesthetic": "Challenge",
+        "rationale": "Teaches the necessity of contingency and management reserves against unknown-unknowns (PMBOK reserve analysis)."
+      },
+      {
+        "concept": "Risk Monitoring and Control (PMBOK 11.6)",
+        "mechanic": "Daily event log recording all triggered risks, chosen responses, and financial outcomes",
+        "dynamic": "Player reviews the log each day to detect patterns — recurring risk types, morale decay trends — and adjusts mitigation investment accordingly",
+        "aesthetic": "Discovery",
+        "rationale": "Models the continuous risk monitoring process; the event log is the in-game equivalent of the Risk Register update cycle."
+      },
+      {
+        "concept": "Proactive Risk Mitigation Investment (PMBOK 11.5 — Mitigate strategy)",
+        "mechanic": "Technology Upgrade Shop offering permanent probability-reduction purchases (Code Review, CI/CD Pipeline, Security Audit, Risk Monitoring Dashboard)",
+        "dynamic": "Players weigh one-time upgrade cost against cumulative risk-probability savings over remaining project days — a return-on-investment calculation",
+        "aesthetic": "Submission",
+        "rationale": "Models real PM infrastructure investments that reduce residual risk probability; reinforces that Mitigate is a proactive, investment-based strategy."
+      },
+      {
+        "concept": "Risk Burnout and Resource Risk (PMBOK 11.2 — Human Resource Risks)",
+        "mechanic": "Morale System (0–100%) with decay rate and productivity multiplier linkage",
+        "dynamic": "Neglecting team wellbeing mathematically reduces daily progress and increases bug event probability, cascading into schedule and budget overruns",
+        "aesthetic": "Expression",
+        "rationale": "Demonstrates that team burnout is a quantified project risk — documented in PMBOK resource management risk categories — not merely a soft concern."
+      },
+      {
+        "concept": "Scope Risk — Scope Creep (PMBOK 11.2)",
+        "mechanic": "Scope Creep risk card triggering unplanned budget and schedule deductions when accepted without mitigation",
+        "dynamic": "Player must decide between costly avoidance/transfer responses versus accepting scope expansion that compounds future risk exposure",
+        "aesthetic": "Challenge",
+        "rationale": "Makes Scope Creep a tangible, measurable threat consistent with its PMBOK classification as a top cause of project failure."
+      }
     ],
     "mdaAnalysis": {
-      "Mechanics": [
-        "Turn-based daily progression",
-        "Resource management (money, morale)",
-        "Event-driven risk system",
-        "Team composition strategy",
-        "Upgrade progression"
-      ],
-      "Dynamics": [
-        "Escalating difficulty through time pressure",
-        "Interdependent systems (morale affects productivity)",
-        "Risk accumulation and mitigation cycles",
-        "Strategic planning vs reactive management",
-        "Team synergy emergence"
-      ],
-      "Aesthetics": [
-        "Retro pixel art visual style",
-        "Immersive office environment simulation",
-        "Tense atmosphere during high-risk periods",
-        "Satisfying progress feedback",
-        "Narrative-driven event descriptions"
-      ]
+      "mechanics": "Players interact with the Risk Card system to select PMBOK-aligned responses (Mitigate, Avoid, Transfer, Accept), manage a $100,000 budget, hire from 8 distinct specialist roles, and advance daily project cycles where progress is calculated using productivity, morale multipliers, and synergy bonuses. The Upgrade Shop allows permanent risk-probability reductions, and the Event Log records all decisions for continuous monitoring.",
+      "dynamics": "Aggressively accepting risks to save budget creates compounding failure states and cascading bug events later in the project, while heavy investment in risk mitigation and team morale generates high-velocity productivity loops — forcing players to constantly balance short-term budget conservation against long-term risk exposure. EMV-based comparison of concurrent risks drives prioritisation habits that mirror real PM practice.",
+      "aesthetics": "The simulation primarily evokes Challenge through tight budget and deadline constraints with no safe dominant strategy, while intense visual feedback (screen shakes, warning vignettes, budget flash animations) creates Sensation — making the abstract consequences of poor risk management emotionally impactful and educationally memorable."
     },
     "scenarios": [
-      "Bug Outbreak: Multiple bugs appear simultaneously, requiring immediate fixes",
-      "Deadline Crunch: Final days with multiple risks and low morale",
-      "Team Conflict: Low morale leads to productivity drops",
-      "Budget Crisis: Insufficient funds for necessary risk mitigation",
-      "Synergy Opportunity: Hiring complementary skills creates bonuses",
-      "Critical Success Chain: Multiple positive events in sequence"
+      {
+        "id": "SC-01",
+        "title": "Total Risk Avoidance Strategy",
+        "setup": "Player is granted a $10,000 initial budget bonus but risk events spawn at double the normal rate from Day 4 onward, creating pressure to use expensive Avoid responses.",
+        "winCondition": "Complete the 30-day project with zero critical risk triggers and a budget greater than zero.",
+        "loseCondition": "Bankruptcy caused by overspending on Avoid ($5k) and Transfer ($3k) responses without sufficient contingency reserve.",
+        "outcome": "Demonstrates the unsustainable financial cost of attempting total risk avoidance — the PMBOK principle that Accept is rational for low-EMV risks."
+      },
+      {
+        "id": "SC-02",
+        "title": "Aggressive Risk Acceptance Under Velocity Pressure",
+        "setup": "Project deadline is compressed to 20 days. Initial morale is high. Accepting all risks saves budget but accumulates residual risk exposure.",
+        "winCondition": "Reach the 1,000 progress-point milestone before Day 20 by maintaining team productivity without triggering catastrophic risk cascades.",
+        "loseCondition": "Compounding triggered risks deplete budget or destroy morale before the deadline. Compassion model applies: losePoints=0 to encourage replay and reflection.",
+        "outcome": "Shows the danger of over-relying on Accept responses: EMV-based analysis reveals the hidden long-term cost of ignoring residual risks."
+      },
+      {
+        "id": "SC-03",
+        "title": "Optimal EMV-Balanced Risk Management",
+        "setup": "Standard Day 1 parameters. No single response strategy is mathematically dominant — players must compute and compare EMV values for each risk before responding.",
+        "winCondition": "Maximise the final Victory Score by completing the project with more than $30,000 remaining and team morale above 70%.",
+        "loseCondition": "Failing to reach 1,000 points before Day 30 due to unmitigated high-EMV risks. Compassion model applies to encourage iterative replay.",
+        "outcome": "Encourages mastery of PMBOK Ch. 11 risk allocation by rewarding balanced, data-driven EMV decision-making over any extreme strategy."
+      }
     ],
     "gamePhases": [
-      "Planning Phase: Initial team hiring and upgrade purchases",
-      "Early Development: Building momentum with risk management",
-      "Mid-Game Challenges: Complex dilemmas and risk combinations",
-      "Endgame Pressure: Final push with deadline approaching",
-      "Post-Mortem: Review of decisions and outcomes"
+      {
+        "phase": "Phase 1 — Risk Identification (Days 1–5)",
+        "description": "Player allocates initial budget, hires first team members, and encounters the first wave of risk cards — establishing the core risk identification and response loop."
+      },
+      {
+        "phase": "Phase 2 — Risk Analysis and Response Planning (Days 6–15)",
+        "description": "New risk categories spawn, EMV comparisons become necessary, upgrade investments are evaluated, and the morale system introduces human-resource risk dynamics."
+      },
+      {
+        "phase": "Phase 3 — Risk Monitoring and Control (Days 16–25)",
+        "description": "Compounding risk triggers test earlier response decisions; contingency reserve depletion forces triage; Critical Success events reward high-morale teams."
+      },
+      {
+        "phase": "Phase 4 — Project Closure (Days 26–30)",
+        "description": "Final sprint toward the 1,000-point milestone; any unmitigated residual risks fire at maximum probability; Victory or Game Over triggers the Post-Mortem report."
+      }
     ],
     "userStories": [
-      "As a project manager, I want to hire employees with complementary skills so that I can achieve synergy bonuses",
-      "As a player, I want to see daily risk events so that I can make informed mitigation decisions",
-      "As a student, I want clear feedback on my decisions so that I can learn from mistakes",
-      "As a player, I want to manage my budget carefully so that I can afford critical risk payments",
-      "As a learner, I want to experience realistic project challenges so that I can apply concepts in real work"
+      {
+        "id": "US-01",
+        "role": "Player (Project Manager)",
+        "want": "view the financial cost, probability, and Expected Monetary Value of a specific risk",
+        "soThat": "I can apply quantitative risk analysis before choosing a PMBOK response strategy",
+        "acc": "Given the Risk Center modal is open, When I view a Risk Card, Then the system displays the risk's exact dollar impact, trigger probability percentage, and computed EMV value before I select any response."
+      },
+      {
+        "id": "US-02",
+        "role": "Player (Project Manager)",
+        "want": "hire specialist team members whose roles permanently reduce specific risk-category probabilities",
+        "soThat": "I can apply the PMBOK Mitigate strategy proactively through workforce investment rather than reactive per-risk spending",
+        "acc": "Given I have sufficient budget, When I hire the DevOps specialist, Then the probability of server-related risk triggers is permanently reduced by 25% for the remainder of the simulation."
+      },
+      {
+        "id": "US-03",
+        "role": "Player (Project Manager)",
+        "want": "see the financial and schedule impact of each risk response immediately after selecting it",
+        "soThat": "I receive direct EMV-grounded feedback that reinforces which PMBOK response strategy produced the best outcome given the risk's probability and impact",
+        "acc": "Given I select the Mitigate response on a risk card, When the action is confirmed, Then the budget counter decreases by $2,000 and the risk's probability is visibly reduced on subsequent appearances."
+      },
+      {
+        "id": "US-04",
+        "role": "Player (Project Manager)",
+        "want": "experience visual and immediate consequences when an unmitigated risk triggers",
+        "soThat": "I emotionally understand the financial and schedule severity of neglecting project threats, reinforcing the value of proactive risk response planning",
+        "acc": "Given a Critical-level risk was Accepted, When the probability roll triggers it, Then the budget counter visibly decreases by the full impact amount, the deadline counter decreases, and a warning visual effect plays."
+      },
+      {
+        "id": "US-05",
+        "role": "Student",
+        "want": "receive a Post-Mortem report at the end of every session summarising my risk decisions and their outcomes",
+        "soThat": "I can evaluate the quality of my own risk management strategy and identify which PMBOK response choices produced the best cost-benefit results",
+        "acc": "Given the project simulation ends (Victory or Game Over), When the Post-Mortem modal opens, Then it displays total budget spent on each response strategy type, number of triggered risks by category, and a feedback paragraph referencing PMBOK concepts."
+      }
     ],
     "frs": [
-      "Display daily HUD with money, morale, day counter, and deadline",
-      "Generate random risk events each day with mitigation options",
-      "Allow hiring/firing of employees with different skill sets",
-      "Track project progress through milestone completion",
-      "Present dilemmas requiring player choice with consequences",
-      "Manage team morale through various game mechanics",
-      "Provide upgrade system for permanent improvements",
-      "Implement critical success and bug outbreak events",
-      "Show post-mortem report with detailed statistics",
-      "Support theme customization for visual preferences"
+      {
+        "id": "FR1",
+        "desc": "System shall simulate 30 in-game days with budget tracking from $100,000 initial balance, deducting daily employee salaries and risk response costs each turn",
+        "priority": "Must"
+      },
+      {
+        "id": "FR2",
+        "desc": "System shall display 15 risk event types as interactive Risk Cards showing probability %, financial impact $, EMV $, schedule delay in days, and morale damage — with Mitigate, Avoid, Transfer, and Accept response buttons",
+        "priority": "Must"
+      },
+      {
+        "id": "FR3",
+        "desc": "System shall allow hiring of 8 specialist employee roles, each deducting a daily salary from budget and applying a permanent probability reduction to their associated risk category",
+        "priority": "Must"
+      },
+      {
+        "id": "FR4",
+        "desc": "System shall calculate daily project progress from employee productivity multiplied by morale multiplier and synergy bonus, advancing the progress bar toward the 1,000-point victory threshold",
+        "priority": "Must"
+      },
+      {
+        "id": "FR5",
+        "desc": "System shall trigger random risk events each day by rolling against each active risk's current probability value, reflecting the PMBOK principle of continuous risk monitoring",
+        "priority": "Must"
+      },
+      {
+        "id": "FR6",
+        "desc": "System shall apply visual feedback effects (budget flash, warning vignette, screen shake) when a risk triggers and causes financial or schedule damage, making consequences immediately perceptible",
+        "priority": "Must"
+      },
+      {
+        "id": "FR7",
+        "desc": "System shall provide a Technology Upgrade Shop with permanent risk-probability-reduction purchases (Code Review −20% bug risk, CI/CD Pipeline −25% integration risk, Security Audit −30% vulnerability risk, Risk Monitoring Dashboard −15% all risks)",
+        "priority": "Must"
+      },
+      {
+        "id": "FR8",
+        "desc": "System shall display a Post-Mortem Report on session end showing: completion percentage, remaining budget (Cost Variance), remaining deadline (Schedule Variance), final morale, risk response strategy distribution, and an AI-generated feedback paragraph referencing PMBOK terminology",
+        "priority": "Should"
+      },
+      {
+        "id": "FR9",
+        "desc": "System shall display a Victory screen when progress reaches 1,000 points and a Game Over screen when budget, deadline, or morale reaches zero, with a Victory Score calculation rewarding efficient risk management",
+        "priority": "Should"
+      },
+      {
+        "id": "FR10",
+        "desc": "System shall maintain a persistent event log recording all triggered risks, chosen responses, costs incurred, and outcomes for the player to review at any point during the session via the Risk Center modal",
+        "priority": "Must"
+      }
     ],
     "nfrs": [
-      "Game should run smoothly in web browser",
-      "Response time for actions should be under 100ms",
-      "Visual style should maintain retro pixel aesthetic",
-      "Game state should persist during session",
-      "Educational content should be accurate and relevant"
+      {
+        "id": "NFR1",
+        "attr": "Usability",
+        "desc": "Game session shall complete in 15–20 minutes for a single playthrough, fitting within a standard university lab period alongside introduction and debrief time",
+        "target": "Session Time: Max 20 minutes"
+      },
+      {
+        "id": "NFR2",
+        "attr": "Usability",
+        "desc": "Application shall run entirely in-browser with no server-side dependencies, deployable as a static bundle on any CDN or university web server",
+        "target": "Architecture: 100% client-side"
+      },
+      {
+        "id": "NFR3",
+        "attr": "Usability",
+        "desc": "All UI text shall be rendered as DOM elements to ensure screen reader accessibility for students with visual impairments",
+        "target": "Accessibility: Lighthouse accessibility score ≥ 90"
+      },
+      {
+        "id": "NFR4",
+        "attr": "Performance",
+        "desc": "Application shall load within 3 seconds on a standard university network connection using the Vite production build",
+        "target": "Load Speed: Under 3 seconds"
+      },
+      {
+        "id": "NFR5",
+        "attr": "Maintainability",
+        "desc": "Codebase shall be structured as a Vue 3 single-page application using Composition API, with risk probability values extracted to a configuration object for balance tuning without code changes",
+        "target": "Tech Stack: Vue 3 Composition API"
+      },
+      {
+        "id": "NFR6",
+        "attr": "Usability",
+        "desc": "Image rendering shall use pixelated CSS interpolation for consistent pixel art aesthetic matching the retro PM simulation narrative theme",
+        "target": "Visual Style: Pixel-perfect rendering"
+      }
     ],
     "gameDuration": "30-45 minutes per session",
     "sessionSteps": [
-      "Introduction and planning phase (5 minutes)",
-      "Daily management loop (20-30 minutes)",
-      "Final delivery and post-mortem (5-10 minutes)",
-      "Debrief and discussion (facilitator-led)"
+      {
+        "seq": 1,
+        "name": "Onboarding and PMBOK Theory Primer",
+        "description": "Facilitator introduces the simulation, connects it to PMBOK Ch. 11 Risk Management Planning (risk identification, qualitative/quantitative analysis, response strategies), and students complete the conceptual pre-quiz.",
+        "duration": "5m"
+      },
+      {
+        "seq": 2,
+        "name": "Risk Identification and Team Setup",
+        "description": "Players allocate their initial $100k budget, hire specialist team members whose roles reduce specific risk-category probabilities, and encounter the first wave of dynamically spawned risk cards.",
+        "duration": "5m"
+      },
+      {
+        "seq": 3,
+        "name": "Risk Monitoring and Response Decision Loop",
+        "description": "Students manage compounding risk triggers, apply EMV-based triage to prioritise which risks to Mitigate, Avoid, Transfer, or Accept, and attempt to maintain team morale as the 30-day deadline approaches.",
+        "duration": "5m"
+      },
+      {
+        "seq": 4,
+        "name": "Post-Mortem Review and Assessment",
+        "description": "The facilitator leads a classroom retrospective to compare Victory Scores and risk response strategy distributions, followed by administration of the post-session quiz and L1 satisfaction survey.",
+        "duration": "5m"
+      }
     ],
     "kpis": [
-      "Project completion rate",
-      "Average days to completion",
-      "Risk mitigation success rate",
-      "Final morale levels",
-      "Budget efficiency (money spent vs milestones achieved)"
+      {
+        "level": "L1",
+        "metric": "Student Reaction and Perceived Utility",
+        "method": "10-item Likert satisfaction survey administered via Google Forms immediately after the session",
+        "target": "≥4.0 / 5.0 mean score on overall enjoyment, engagement, and perceived clarity of PMBOK risk management concepts"
+      },
+      {
+        "level": "L2",
+        "metric": "Learning — Risk Response and EMV Comprehension",
+        "method": "15-item conceptual pre/post quiz administered 48 hours before and 48 hours after the simulation via Google Forms",
+        "target": "≥15% mean score improvement on PMBOK risk response strategy application; ≥80% accuracy on EMV calculation items"
+      },
+      {
+        "level": "L3",
+        "metric": "Behaviour — Real-World Risk Register Application",
+        "method": "Instructor evaluation of students' subsequent Project Charter submissions (Assignment 2) using a standardised risk register completeness rubric",
+        "target": "≥20% improvement in Assignment 2 risk register completeness rubric score versus prior-semester control group"
+      },
+      {
+        "level": "L4",
+        "metric": "Results — Programme-Level Risk Management Outcomes",
+        "method": "End-of-semester evaluation of capstone project risk documentation quality, comparing simulation cohorts against historical cohort data",
+        "target": "Statistically significant improvement in capstone project risk register completeness and response strategy justification grades"
+      }
     ],
     "logPrivacy": "All gameplay data is anonymized and aggregated for educational research purposes only",
     "dataCollectionPlan": "Game logs player decisions, risk outcomes, and completion metrics for analysis of learning effectiveness",
     "tuslerRisks": [
-      "Technical complexity leading to bugs",
-      "Scope creep from feature additions",
-      "Team burnout from overtime demands",
-      "Budget overruns from unexpected risks",
-      "Integration issues with new hires",
-      "Time pressure reducing decision quality"
+      {
+        "risk": "Server Crash — database overloads under project pressure",
+        "category": "Tiger 🐯",
+        "prob": "High",
+        "impact": "High",
+        "preventive": "Hire the DevOps specialist early to apply a permanent −25% server risk probability reduction; purchase the Cloud Scaling upgrade by Day 10.",
+        "responsive": "Select Mitigate immediately to halve the trigger probability; if budget is critical, Transfer the financial impact via the insurance response option."
+      },
+      {
+        "risk": "Scope Creep — client requests unplanned features mid-project",
+        "category": "Alligator 🐊",
+        "prob": "Medium",
+        "impact": "High",
+        "preventive": "Hire the Project Manager role to enforce scope boundaries and reduce Scope Creep probability by 30%; document original scope in the risk register.",
+        "responsive": "Transfer the risk by negotiating client-paid buffer; Avoid entirely (remove from pool) if budget permits and timeline is critical."
+      },
+      {
+        "risk": "Critical Bug — show-stopping defect in core functionality",
+        "category": "Tiger 🐯",
+        "prob": "High",
+        "impact": "High",
+        "preventive": "Hire the QA Specialist to reduce bug probability by 25%; purchase the Code Review upgrade for an additional −20% reduction.",
+        "responsive": "Mitigate aggressively — an unmitigated Critical Bug triggers both a budget deduction and a morale penalty, compounding future risk."
+      },
+      {
+        "risk": "Security Vulnerability — critical zero-day discovered in codebase",
+        "category": "Kitten 🐱",
+        "prob": "Low",
+        "impact": "High",
+        "preventive": "Hire the Security Expert to reduce vulnerability probability by 30%; purchase the Security Audit upgrade for ongoing protection.",
+        "responsive": "Transfer the financial impact through cyber insurance or third-party indemnification; Accept only if EMV is below current budget threshold."
+      },
+      {
+        "risk": "Team Burnout — overworked members lose productivity",
+        "category": "Puppy 🐶",
+        "prob": "High",
+        "impact": "Medium",
+        "preventive": "Maintain morale above 70% by avoiding consecutive overtime assignments; purchase the Espresso Machine upgrade for passive morale recovery.",
+        "responsive": "Accept only when morale is high enough to absorb the penalty; otherwise Mitigate by reducing overtime and scheduling a rest day."
+      },
+      {
+        "risk": "Technical Debt — accumulated shortcuts surface as cascading failures",
+        "category": "Alligator 🐊",
+        "prob": "Medium",
+        "impact": "High",
+        "preventive": "Purchase the Code Review and CI/CD Pipeline upgrades early; invest in QA hiring to prevent debt accumulation from the start.",
+        "responsive": "Mitigate immediately — Technical Debt left unaddressed increases bug probability for all subsequent days, creating a compounding risk cascade."
+      }
     ],
     "supportTeam": [
-      "Lead Facilitator: Guides gameplay and debrief",
-      "Technical Support: Assists with game technical issues",
-      "Educational Coordinator: Ensures learning objectives are met"
+      {
+        "role": "Lead Instructor",
+        "name": "Yusuf Altunel",
+        "resp": "Deploy the game URL to the lab environment, introduce the PMBOK risk management context, facilitate the post-game debrief, and administer pre/post quizzes."
+      },
+      {
+        "role": "Teaching Assistant",
+        "name": "TBA",
+        "resp": "Assist students with browser access, collect L1 satisfaction surveys, manage classroom leaderboard tally, and support students encountering UI issues."
+      },
+      {
+        "role": "IT Support",
+        "name": "University IT Department",
+        "resp": "Ensure lab computers have unrestricted browser access to the Netlify or Vercel static hosting domain and that no firewall rules block the application assets."
+      }
     ],
     "facilitatorRole": "Introduce the game mechanics, observe student decision-making, facilitate post-game discussion on risk management strategies, and connect gameplay to real-world project management concepts",
     "risks": [
@@ -360,13 +672,13 @@
         "moralDamage": 0
       }
     ],
-    "wf_dash": "Project dashboard showing progress bars, milestone status, team composition, and current risks",
-    "wf_asset": "Employee skills and upgrade inventory management interface",
-    "wf_portfolio": "Overall project portfolio view with completed milestones and remaining tasks",
-    "inScope": "Core single-player simulation mechanics, risk management system, team management, progress tracking, and educational debrief features",
-    "outScope": "Multiplayer features, advanced AI opponents, mobile app versions, integration with learning management systems, and real-time collaboration tools",
-    "whyMotivation": "Traditional lectures on risk management lack engagement and practical application. This game provides experiential learning through simulated project challenges.",
-    "howEthics": "Students provide informed consent for gameplay data collection, data is anonymized, and findings are used only for educational research and improvement of the learning experience."
+    "wf_dash": "_______________________________________________________________________________\n| [ PROJECT: NEON ]          DAY: 12/30          BUDGET: $74,500  [MORALE: 68%] |\n| PROGRESS: [##########----------] 50%           VELOCITY: +42 pts/day          |\n|_______________________________________________________________________________|\n|                                                                               |\n|  [ ACTIVE RISK MARKET ]                         [ DAILY EVENT LOG ]           |\n|  __________________________                     __________________________    |\n|  | ID: 04 SCOPE CREEP     |                     | > Day 11: +15 Progress |    |\n|  | Prob: 55%  EMV: $2,750 |                     | > Server Crash Mitigated|   |\n|  | [MITIGATE] [TRANSFER]  |                     | > Morale is Stable     |    |\n|  |________________________|                     |________________________|    |\n|  __________________________                                                   |\n|  | ID: 06 CRITICAL BUG    |                     [ ACTIVE UPGRADES ]           |\n|  | Prob: 50%  EMV: $4,000 |                     - Code Review (-20% bug)      |\n|  | [AVOID]    [ACCEPT]    |                     - CI/CD Pipeline (-25% int)   |\n|  |________________________|                                                   |\n|_______________________________________________________________________________|\n| [ HIRE TEAM ]      [ UPGRADE SHOP ]      [ EVENT LOG ]      [[ ADVANCE DAY ]] |\n|_______________________________________________________________________________|",
+    "wf_asset": "_______________________________________________________________________________\n| < BACK TO DASHBOARD             [ RISK DETAIL: SERVER CRASH ]                |\n|_______________________________________________________________________________|\n|                                                                               |\n|  RISK STATISTICS:                            PMBOK RESPONSE STRATEGIES:       |\n|  - Probability: 45%                          __________________________       |\n|  - Financial Impact: -$15,000                | [A] MITIGATE  (-$2k)   |       |\n|  - EMV: $6,750                               | Probability halved     |       |\n|  - Schedule Delay: -3 Days                   |________________________|       |\n|  - Severity: CRITICAL                        __________________________       |\n|                                              | [B] TRANSFER  (-$3k)   |       |\n|  ACTIVE MITIGATIONS:                         | Zero cost on trigger   |       |\n|  - DevOps (Bob): -25% Prob                   |________________________|       |\n|  - Cloud Scaling: -30% Prob                  __________________________       |\n|                                              | [C] AVOID     (-$5k)   |       |\n|  Residual Probability: 15%                   | Risk removed from pool |       |\n|  Residual EMV: $2,250                        |________________________|       |\n|                                              __________________________       |\n|                                              | [D] ACCEPT    ($0)     |       |\n|                                              | Full impact if fires   |       |\n|                                              |________________________|       |\n|_______________________________________________________________________________|",
+    "wf_portfolio": "_______________________________________________________________________________\n| [ TEAM PORTFOLIO ]                                       TOTAL SALARY: $5.2k/d|\n|_______________________________________________________________________________|\n|                                                                               |\n|  CURRENT TEAM:                                 SYNERGY & RISK REDUCTIONS:     |\n|  __________________________                    __________________________     |\n|  | ALICE (Senior Dev)     |                    | [!] SYNERGY ACTIVE     |     |\n|  | Prod: 50  Morale: [OK] |                    | Alice + Bob: +8 pts    |     |\n|  | Cost: $2k/day          |                    |________________________|     |\n|  | Risk: Bug -15%         |                                                   |\n|  |________________________|                    RISK PROBABILITY STATUS:        |\n|  __________________________                    - Bug Risk: 12% (was 50%)       |\n|  | BOB (DevOps Engineer)  |                    - Server Risk: 8% (was 45%)    |\n|  | Risk: Server -25%      |                    - Security Risk: 20% (was 30%) |\n|  | Cost: $1.5k/day        |                                                   |\n|  |________________________|                    [ VIEW ALL 9 SYNERGY PAIRS ]   |\n|                                                                               |\n|_______________________________________________________________________________|\n| [ HIRE NEW ROLE ]      [ UPGRADE SHOP ]      [ FIRE MEMBER (Costs 12 Morale)] |\n|_______________________________________________________________________________|",
+    "inScope": "30-day project simulation with budget and deadline constraints\n15 distinct risk event types with probability, cost, EMV, and schedule impact\n8 hireable specialist roles each providing permanent risk-probability reductions\n6 technology upgrade options modifying risk probabilities\nMorale system (0–100%) affecting productivity multiplier and critical success probability\nSynergy system rewarding compatible specialist role pair hiring\nParticle effects, screen shake, and vignette danger overlay on risk triggers\nDay Summary modal with sprint-day progress and triggered event data\nVictory score calculation and three Game Over conditions (budget, deadline, morale)\nPost-Mortem report with PMBOK Lessons Learned structure and AI feedback",
+    "outScope": "Multiplayer or collaborative play modes\nPersistent player accounts or cross-session leaderboards\nNetwork-dependent backend or database infrastructure\nMobile-native application (browser-only in current version)\nAudio and sound effects\nAgile or Scrum methodology-specific mechanics unrelated to PMBOK risk planning\nStakeholder communication simulations outside risk response context\nWBS decomposition or scope management educational content",
+    "whyMotivation": "Students consistently underperform on risk management assignments because they engage with risk as an abstract checklist. The game creates emotional memory of risk consequences through visceral visual feedback — red vignette, screen shake, budget counter flash — which is more pedagogically durable than passive lecture. Research on game-based learning demonstrates significantly higher retention of procedural knowledge such as risk decision-making when compared to traditional instruction alone (Mayer 2019; Plass et al. 2020).",
+    "howEthics": "The simulation employs a strict compassion model: no personal data is stored, and failure states are purely instructional with losePoints=0 to maintain a zero-penalty learning environment. All gameplay data is anonymised by student number, and findings are used exclusively for educational research and simulation improvement. Students participate voluntarily and face no academic penalty for in-game decisions."
   },
   "_audit": {
     "sysLog": [

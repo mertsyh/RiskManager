@@ -48,7 +48,7 @@
             border: '3px solid ' + (canAfford ? '#0c3808' : '#100e08'),
             boxShadow: canAfford ? '0 3px 0 #081004' : 'none',
             cursor: canAfford ? 'pointer' : 'not-allowed',
-          }">✔ İŞE AL</button>
+          }">✔ İŞE AL (${{ employee.hiringCost.toLocaleString() }})</button>
 
         <template v-else>
           <button @click="$emit('overtime', employee.id)"
@@ -71,6 +71,9 @@
 
       <!-- Stat chips row -->
       <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px">
+        <div v-if="!employee.hired" style="font-size:6px;padding:4px 7px;background:#1a0808;border:2px solid #401010;color:#c06050">
+          🎫 ${{ employee.hiringCost.toLocaleString() }}
+        </div>
         <div style="font-size:6px;padding:4px 7px;background:#300a0a;border:2px solid #501818;"
           :style="{color:theme?.empSalary||'#e87060'}">
           💰 ${{ employee.dailyCost.toLocaleString() }}/g
@@ -81,7 +84,7 @@
         </div>
         <div v-if="employee.overtime && employee.hired"
           style="font-size:6px;padding:4px 7px;background:#301a04;border:2px solid #503008;color:#f09830">
-          ×1.5
+          ×1.25
         </div>
       </div>
 

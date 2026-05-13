@@ -59,11 +59,29 @@
             <button v-for="opt in focusOpts" :key="opt.id"
                     @click="selections.focus = opt.id"
                     class="p-2 border-2 transition-all flex items-center justify-center gap-2"
-                    :style="selections.focus === opt.id ? 
-                      { borderColor: theme.chipGreenText, backgroundColor: 'rgba(50,200,80,0.1)' } : 
+                    :style="selections.focus === opt.id ?
+                      { borderColor: theme.chipGreenText, backgroundColor: 'rgba(50,200,80,0.1)' } :
                       { borderColor: theme.panelBorder, backgroundColor: 'rgba(0,0,0,0.3)' }">
               <span class="text-lg">{{ opt.icon }}</span>
               <span class="text-[9px]">{{ opt.label }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Soru 4: İletişim Stratejisi -->
+        <div class="flex flex-col gap-3">
+          <div class="text-xs" :style="{ color: theme.chipYellowText }">4. İletişim Stratejisi (Communication Plan)</div>
+          <div class="text-[8px] opacity-70 mb-1">PMBOK: İletişim planı paydaş yönetiminin temelidir. Yoğun iletişim morali artırır ama kapsam riskini ve maliyeti yükseltir.</div>
+          <div class="grid grid-cols-3 gap-3">
+            <button v-for="opt in commOpts" :key="opt.id"
+                    @click="selections.communication = opt.id"
+                    class="p-3 border-2 transition-all flex flex-col gap-2 items-center text-center"
+                    :style="selections.communication === opt.id ?
+                      { borderColor: theme.chipGreenText, backgroundColor: 'rgba(50,200,80,0.1)' } :
+                      { borderColor: theme.panelBorder, backgroundColor: 'rgba(0,0,0,0.3)' }">
+              <span class="text-xl">{{ opt.icon }}</span>
+              <span class="text-[9px] font-bold" :style="{ color: opt.color }">{{ opt.label }}</span>
+              <span class="text-[8px] opacity-80" style="line-height:1.5">{{ opt.desc }}</span>
             </button>
           </div>
         </div>
@@ -108,10 +126,17 @@ const focusOpts = [
   { id: 'scope', label: 'KAPSAM RİSKLERİ', icon: '📈' },
 ]
 
+const commOpts = [
+  { id: 'intensive', label: 'YOĞUN', icon: '📢', color: '#80b0f0', desc: '+2 moral/gün, Kapsam +%10, -$500/gün' },
+  { id: 'balanced',  label: 'DENGELİ', icon: '⚖️', color: '#f0d060', desc: 'Temel parametreler, değişiklik yok' },
+  { id: 'minimal',   label: 'MİNİMAL', icon: '🔕', color: '#f08060', desc: '-2 moral/gün, Kapsam -%10, +$300/gün tasarruf' },
+]
+
 const selections = reactive({
   appetite: 'medium',
   reserve: 15000,
-  focus: 'technical'
+  focus: 'technical',
+  communication: 'balanced',
 })
 
 function startProject() {

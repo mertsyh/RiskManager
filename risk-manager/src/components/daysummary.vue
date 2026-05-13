@@ -37,6 +37,7 @@
         <div v-if="summary.events.length" class="ds-events">
           <div v-for="(ev,i) in summary.events" :key="i"
             :class="['ev-item',
+              ev.type==='cascade' ? 'ev-cascade' :
               ev.type==='success'||ev.type==='event-good' ? 'ev-good' :
               ev.type==='warning'||ev.type==='event-bad'  ? 'ev-bad'  : 'ev-info']">
             {{ ev.text }}
@@ -52,6 +53,11 @@
         </div>
         <div v-if="summary.triggeredRisk" class="ds-banner ds-banner-risk">
           🚨 RİSK TETİKLENDİ: <span class="ds-risk-name">{{ summary.triggeredRisk.name }}</span>
+        </div>
+
+        <div v-if="summary.pmbokInsight" class="ds-pmbok-insight">
+          <div class="ds-pmbok-label">📘 PMBOK ANLIK DERS</div>
+          <div class="ds-pmbok-text">{{ summary.pmbokInsight }}</div>
         </div>
 
         <button @click="$emit('close')" class="ds-continue-btn">
@@ -125,9 +131,10 @@ defineEmits(['close'])
   font-family: 'Press Start 2P', monospace;
   font-size: 9px; padding: 8px 12px; border: 2px solid; line-height: 2.2;
 }
-.ev-good { background: #1a3010; color: #80d060; border-color: #2a4818; }
-.ev-bad  { background: #3a2808; color: #f0a040; border-color: #503810; }
-.ev-info { background: #221608; color: #c09060; border-color: #3a2810; }
+.ev-good    { background: #1a3010; color: #80d060; border-color: #2a4818; }
+.ev-bad     { background: #3a2808; color: #f0a040; border-color: #503810; }
+.ev-info    { background: #221608; color: #c09060; border-color: #3a2810; }
+.ev-cascade { background: #1a1830; color: #a080f0; border-color: #2a2840; }
 
 /* Banners */
 .ds-banner {
@@ -139,6 +146,19 @@ defineEmits(['close'])
 .ds-banner-bug  { background: #200808; border-color: #600000; color: #f04040; }
 .ds-banner-risk { background: #3a0808; border-color: #601010; color: #f08080; font-size: 11px; }
 .ds-risk-name   { color: #ffe4a0; }
+
+.ds-pmbok-insight {
+  background: #0a1830; border: 3px solid #1a3060; border-left: 5px solid #4080d0;
+  padding: 14px 16px;
+}
+.ds-pmbok-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px; color: #6090d0; margin-bottom: 8px; letter-spacing: 2px;
+}
+.ds-pmbok-text {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px; color: #8ab0d8; line-height: 2.4;
+}
 
 /* Button */
 .ds-continue-btn {

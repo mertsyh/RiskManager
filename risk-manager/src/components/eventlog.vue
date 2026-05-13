@@ -21,6 +21,7 @@ function typeClass(t) {
   return {
     success:'log-success',warning:'log-warning',danger:'log-danger',
     milestone:'log-milestone',hire:'log-hire',upgrade:'log-upgrade',info:'log-info',
+    pmbok:'log-pmbok', dilemma:'log-dilemma',
   }[t] || 'log-info'
 }
 </script>
@@ -34,6 +35,8 @@ function typeClass(t) {
 .log-hire      { background:#0a1a30;color:#80a0f0;border-color:#182840; }
 .log-upgrade   { background:#1a0a30;color:#a060f0;border-color:#280a40; }
 .log-info      { background:#2a1808;color:#c09060;border-color:#3a2810; }
+.log-pmbok     { background:#0a1830;color:#80b0f0;border-color:#1a3860;border-left:4px solid #4080d0; }
+.log-dilemma   { background:#1a0830;color:#c080f0;border-color:#2a1050; }
 
 .log-enter-active { transition:all 0.25s ease; }
 .log-enter-from   { opacity:0;transform:translateY(-6px); }

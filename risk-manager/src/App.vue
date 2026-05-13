@@ -51,7 +51,7 @@
               <div class="pixel-inset p-3 text-center" :style="{ backgroundColor: theme.panelBg, color: '#c080f0' }"><div class="text-2xl">❓</div>İKİLEM SİSTEMİ</div>
               <div class="pixel-inset p-3 text-center" :style="{ backgroundColor: theme.panelBg, color: '#f06060' }"><div class="text-2xl">🐛</div>BUG RİSKİ</div>
             </div>
-            <button @click="showPlanningModal = true" class="pixel-btn-green py-4 text-lg tracking-widest">▶  SİSTEMİ BAŞLAT</button>
+            <button @click="showScenarioModal = true" class="pixel-btn-green py-4 text-lg tracking-widest">▶  SİSTEMİ BAŞLAT</button>
           </div>
           <div class="pixel-title-bar px-4 py-2 text-center text-xs" :style="{ backgroundColor: theme.titleBarBg, color: theme.titleText }">
             ANTHROPIC VENTURES © 2026
@@ -212,6 +212,11 @@
     <Transition name="fade">
       <ProjectPlanningModal v-if="showPlanningModal" :theme="theme" @planComplete="handlePlanComplete" />
     </Transition>
+    <Transition name="fade">
+      <ScenarioSelectModal v-if="showScenarioModal" :theme="theme"
+        @scenarioSelected="handleScenarioSelected"
+        @skip="showScenarioModal = false; showPlanningModal = true" />
+    </Transition>
   </div>
 </template>
 
@@ -232,6 +237,7 @@ import TeamShopModal from './components/TeamShopModal.vue'
 import RiskCenterModal from './components/RiskCenterModal.vue'
 import DayInsightModal from './components/DayInsightModal.vue'
 import ProjectPlanningModal from './components/ProjectPlanningModal.vue'
+import ScenarioSelectModal from './components/ScenarioSelectModal.vue'
 import { newTheme } from './design.js'
 
 const originalTheme = {
@@ -272,9 +278,32 @@ const showKnowledgeBase = ref(false)
 const eventLog = ref([])
 const stats = reactive({ critSuccesses: 0, bugsFixed: 0, dilemmasResolved: 0, risksProactivelyHandled: 0 })
 
+// ─── SCENARIO & COMMUNICATION STATE ───
+const showScenarioModal = ref(false)
+const activeScenario = ref(null)
+const moraleDecayModifier = ref(0)
+const scopeCommModifier = ref(0)
+const dailyCommCost = ref(0)
+
+// ─── CASCADE RISK SYSTEM ───
+const RISK_CASCADE_MAP = {
+  server:   [{ targetType: 'api', probBonus: 10, days: 3 }, { targetType: 'bug', probBonus: 5, days: 3 }],
+  security: [{ targetType: 'scope', probBonus: 15, days: 3 }],
+  bug:      [{ targetType: 'conflict', probBonus: 10, days: 3 }],
+  conflict: [{ targetType: 'bug', probBonus: 5, days: 2 }, { targetType: 'conflict', probBonus: 8, days: 2 }],
+}
+const activeCascades = ref([])
+
+function effectiveProb(risk) {
+  const bonus = activeCascades.value
+    .filter(c => c.targetType === risk.type)
+    .reduce((s, c) => s + c.probBonus, 0)
+  return Math.min(95, risk.prob + bonus)
+}
+
 const fx = reactive({ shake:false, moneyFlash:false, glitch:false, criticalSuccess:false, bugEvent:false })
 const gs = reactive({ status:'menu', money:100000, day:1, morale:75, contingencyReserve:15000, riskScore:0, score:0 })
-const project = reactive({ deadline:30, progress:0, totalEffort:1000 })
+const project = reactive({ deadline:30, progress:0, totalEffort:1800 })
 const milestones = reactive([
   { pct:25, label:'+$10K', bonus:10000, reached:false, icon:'💰' },
   { pct:50, label:'+$15K', bonus:15000, reached:false, icon:'🎯' },
@@ -282,17 +311,18 @@ const milestones = reactive([
 ])
 
 // ─── EMPLOYEES ───
+// hiringCost: işe alım ücreti (tek seferlik). dailyCost: günlük maaş.
 const defaultEmployees = () => [
-  { id:1, name:'Mert', role:'Senior Dev', icon:'🧑‍💻', dailyCost:2000, productivity:50, moralBonus:0, desc:'Bug -%20 | QA/Data ile sinerji', hired:false, energy:100, overtime:false },
-  { id:2, name:'Bob',   role:'DevOps',     icon:'🔧',   dailyCost:1500, productivity:30, moralBonus:0, desc:'Server -%25 | Güvenlik ile sinerji', hired:false, energy:100, overtime:false },
-  { id:3, name:'Charlie',role:'QA',        icon:'🔍',   dailyCost:1200, productivity:20, moralBonus:0, desc:'Bug -%15 | Senior ile sinerji', hired:false, energy:100, overtime:false },
-  { id:4, name:'Diana', role:'PM',         icon:'📊',   dailyCost:1000, productivity:15, moralBonus:8, desc:'+8 moral/gün | Tüm ekiple sinerji', hired:false, energy:100, overtime:false },
-  { id:5, name:'Eve',   role:'Güvenlik',   icon:'🔒',   dailyCost:1300, productivity:15, moralBonus:0, desc:'Siber -%30 | DevOps ile sinerji', hired:false, energy:100, overtime:false },
-  { id:6, name:'Frank', role:'Frontend',   icon:'🎨',   dailyCost:1100, productivity:35, moralBonus:5, desc:'+5 moral/gün | AI ile sinerji', hired:false, energy:100, overtime:false },
-  { id:7, name:'Grace', role:'AI Müh.',    icon:'🤖',   dailyCost:1800, productivity:60, moralBonus:0, desc:'Süper verimli | Frontend ile sinerji', hired:false, energy:100, overtime:false },
-  { id:8, name:'Hank',  role:'Stajyer',    icon:'👶',   dailyCost:400,  productivity:8,  moralBonus:0, desc:'Ucuz ama riskli', hired:false, energy:100, overtime:false },
-  { id:9, name:'İpek',  role:'BA',         icon:'📝',   dailyCost:1400, productivity:20, moralBonus:3, desc:'Scope -%25 | PM ile sinerji', hired:false, energy:100, overtime:false },
-  { id:10,name:'Kemal', role:'Data Eng.',  icon:'🗄️',   dailyCost:1600, productivity:40, moralBonus:0, desc:'Server -%20 | Senior ile sinerji', hired:false, energy:100, overtime:false },
+  { id:1, name:'Mert',    role:'Senior Dev', icon:'🧑‍💻', dailyCost:2000, hiringCost:8000,  productivity:28, moralBonus:0, desc:'Bug -%20 | QA/Data ile sinerji', hired:false, energy:100, overtime:false },
+  { id:2, name:'Bob',     role:'DevOps',     icon:'🔧',   dailyCost:1500, hiringCost:6000,  productivity:16, moralBonus:0, desc:'Server -%25 | Güvenlik ile sinerji', hired:false, energy:100, overtime:false },
+  { id:3, name:'Charlie', role:'QA',         icon:'🔍',   dailyCost:1200, hiringCost:4800,  productivity:10, moralBonus:0, desc:'Bug -%15 | Senior ile sinerji', hired:false, energy:100, overtime:false },
+  { id:4, name:'Diana',   role:'PM',         icon:'📊',   dailyCost:1000, hiringCost:4000,  productivity:7,  moralBonus:8, desc:'+8 moral/gün | Tüm ekiple sinerji', hired:false, energy:100, overtime:false },
+  { id:5, name:'Eve',     role:'Güvenlik',   icon:'🔒',   dailyCost:1300, hiringCost:5200,  productivity:7,  moralBonus:0, desc:'Siber -%30 | DevOps ile sinerji', hired:false, energy:100, overtime:false },
+  { id:6, name:'Frank',   role:'Frontend',   icon:'🎨',   dailyCost:1100, hiringCost:4400,  productivity:18, moralBonus:5, desc:'+5 moral/gün | AI ile sinerji', hired:false, energy:100, overtime:false },
+  { id:7, name:'Grace',   role:'AI Müh.',    icon:'🤖',   dailyCost:1800, hiringCost:7200,  productivity:30, moralBonus:0, desc:'Süper verimli | Frontend ile sinerji', hired:false, energy:100, overtime:false },
+  { id:8, name:'Hank',    role:'Stajyer',    icon:'👶',   dailyCost:400,  hiringCost:1200,  productivity:4,  moralBonus:0, desc:'Ucuz ama riskli — Stajyer Hatası riski yüksek', hired:false, energy:100, overtime:false },
+  { id:9, name:'İpek',    role:'BA',         icon:'📝',   dailyCost:1400, hiringCost:5600,  productivity:10, moralBonus:3, desc:'Scope -%25 | PM ile sinerji', hired:false, energy:100, overtime:false },
+  { id:10,name:'Kemal',   role:'Data Eng.',  icon:'🗄️',   dailyCost:1600, hiringCost:6400,  productivity:20, moralBonus:0, desc:'Server -%20 | Senior ile sinerji', hired:false, energy:100, overtime:false },
 ]
 const employees = ref(defaultEmployees())
 
@@ -311,14 +341,14 @@ const synergyBonus = computed(() => {
   SYNERGY_PAIRS.forEach(([a,b]) => {
     const empA = employees.value.find(e=>e.id===a)
     const empB = employees.value.find(e=>e.id===b)
-    if (empA?.hired && empB?.hired) bonus += 8
+    if (empA?.hired && empB?.hired) bonus += 3
   })
   return bonus
 })
 
 // ─── UPGRADES ───
 const defaultUpgrades = () => [
-  { id:'cicd',   name:'CI/CD Pipeline',  icon:'⚙️', cost:5000,  bought:false, desc:'+20 ilerleme/gün' },
+  { id:'cicd',   name:'CI/CD Pipeline',  icon:'⚙️', cost:5000,  bought:false, desc:'+10 ilerleme/gün' },
   { id:'review', name:'Code Review',     icon:'👁️', cost:3000,  bought:false, desc:'Bug riski -%20' },
   { id:'cloud',  name:'Cloud Scaling',   icon:'☁️', cost:4000,  bought:false, desc:'Server riski -%30' },
   { id:'copilot',name:'AI Copilot',      icon:'🧠', cost:6000,  bought:false, desc:'Dev\'lere +15 üretim' },
@@ -608,11 +638,16 @@ function checkGameEnd() {
   if (gs.money <= 0)                          { gameOverReason.value='Bütçe tükendi!';        gs.status='gameover'; return true }
   if (project.deadline <= 0)                  { gameOverReason.value='Süre doldu!';            gs.status='gameover'; return true }
   if (gs.morale <= 0)                         { gameOverReason.value='Ekip istifa etti!';      gs.status='gameover'; return true }
-  if (project.progress >= project.totalEffort){ 
-    gs.status='victory'; 
-    const finalBonus = Math.floor(gs.money/100) + (project.deadline * 100) + (gs.morale * 10);
-    updateScore(finalBonus);
-    return true 
+  if (project.progress >= project.totalEffort) {
+    gs.status = 'victory'
+    const finalBonus = Math.floor(gs.money / 100) + (project.deadline * 100) + (gs.morale * 10)
+    updateScore(finalBonus)
+    // SC-03: extra win condition — $30K remaining AND morale > 70
+    if (activeScenario.value === 'SC-03' && (gs.money < 30000 || gs.morale <= 70)) {
+      gs.status = 'gameover'
+      gameOverReason.value = 'SC-03: Bütçe ($30K+) veya moral (%70+) hedefi tutturulamadı!'
+    }
+    return true
   }
   return false
 }
@@ -620,9 +655,9 @@ function checkGameEnd() {
 // ─── PLAYER ACTIONS ───
 function hireEmployee(id) {
   const e = employees.value.find(x=>x.id===id)
-  if (!e || e.hired || gs.money < e.dailyCost) return
-  e.hired = true; updateMoney(-e.dailyCost)
-  addLog(`👤 ${e.name} (${e.role}) işe alındı`, 'hire')
+  if (!e || e.hired || gs.money < e.hiringCost) return
+  e.hired = true; updateMoney(-e.hiringCost)
+  addLog(`👤 ${e.name} (${e.role}) işe alındı — İşe alım ücreti: $${e.hiringCost.toLocaleString()}`, 'hire')
   if (id === 8) {
     const r = allRisksPool.find(r=>r.id===13)
     if (r && !activeRiskPool.value.find(x=>x.id===13)) activeRiskPool.value.push(JSON.parse(JSON.stringify(r)))
@@ -656,11 +691,39 @@ function handleRiskAction(riskId, actionType) {
   const risk = activeRiskPool.value.find(r=>r.id===riskId)
   if (!risk) return
   stats.risksProactivelyHandled++
+  const preEmv = Math.round((risk.prob / 100) * (risk.cost || 0))
   const a = {
-    mitigate: ()=>{ updateScore(300); updateMoney(-2000); risk.prob=Math.floor(risk.prob/2); risk.status='active'; addLog(`🛡️ [PM NOTU - Mitigate]: "${risk.name}" olasılığı yarıya indirildi (-$2k). Mantıklı bir savunma!`,'warning') },
-    avoid:    ()=>{ updateScore(500); updateMoney(-5000); risk.status='resolved'; addLog(`🛑 [PM NOTU - Avoid]: "${risk.name}" tamamen önlendi (-$5k). Plandaki değişiklikle riski kökünden çözdünüz.`,'success') },
-    transfer: ()=>{ updateScore(400); updateMoney(-3000); risk.cost=0; risk.moralDamage=0; risk.status='active'; addLog(`📄 [PM NOTU - Transfer]: "${risk.name}" aktarıldı (-$3k). Risk gerçekleşse bile hasar bize yansımayacak.`,'info') },
-    accept:   ()=>{ updateScore(100); risk.status='active'; addLog(`✅ [PM NOTU - Accept]: "${risk.name}" kabul edildi. Proaktif bütçe harcanmadı, ancak pasif olarak tetikteyiz.`,'info') },
+    mitigate: () => {
+      updateScore(300); updateMoney(-2000)
+      risk.prob = Math.floor(risk.prob / 2); risk.status = 'active'
+      addLog(`🛡️ [PM NOTU - Mitigate]: "${risk.name}" olasılığı yarıya indirildi (-$2k).`, 'warning')
+      const postEmv = Math.round((risk.prob / 100) * (risk.cost || 0))
+      const saved = preEmv - postEmv
+      addLog(`📘 Mitigate: $2K ile EMV $${preEmv.toLocaleString()}→$${postEmv.toLocaleString()}'e düştü. Beklenen tasarruf: $${saved.toLocaleString()}.`, 'pmbok')
+      if (activeScenario.value === 'SC-03' && preEmv > 2000) updateScore(700)
+    },
+    avoid: () => {
+      updateScore(500); updateMoney(-5000); risk.status = 'resolved'
+      addLog(`🛑 [PM NOTU - Avoid]: "${risk.name}" tamamen önlendi (-$5k).`, 'success')
+      const rational = preEmv > 5000 ? 'Rasyonel: EMV > $5K, maliyet karşılanıyor.' : 'Dikkat: EMV < $5K — Mitigate daha ekonomik olabilirdi.'
+      addLog(`📘 Avoid: Risk tamamen ortadan kalktı. Residual risk: $0. ${rational}`, 'pmbok')
+      if (activeScenario.value === 'SC-03' && preEmv > 5000) updateScore(500)
+    },
+    transfer: () => {
+      updateScore(400); updateMoney(-3000); risk.cost = 0; risk.moralDamage = 0; risk.status = 'active'
+      addLog(`📄 [PM NOTU - Transfer]: "${risk.name}" aktarıldı (-$3k).`, 'info')
+      addLog(`📘 Transfer: Finansal riski devretti. Tetiklenirse $0 ödersiniz. (EMV: $${preEmv.toLocaleString()})`, 'pmbok')
+    },
+    accept: () => {
+      updateScore(100); risk.status = 'active'; risk._wasAccepted = true
+      addLog(`✅ [PM NOTU - Accept]: "${risk.name}" kabul edildi. Proaktif bütçe harcanmadı.`, 'info')
+      if (preEmv < 2000) {
+        addLog(`📘 ✓ Rasyonel Accept: EMV ($${preEmv.toLocaleString()}) < $2K mitigate maliyeti. Akıllı bütçe yönetimi!`, 'pmbok')
+        if (activeScenario.value === 'SC-03') updateScore(800)
+      } else {
+        addLog(`📘 ⚠ Yüksek riskli Accept! EMV $${preEmv.toLocaleString()}. Risk tetiklenirse tam hasarı ödersiniz.`, 'pmbok')
+      }
+    },
   }
   a[actionType]?.()
 }
@@ -683,6 +746,9 @@ function handleDilemmaChoice(opt) {
   choice.effect()
   addLog(`❓ İkilem: "${currentDilemma.value.title}" → ${choice.text}`, 'dilemma')
   eventLog.value[0].dilemmaId = currentDilemma.value.id
+  if (currentDilemma.value.pmContext) {
+    addLog(`📘 PMBOK: ${currentDilemma.value.pmContext}`, 'pmbok')
+  }
   stats.dilemmasResolved++
   showDilemma.value = false
   currentDilemma.value = null
@@ -703,6 +769,10 @@ async function processNextDay() {
   let dp = 10, dc = 0
   const ev = []
 
+  // Cascade tick: decrement active cascades
+  activeCascades.value.forEach(c => c.daysLeft--)
+  activeCascades.value = activeCascades.value.filter(c => c.daysLeft > 0)
+
   // Upgrades
   const hasCopilot  = upgrades.value.find(u=>u.id==='copilot')?.bought
   const hasCicd     = upgrades.value.find(u=>u.id==='cicd')?.bought
@@ -710,7 +780,7 @@ async function processNextDay() {
   const hasErgo     = upgrades.value.find(u=>u.id==='ergonomic')?.bought
   const hasStandup  = upgrades.value.find(u=>u.id==='standup')?.bought
 
-  if (hasCicd)    { dp += 20; ev.push({text:'⚙️ CI/CD: +20 ilerleme', type:'success'}) }
+  if (hasCicd)    { dp += 10; ev.push({text:'⚙️ CI/CD: +10 ilerleme', type:'success'}) }
   if (hasCoffee)  { updateMorale(5);  ev.push({text:'☕ Espresso: +5 moral', type:'success'}) }
   if (hasStandup) { updateMorale(5);  ev.push({text:'📋 Standup: +5 moral', type:'success'}) }
 
@@ -723,8 +793,8 @@ async function processNextDay() {
     dc += e.dailyCost
     const energyDrain = (e.overtime ? 20 : 10) * (hasErgo ? 0.7 : 1)
     e.energy = Math.max(0, e.energy - energyDrain)
-    const copilotB = (hasCopilot && ['Senior Dev','Frontend Dev','AI Müh.','Stajyer'].includes(e.role)) ? 15 : 0
-    dp += Math.floor((e.productivity + copilotB) * (e.energy/100) * mm * (e.overtime?1.5:1))
+    const copilotB = (hasCopilot && ['Senior Dev','Frontend Dev','AI Müh.','Stajyer'].includes(e.role)) ? 8 : 0
+    dp += Math.floor((e.productivity + copilotB) * (e.energy/100) * mm * (e.overtime?1.25:1))
     if (e.moralBonus > 0) updateMorale(e.moralBonus)
     if (e.id === 6) updateMorale(5)
     if (e.energy === 0) ev.push({text:`😴 ${e.name} tamamen tükendi!`, type:'warning'})
@@ -734,18 +804,26 @@ async function processNextDay() {
   const syn = synergyBonus.value
   if (syn > 0) { dp += syn; ev.push({text:`🤝 Ekip sinerjisi: +${syn} puan`, type:'success'}) }
 
-  // Base morale decay
-  updateMorale(-3)
+  // Team size morale penalty (coordination overhead for large teams)
+  const hiredCount = employees.value.filter(e => e.hired).length
+  if (hiredCount > 5) {
+    const overPenalty = -(hiredCount - 5)
+    updateMorale(overPenalty)
+    ev.push({text:`👥 Koordinasyon yükü: ${overPenalty} moral (${hiredCount} kişi)`, type:'warning'})
+  }
+
+  // Base morale decay (communication strategy modifies this)
+  updateMorale(-3 + moraleDecayModifier.value)
 
   // ── CRITICAL SUCCESS ── (morale > 70, 15% chance)
   lastCritSuccess.value = false
   if (gs.morale >= 70 && Math.random() < critChance.value/100) {
-    dp = Math.floor(dp * 2)
+    dp = Math.floor(dp * 1.4)
     lastCritSuccess.value = true
     stats.critSuccesses++
     updateScore(300)
     triggerFx('criticalSuccess', 2000)
-    ev.push({text:'⭐ KRİTİK BAŞARI! İlerleme 2x!', type:'success'})
+    ev.push({text:'⭐ KRİTİK BAŞARI! İlerleme ×1.4!', type:'success'})
     addLog('⭐ KRİTİK BAŞARI!', 'milestone')
     spawnParticles(window.innerWidth/2, window.innerHeight/2, 24, 'crit')
   }
@@ -778,11 +856,14 @@ async function processNextDay() {
   }
 
   // ── NEW RANDOM RISK ──
-  if (gs.day >= 4 && Math.random() < 0.25) {
+  const spawnChance = activeScenario.value === 'SC-01' ? 0.50 : 0.25
+  if (gs.day >= 4 && Math.random() < spawnChance) {
     const avail = allRisksPool.filter(r=>!activeRiskPool.value.find(ar=>ar.id===r.id))
     if (avail.length) {
-      const nr = avail[Math.floor(Math.random()*avail.length)]
-      activeRiskPool.value.push(JSON.parse(JSON.stringify(nr)))
+      const nr = JSON.parse(JSON.stringify(avail[Math.floor(Math.random()*avail.length)]))
+      if (nr.type === 'scope' && scopeCommModifier.value !== 0)
+        nr.prob = Math.max(5, Math.min(95, nr.prob + scopeCommModifier.value))
+      activeRiskPool.value.push(nr)
       addLog(`⚠️ Yeni tehdit: "${nr.name}"`, 'warning')
       triggerFx('glitch', 400)
     }
@@ -791,12 +872,13 @@ async function processNextDay() {
   // ── ACTIVE RISK TRIGGERS ──
   let trd = null
   for (const risk of activeRisks.value) {
-    if (Math.random()*100 < risk.prob) { trd = risk; break }
+    if (Math.random() * 100 < effectiveProb(risk)) { trd = risk; break }
   }
 
   lastDailyProgress.value = dp
   lastDailyCost.value = dc
   updateMoney(-dc)
+  if (dailyCommCost.value !== 0) updateMoney(-dailyCommCost.value)
   project.progress = Math.min(project.totalEffort, project.progress + Math.max(0, dp))
   checkMilestones()
 
@@ -825,6 +907,33 @@ async function processNextDay() {
     project.deadline -= trd.delay
     trd.status = 'resolved'
     spawnParticles(window.innerWidth/2, window.innerHeight/2, 16, 'bug')
+
+    // Cascade: trigger related risk probability increases
+    if (RISK_CASCADE_MAP[trd.type]) {
+      const typeLabels = { api: 'API', bug: 'Bug', scope: 'Kapsam', conflict: 'Çatışma', server: 'Sunucu', security: 'Güvenlik' }
+      RISK_CASCADE_MAP[trd.type].forEach(c => {
+        activeCascades.value.push({ targetType: c.targetType, probBonus: c.probBonus, daysLeft: c.days })
+        const label = typeLabels[c.targetType] || c.targetType
+        ev.push({ text: `🔗 DOMINO: ${trd.name} → ${label} riski +%${c.probBonus} (${c.days} gün)`, type: 'cascade' })
+        addLog(`🔗 DOMINO: "${trd.name}" tetiklendi → ${label} riskleri +%${c.probBonus} olasılık (${c.days} gün)`, 'warning')
+      })
+    }
+  }
+
+  // PMBOK Anlık Ders hesaplama
+  let pmbokInsight = ''
+  const totalDailySpend = dc + (dailyCommCost.value > 0 ? dailyCommCost.value : 0)
+  if (trd && trd._wasAccepted && (trd.cost || 0) > 0) {
+    const saving = (trd.cost || 0) - 2000
+    pmbokInsight = `Bu risk Accept edilmişti. Mitigate ($2K) ile $${saving.toLocaleString()} tasarruf sağlanırdı.`
+  } else if (lastCritSuccess.value) {
+    pmbokInsight = 'Kritik Başarı! PMBOK: Yüksek moral → verimlilik artışı → schedule variance azalır.'
+  } else if (gs.morale < 40) {
+    pmbokInsight = 'Tehlike! Moral < %40 → Burnout riski aktif. PMBOK: İnsan kaynağı risk planı yapın.'
+  } else if (totalDailySpend > 20000) {
+    pmbokInsight = "Yüksek günlük harcama! Contingency Reserve'nizi koruyun (PMBOK: Reserve Analysis)."
+  } else if (!trd && gs.day > 10) {
+    pmbokInsight = 'Temiz gün! Proaktif mitigation stratejiniz işe yarıyor.'
   }
 
   daySummaryData.value = {
@@ -836,7 +945,8 @@ async function processNextDay() {
     totalProgress: project.progress,
     totalEffort: project.totalEffort,
     money: gs.money,
-    hasAnyUpgrade: upgrades.value.some(u => u.bought)
+    hasAnyUpgrade: upgrades.value.some(u => u.bought),
+    pmbokInsight,
   }
   const nothingHappened = (dc === 0) && (ev.length === 0) && !trd && !lastCritSuccess.value && !lastBugEvent.value;
   
@@ -865,6 +975,12 @@ function closeDayInsight() {
 
 function closeModal() { triggeredRisk.value = null; checkGameEnd() }
 
+function handleScenarioSelected(id) {
+  activeScenario.value = id
+  showScenarioModal.value = false
+  showPlanningModal.value = true
+}
+
 function handlePlanComplete(plan) {
   showPlanningModal.value = false
   startGame(plan)
@@ -878,26 +994,43 @@ function startGame(plan = null) {
     let probMod = 0
     if (plan.appetite === 'low') { baseMoney = 80000; probMod = -10 }
     else if (plan.appetite === 'high') { baseMoney = 120000; probMod = 10 }
-    
+
     gs.contingencyReserve = plan.reserve
     gs.money = baseMoney - plan.reserve
+
+    // Communication strategy modifiers
+    const commMap = {
+      intensive: { morale: 2, scope: 10, cost: 500 },
+      minimal:   { morale: -2, scope: -10, cost: -300 },
+      balanced:  { morale: 0, scope: 0, cost: 0 },
+    }
+    const cm = commMap[plan.communication] || commMap.balanced
+    moraleDecayModifier.value = cm.morale
+    scopeCommModifier.value   = cm.scope
+    dailyCommCost.value       = cm.cost
 
     activeRiskPool.value = [
       JSON.parse(JSON.stringify(allRisksPool[0])), // Server
       JSON.parse(JSON.stringify(allRisksPool[3])), // Scope
       JSON.parse(JSON.stringify(allRisksPool[4])), // Conflict
     ]
-    
+
     activeRiskPool.value.forEach(r => {
       r.prob = Math.max(5, Math.min(95, r.prob + probMod))
       let isFocus = false
       if (plan.focus === 'technical' && (r.type === 'server' || r.type === 'bug' || r.type === 'security')) isFocus = true
       if (plan.focus === 'human' && r.type === 'conflict') isFocus = true
       if (plan.focus === 'scope' && r.type === 'scope') isFocus = true
-      
+
       if (isFocus) r.prob = Math.max(5, r.prob - 20)
       else r.prob = Math.min(95, r.prob + 10)
+
+      if (r.type === 'scope') r.prob = Math.max(5, Math.min(95, r.prob + cm.scope))
     })
+
+    // Scenario-specific overrides
+    if (activeScenario.value === 'SC-01') gs.money += 10000
+    if (activeScenario.value === 'SC-02') project.deadline = 20
   } else {
     activeRiskPool.value = [
       JSON.parse(JSON.stringify(allRisksPool[0])),
@@ -910,7 +1043,7 @@ function startGame(plan = null) {
 }
 
 function resetGame() {
-  Object.assign(gs, {status:'menu',money:100000,day:1,morale:75,contingencyReserve:15000,riskScore:0})
+  Object.assign(gs, {status:'menu',money:100000,day:1,morale:75,contingencyReserve:15000,riskScore:0,score:0})
   Object.assign(project, {progress:0,deadline:30})
   employees.value = defaultEmployees()
   upgrades.value = defaultUpgrades()
@@ -920,6 +1053,9 @@ function resetGame() {
   lastDailyProgress.value = 0; lastDailyCost.value = 0
   Object.assign(stats, {critSuccesses:0,bugsFixed:0,dilemmasResolved:0,risksProactivelyHandled:0})
   lastCritSuccess.value = false; lastBugEvent.value = false
+  activeScenario.value = null
+  moraleDecayModifier.value = 0; scopeCommModifier.value = 0; dailyCommCost.value = 0
+  activeCascades.value = []
 }
 
 // ─── LIFECYCLE ───

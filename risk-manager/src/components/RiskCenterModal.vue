@@ -36,15 +36,23 @@
 
         <!-- ── TAB 1: TEHDİT (Risk Cards) ── -->
         <div v-if="activeTab === 'threats'">
-          <div v-if="!pendingRisks.length" class="rc-empty">
+          <div class="rc-emv-portfolio">
+            📊 Toplam Maruz Kalma: <strong>${{ portfolioEmv.toLocaleString() }}</strong> (Aktif EMV)
+          </div>
+          <div v-if="!sortedPendingRisks.length" class="rc-empty">
             <div class="text-4xl mb-3">✅</div>
             <div>Aktif tehdit yok</div>
             <div class="rc-empty-sub">Tüm riskler çözüldü veya henüz tetiklenmedi.</div>
           </div>
-          <TransitionGroup name="list" tag="div" class="flex flex-col gap-3">
-            <RiskCard v-for="risk in pendingRisks" :key="risk.id" :risk="risk" :theme="theme"
-              @action="(id, type) => $emit('action', id, type)" />
-          </TransitionGroup>
+          <div class="flex flex-col gap-3">
+            <template v-for="(risk, i) in sortedPendingRisks" :key="risk.id">
+              <div v-if="i === 0 || priorityBand(risk) !== priorityBand(sortedPendingRisks[i-1])"
+                   class="rc-priority-divider" :class="'prio-' + priorityBand(risk)">
+                {{ priorityLabel(risk) }}
+              </div>
+              <RiskCard :risk="risk" :theme="theme" @action="(id, type) => $emit('action', id, type)" />
+            </template>
+          </div>
         </div>
 
         <!-- ── TAB 2: MATRİS (Qualitative Risk Matrix) ── -->
@@ -207,6 +215,22 @@ const tabs = [
   { id: 'log',      icon: '📰', label: 'GÜNLÜK' },
 ]
 
+const sortedPendingRisks = computed(() =>
+  [...(props.pendingRisks || [])].sort((a, b) =>
+    ((b.prob / 100) * (b.cost || 0)) - ((a.prob / 100) * (a.cost || 0))
+  )
+)
+const portfolioEmv = computed(() =>
+  (props.pendingRisks || []).reduce((s, r) => s + Math.round((r.prob / 100) * (r.cost || 0)), 0)
+)
+function priorityBand(risk) {
+  const emv = (risk.prob / 100) * (risk.cost || 0)
+  return emv > 5000 ? 'high' : emv > 2000 ? 'medium' : 'low'
+}
+function priorityLabel(risk) {
+  return { high: '🔴 YÜKSEK ÖNCELİK', medium: '🟡 ORTA ÖNCELİK', low: '🟢 DÜŞÜK ÖNCELİK' }[priorityBand(risk)]
+}
+
 // ── Risk Matrix logic ──
 // Prob: low <35, mid 35-65, high >65
 // Impact: low <5000, mid 5000-15000, high >15000
@@ -326,6 +350,21 @@ function statusLabel(s) {
 
 .rc-empty { text-align:center; padding:40px 0; font-family:'Press Start 2P',monospace; font-size:10px; color:#5a4020; }
 .rc-empty-sub { font-size:7px; color:#3a2810; margin-top:8px; line-height:2; }
+
+.rc-emv-portfolio {
+  background:#0a1420; border:2px solid #1a2840; border-left:4px solid #4080c0;
+  padding:8px 12px; margin-bottom:10px;
+  font-family:'Press Start 2P',monospace; font-size:7px; color:#5888a8; line-height:2;
+}
+.rc-emv-portfolio strong { color:#80b0f0; }
+
+.rc-priority-divider {
+  font-family:'Press Start 2P',monospace; font-size:7px;
+  padding:5px 8px; border-bottom:2px solid; margin:8px 0 4px 0; letter-spacing:2px;
+}
+.prio-high   { color:#e06060; border-color:#501010; background:#1a0808; }
+.prio-medium { color:#d0a040; border-color:#503010; background:#1a1008; }
+.prio-low    { color:#60c060; border-color:#104810; background:#081408; }
 
 /* ── MATRIX ── */
 .matrix-intro {
