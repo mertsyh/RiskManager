@@ -45,20 +45,24 @@
         <!-- Risk Audit Section -->
         <div>
           <h3 class="text-sm mb-2 border-b pb-1" :style="{ color: theme.chipYellowText, borderColor: theme.panelBorder }">Risk Yönetimi Denetimi (Risk Audit)</h3>
-          <ul class="list-disc pl-5 flex flex-col gap-2">
-            <li>
-              <strong>Bug Patlamaları:</strong> <span :style="{color: stats.bugsFixed > 0 ? '#f08080' : '#a8d060'}">{{ stats.bugsFixed }} kez</span> gerçekleşti. 
-              <span class="text-[10px] text-gray-400 block mt-1">Eğer yüksekse, "Code Review" (Azaltma/Mitigate) yatırımı eksik kalmış veya ekip yorgunluktan kaliteyi düşürmüş olabilir.</span>
-            </li>
-            <li>
-              <strong>Kritik Başarılar:</strong> <span style="color:#ffe4a0">{{ stats.critSuccesses }} kez</span> tetiklendi.
-              <span class="text-[10px] text-gray-400 block mt-1">Yüksek moral ve doğru ekip sinerjisinin yarattığı pozitif risklerin (Fırsat/Exploit) sonucudur.</span>
-            </li>
-            <li>
-              <strong>Çözülen İkilemler (Case Studies):</strong> <span style="color:#80c0ff">{{ stats.dilemmasResolved }} vaka</span> çözüldü.
-              <span class="text-[10px] text-gray-400 block mt-1">PM olarak kapsam kayması veya kaynak problemleri karşısında verdiğiniz yönetsel kararların sayısı.</span>
-            </li>
-          </ul>
+
+          <!-- 🦁 Tusler Sınıflandırma Karnesi -->
+          <div class="mt-3 p-3 rounded border" style="border-color:#2a3a18; background:#0c140a">
+            <div class="flex items-center justify-between mb-1">
+              <h4 class="text-xs" style="color:#9ad07a">🦁 Tusler Sınıflandırma Karnesi</h4>
+              <span class="text-base font-bold" :style="{ color: tuslerLabel.color }">{{ stats.tuslerTotal ? tuslerAccuracy + '%' : '—' }}</span>
+            </div>
+            <div class="text-[10px] text-gray-400" style="line-height:1.6">
+              <template v-if="stats.tuslerTotal">
+                <span style="color:#c0d0a0">{{ stats.tuslerCorrect }}/{{ stats.tuslerTotal }}</span> riskte hayvanın ideal yanıtını seçtin —
+                <span :style="{ color: tuslerLabel.color }">{{ tuslerLabel.label }}</span>.
+                <div class="mt-1" style="color:#6a8a52">Kural: 🐯 Kaplan→Önle · 🐊 Timsah→Aktar · 🐶 Yavru Köpek→Azalt · 🐱 Yavru Kedi→Kabul Et.</div>
+              </template>
+              <template v-else>
+                Bu projede hiç risk çıkmadı (ya da sınıflandırmadın). Günleri ilerlettikçe çıkan riskleri doğru hayvana sınıflandırarak Tusler becerini geliştir.
+              </template>
+            </div>
+          </div>
         </div>
 
         <!-- Risk Management Score & Competition Score -->
@@ -161,16 +165,25 @@ defineEmits(['restart'])
 
 const isVictory = computed(() => props.status === 'victory')
 
+// 🦁 Tusler sınıflandırma doğruluğu
+const tuslerAccuracy = computed(() =>
+  props.stats.tuslerTotal ? Math.round((props.stats.tuslerCorrect / props.stats.tuslerTotal) * 100) : 0
+)
+const tuslerLabel = computed(() => {
+  if (!props.stats.tuslerTotal) return { label: 'Veri yok', color: '#888' }
+  const a = tuslerAccuracy.value
+  if (a >= 80) return { label: 'Tusler Ustası', color: '#60e060' }
+  if (a >= 55) return { label: 'Gelişen Sınıflandırıcı', color: '#a0d060' }
+  if (a >= 30) return { label: 'Acemi Bakıcı', color: '#f0c040' }
+  return { label: 'Hayvanları karıştırıyorsun', color: '#f08060' }
+})
+
 const riskManagementScore = computed(() => {
-  let score = 50 // baseline
-  score += (props.stats.risksProactivelyHandled || 0) * 10
-  score += (props.stats.critSuccesses || 0) * 8
-  score -= (props.stats.bugsFixed || 0) * 12
-  // Contingency reserve remaining = good planning
-  const reserveRatio = (props.gs.contingencyReserve || 0) / 15000
-  score += Math.floor(reserveRatio * 15)
-  if (props.gs.morale > 60) score += 10
-  if (props.status === 'victory') score += 20
+  let score = 40 // baseline
+  // Skorun çoğu Tusler sınıflandırma isabetinden gelir
+  score += Math.round(tuslerAccuracy.value * 0.5) // 0..50
+  if (props.gs.morale > 60) score += 5
+  if (props.status === 'victory') score += 15
   return Math.max(0, Math.min(100, score))
 })
 
@@ -184,20 +197,23 @@ const riskScoreLabel = computed(() => {
 
 function generateFeedback() {
   let feedback = ''
-  if (props.stats.bugsFixed > 3) {
-    feedback += 'Teknik borç ve hata oranı çok yüksek. Kalite Güvence (QA) süreçlerine daha fazla yatırım yapmalısınız (Mitigate). '
+  if (props.stats.tuslerTotal) {
+    const a = tuslerAccuracy.value
+    if (a >= 80) feedback += 'Riskleri olasılık × etki düzleminde isabetle sınıflandırdın — gerçek bir Tusler ustası. '
+    else if (a >= 50) feedback += 'Sınıflandırman fena değil; özellikle yüksek etkili riskleri (🐊 Timsah / 🐯 Kaplan) ayırt etmeye odaklan. '
+    else feedback += 'Hayvanları karıştırdın: önce etkinin yüksek mi düşük mü olduğuna, sonra olasılığa bak. '
   }
   if (props.gs.money < 10000 && props.gs.money > 0) {
-    feedback += 'Bütçeyi sınırda yönettiniz. Risk yanıt stratejilerinde (Transfer/Avoid) harcanan paralar contingency reserve (yedek akçe) hesabınızı zorlamış olabilir. '
+    feedback += 'Bütçeyi sınırda yönettin; yanlış sınıflandırmaların artakalan hasarı bütçeni eritti. '
   }
   if (props.gs.morale < 30) {
-    feedback += 'Ekip motivasyonu çok düşük. Proje yönetiminde sadece bütçe ve zaman değil, "İnsan Kaynakları" yönetimi de kritiktir. Çalışanlarınız tükenmiş (Burnout). '
+    feedback += 'Ekip morali çok düştü — moral hasarı veren riskleri (Çatışma / Burn-out) doğru yönetmek kritik. '
   }
   if (props.status === 'victory' && props.gs.money > 30000 && props.gs.morale > 60) {
-    feedback += 'Mükemmel bir denge! Hem zaman/maliyet kısıtlarını yönettiniz, hem de ekibin moralini korudunuz. Tam bir PMP (Project Management Professional) performansı.'
+    feedback += 'Mükemmel denge! Zaman, maliyet ve morali birlikte korudun — tam bir PMP performansı.'
   }
   if (!feedback) {
-    feedback = 'Proje yönetimi sürekli bir dengeleme eylemidir (Demir Üçgen: Kapsam, Zaman, Maliyet). Bir sonraki projede EMV (Beklenen Parasal Değer) analizine daha çok dikkat edin.'
+    feedback = 'Proje yönetimi sürekli bir dengeleme eylemidir. Her riski doğru hayvana sınıflandırmak, doğru PMBOK yanıtını seçmeni sağlar.'
   }
   return feedback
 }

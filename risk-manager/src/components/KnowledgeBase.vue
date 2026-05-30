@@ -70,6 +70,60 @@
           </div>
         </div>
 
+        <!-- TUSLER TAB -->
+        <div v-if="activeTab === 'tusler'" class="flex flex-col gap-4">
+          <!-- Intro -->
+          <div class="p-3 bg-black/30 rounded border border-white/10">
+            <h3 class="text-sm mb-2" :style="{ color: theme.chipYellowText }">Tusler'in Hayvan Metaforu</h3>
+            <p>Robert Tusler her riski bir <strong>Olasılık × Etki</strong> matrisine yerleştirip dört hayvanla eşleştirir. Soyut yüzdeler yerine hayvanlar; paydaşların riski anında kavramasını sağlar — ve her hayvan, alınması gereken doğru yanıtı fısıldar.</p>
+            <div class="mt-2 p-2 bg-green-900/20 border border-green-800/30 rounded text-[10px]">
+              🎮 <strong>Oyunda:</strong> Her risk kartında hayvan rozetini; Risk Merkezi → MATRİS sekmesinde ise canlı 2×2 hayvan haritanı görürsün.
+            </div>
+          </div>
+
+          <!-- 2×2 visual -->
+          <div class="p-3 bg-black/30 rounded border border-white/10">
+            <h3 class="text-sm mb-3" :style="{ color: theme.chipYellowText }">2×2 Matris</h3>
+            <div class="grid grid-cols-2 gap-2">
+              <div v-for="key in TUSLER_GRID" :key="key" class="p-2 rounded text-center"
+                   :style="{ border: '2px solid ' + TUSLER_ANIMALS[key].color, background: TUSLER_ANIMALS[key].color + '14' }">
+                <div class="text-2xl">{{ TUSLER_ANIMALS[key].emoji }}</div>
+                <div class="text-[11px] mt-1" :style="{ color: TUSLER_ANIMALS[key].color }">{{ TUSLER_ANIMALS[key].nameTr }}</div>
+                <div class="text-[8px] mt-1 text-gray-400">{{ TUSLER_ANIMALS[key].probBand }}<br>{{ TUSLER_ANIMALS[key].impactBand }}</div>
+                <div class="text-[8px] mt-1" :style="{ color: TUSLER_ANIMALS[key].color }">→ {{ TUSLER_ANIMALS[key].recoTr }}</div>
+              </div>
+            </div>
+            <div class="flex justify-between text-[8px] text-gray-500 mt-2 px-1">
+              <span>← Yatay eksen: Olasılık →</span>
+              <span>↕ Dikey eksen: Etki</span>
+            </div>
+          </div>
+
+          <!-- Animal → response detail cards -->
+          <div v-for="key in tuslerOrder" :key="key"
+               class="flex gap-3 items-start p-3 bg-black/30 rounded border border-white/10">
+            <div class="text-3xl flex-shrink-0">{{ TUSLER_ANIMALS[key].emoji }}</div>
+            <div class="flex-1">
+              <div class="flex items-center justify-between mb-1 flex-wrap gap-1">
+                <h4 class="text-sm" :style="{ color: TUSLER_ANIMALS[key].color }">{{ TUSLER_ANIMALS[key].nameTr }} ({{ TUSLER_ANIMALS[key].nameEn }})</h4>
+                <span class="text-[9px] px-2 py-0.5 rounded" :style="{ backgroundColor: TUSLER_ANIMALS[key].color + '22', color: TUSLER_ANIMALS[key].color }">{{ TUSLER_ANIMALS[key].probBand }} × {{ TUSLER_ANIMALS[key].impactBand }}</span>
+              </div>
+              <p class="text-[10px] mb-2">{{ TUSLER_ANIMALS[key].rationale }}</p>
+              <div class="p-2 bg-black/30 rounded text-[10px]" :style="{ borderLeft: '3px solid ' + TUSLER_ANIMALS[key].color }">
+                <strong>İdeal Yanıt (PMBOK):</strong> {{ RESPONSE_LABELS[TUSLER_ANIMALS[key].idealResponse] }}
+              </div>
+              <div class="mt-1 text-[10px]" :style="{ color: theme.chipGreenText }">💡 {{ TUSLER_ANIMALS[key].tipTr }}</div>
+            </div>
+          </div>
+
+          <!-- Closing / teaching point + attribution -->
+          <div class="p-3 bg-black/30 rounded border border-yellow-800/30">
+            <div class="text-[10px] mb-2">🎮 <strong>Oyundaki not sistemi:</strong> Riske hayvanının ideal yanıtını uygularsan (🐯→Önle, 🐊→Aktar, 🐶→Azalt, 🐱→Kabul Et) bonus puan + ders kazanırsın. Yanlış eşleşmede ceza yok; sadece doğru hamleyi açıklayan nazik bir not gelir.</div>
+            <div class="text-[10px] mb-2 p-2 bg-green-900/20 border border-green-800/30 rounded">💡 <strong>Önemli:</strong> Bu oyundaki yüksek-etkili risklerin çoğu 🐊 Timsah'tır — düşük olasılık ama yıkıcı. Gerçek hayatta da en tehlikeli riskler çoğu zaman nadir görünenlerdir; <strong>Yedek Akçe (Contingency Reserve)</strong> tam bu yüzden vardır.</div>
+            <div class="text-[9px] text-gray-500">📚 Kaynak: Robert Tusler'in risk sınıflandırma şeması (Tusler's Risk Classification Scheme).</div>
+          </div>
+        </div>
+
         <!-- STRATEJİLER TAB -->
         <div v-if="activeTab === 'strategies'" class="flex flex-col gap-4">
           <p class="p-2 bg-black/20 rounded">Tehditlere karşı kullanılan <strong>4 PMBOK stratejisi</strong> ve oyundaki maliyetleri:</p>
@@ -221,18 +275,23 @@
 
 <script setup>
 import { ref } from 'vue'
+import { TUSLER_ANIMALS, TUSLER_GRID, RESPONSE_LABELS } from '../tusler.js'
 
 const props = defineProps({ theme: Object })
 const emit = defineEmits(['close'])
 
 const tabs = [
   { id: 'basics',     name: '📘 TEMELLER' },
+  { id: 'tusler',     name: '🦁 TUSLER' },
   { id: 'strategies', name: '🛡️ STRATEJİLER' },
   { id: 'metrics',    name: '📊 METRİKLER' },
   { id: 'glossary',   name: '📖 SÖZLÜK' },
   { id: 'realworld',  name: '🌍 GERÇEK DÜNYA' },
 ]
 const activeTab = ref('basics')
+
+// Tusler hayvan sınıflandırması (paylaşılan modülden)
+const tuslerOrder = ['tiger', 'alligator', 'puppy', 'kitten']
 
 const strategies = [
   {

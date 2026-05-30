@@ -10,17 +10,10 @@
   <!-- ══ GLITCH OVERLAY ══ -->
   <div v-if="fx.glitch" class="glitch-overlay"></div>
 
-  <!-- ══ CRITICAL SUCCESS FLASH ══ -->
+  <!-- ══ CLASSIFY HIT FLASH ══ -->
   <Transition name="fade">
     <div v-if="fx.criticalSuccess" class="crit-flash">
-      <div class="crit-text">⭐ KRİTİK BAŞARI!</div>
-    </div>
-  </Transition>
-
-  <!-- ══ BUG EVENT FLASH ══ -->
-  <Transition name="fade">
-    <div v-if="fx.bugEvent" class="bug-flash">
-      <div class="bug-text">🐛 BUG PATLAMASI!</div>
+      <div class="crit-text">⭐ PERFECT CLASSIFY!</div>
     </div>
   </Transition>
 
@@ -34,24 +27,24 @@
       <div v-if="gs.status==='menu'" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-80">
         <div class="relative z-10 flex flex-col gap-4 pixel-panel p-0 overflow-hidden w-[480px] border-4 border-gray-800 shadow-lg">
           <div class="pixel-title-bar px-4 py-2 flex justify-between text-xs" :style="{ backgroundColor: theme.titleBarBg, color: theme.titleText }">
-            <span>★ ANTHROPIC VENTURES ★</span><span>v3.0</span>
+            <span>★ ANTHROPIC VENTURES ★</span><span>v4.0</span>
           </div>
           <div class="px-6 pb-6 flex flex-col gap-6 pt-4">
             <div class="text-center" style="line-height:2.5">
               <div style="font-size:32px;color:#fff;text-shadow:4px 4px 0 #000;letter-spacing:4px">RISK</div>
               <div style="font-size:32px;color:#fff;text-shadow:4px 4px 0 #000;letter-spacing:2px">MANAGER</div>
-              <div style="font-size:10px;color:#a3b18a;margin-top:4px;letter-spacing:3px">PROTOCOL // 2026</div>
+              <div style="font-size:10px;color:#a3b18a;margin-top:4px;letter-spacing:3px">TUSLER PROTOCOL // 2026</div>
             </div>
             <div class="pixel-inset p-4 text-center text-sm" :style="{ backgroundColor: theme.panelBg, color: theme.riskDescText }">
-              30 günde PROJECT: NEON'u teslim et.<br>Ekibi yönet · Riskleri bertaraf et · Sürprizlerle baş et!
+              Complete PROJECT: NEON in 30 days.<br>As risks appear, classify each one to the right animal by its probability × impact!
             </div>
             <div class="grid grid-cols-2 gap-4">
-              <div class="pixel-inset p-3 text-center" :style="{ backgroundColor: theme.panelBg, color: theme.chipGreenText }"><div class="text-2xl">🤝</div>EKİP SİNERJİSİ</div>
-              <div class="pixel-inset p-3 text-center" :style="{ backgroundColor: theme.panelBg, color: theme.chipYellowText }"><div class="text-2xl">⭐</div>KRİTİK BAŞARI</div>
-              <div class="pixel-inset p-3 text-center" :style="{ backgroundColor: theme.panelBg, color: '#c080f0' }"><div class="text-2xl">❓</div>İKİLEM SİSTEMİ</div>
-              <div class="pixel-inset p-3 text-center" :style="{ backgroundColor: theme.panelBg, color: '#f06060' }"><div class="text-2xl">🐛</div>BUG RİSKİ</div>
+              <div class="pixel-inset p-3 text-center" :style="{ backgroundColor: theme.panelBg, color: '#e8702a' }"><div class="text-2xl">🐯</div>TIGER → AVOID</div>
+              <div class="pixel-inset p-3 text-center" :style="{ backgroundColor: theme.panelBg, color: '#4fa050' }"><div class="text-2xl">🐊</div>ALLIGATOR → TRANSFER</div>
+              <div class="pixel-inset p-3 text-center" :style="{ backgroundColor: theme.panelBg, color: '#e0a838' }"><div class="text-2xl">🐶</div>PUPPY → MITIGATE</div>
+              <div class="pixel-inset p-3 text-center" :style="{ backgroundColor: theme.panelBg, color: '#8fa6bd' }"><div class="text-2xl">🐱</div>KITTEN → ACCEPT</div>
             </div>
-            <button @click="showScenarioModal = true" class="pixel-btn-green py-4 text-lg tracking-widest">▶  SİSTEMİ BAŞLAT</button>
+            <button @click="startGame()" class="pixel-btn-green py-4 text-lg tracking-widest">▶  START GAME</button>
           </div>
           <div class="pixel-title-bar px-4 py-2 text-center text-xs" :style="{ backgroundColor: theme.titleBarBg, color: theme.titleText }">
             ANTHROPIC VENTURES © 2026
@@ -62,13 +55,13 @@
 
     <!-- ══════════ POST MORTEM (GAME OVER / VICTORY) ══════════ -->
     <Transition name="fade">
-      <PostMortemReport v-if="gs.status==='gameover' || gs.status==='victory'" 
-        :status="gs.status" 
-        :reason="gameOverReason" 
-        :project="project" 
-        :stats="stats" 
-        :gs="gs" 
-        :theme="theme" 
+      <PostMortemReport v-if="gs.status==='gameover' || gs.status==='victory'"
+        :status="gs.status"
+        :reason="gameOverReason"
+        :project="project"
+        :stats="stats"
+        :gs="gs"
+        :theme="theme"
         @restart="resetGame" />
     </Transition>
 
@@ -76,57 +69,55 @@
     <template v-if="gs.status !== 'menu'">
 
       <!-- HUD BAR -->
-      <header class="pixel-hud-bar flex items-center justify-between px-3 shrink-0" style="height:44px"
+      <header class="pixel-hud-bar flex items-center justify-between px-4 shrink-0" style="height:72px"
         :style="{background:theme.hudBg}">
-        <div style="font-size:8px;color:#ffe4a0;display:flex;align-items:center;gap:6px">
-          <span style="font-size:18px">🏢</span> RM 2026
+        <div style="display:flex;align-items:center;gap:10px;color:#ffe4a0">
+          <span style="font-size:30px">🏢</span>
+          <div style="display:flex;flex-direction:column;line-height:1.3">
+            <span style="font-size:14px;font-family:'Press Start 2P',monospace;color:#ffe4a0">RM 2026</span>
+            <span style="font-size:11px;color:#b08850">PROJECT: NEON</span>
+          </div>
         </div>
-        <div style="display:flex;gap:5px;align-items:center">
+
+        <div style="display:flex;gap:10px;align-items:stretch">
           <!-- Score -->
-          <div class="pixel-hud-chip" style="background:#2a1438;color:#d0a0f0;border-color:#4a2060" title="Yarışma Skoru">
-            🏆 SKOR: {{ gs.score.toLocaleString() }}
+          <div class="hud-stat" style="background:#2a1438;border-color:#4a2060" title="Competition score">
+            <div class="hud-stat-label" style="color:#b88ad0">🏆 SCORE</div>
+            <div class="hud-stat-value" style="color:#e0b8ff">{{ gs.score.toLocaleString() }}</div>
           </div>
           <!-- Money -->
-          <div class="pixel-hud-chip" :class="fx.moneyFlash?'hud-chip-red':''"
-            :style="!fx.moneyFlash?{background:theme.chipGreen,color:theme.chipGreenText,borderColor:theme.chipGreen}:{}">
-            💰 ${{ gs.money.toLocaleString() }}
+          <div class="hud-stat" :class="fx.moneyFlash?'hud-stat-flash':''"
+            :style="{background:theme.chipGreen,borderColor:theme.chipGreen}" title="Remaining budget">
+            <div class="hud-stat-label" :style="{color:theme.chipGreenText}">💰 MONEY</div>
+            <div class="hud-stat-value" :style="{color:theme.chipGreenText}">${{ gs.money.toLocaleString() }}</div>
           </div>
-          <!-- Morale with pulsing bar -->
-          <div class="pixel-hud-chip" style="display:flex;align-items:center;gap:5px"
-            :style="{background:theme.chipYellow,color:theme.chipYellowText,borderColor:theme.chipYellow}">
-            {{ moraleIcon }}
-            <div class="pixel-bar-track" style="width:52px">
-              <div :class="['pixel-bar-fill', gs.morale<30?'bar-pulse-danger':gs.morale>70?'bar-pulse-good':'']"
-                   :style="{width:gs.morale+'%',background:gs.morale>60?theme.energyFull:gs.morale>30?theme.energyMid:theme.energyLow}"></div>
+          <!-- Morale -->
+          <div class="hud-stat" :style="{background:theme.chipYellow,borderColor:theme.chipYellow}" title="Team morale">
+            <div class="hud-stat-label" :style="{color:theme.chipYellowText}">{{ moraleIcon }} MORALE</div>
+            <div style="display:flex;align-items:center;gap:7px">
+              <div class="pixel-bar-track" style="width:66px;height:13px">
+                <div :class="['pixel-bar-fill', gs.morale<30?'bar-pulse-danger':gs.morale>70?'bar-pulse-good':'']"
+                     :style="{width:gs.morale+'%',background:gs.morale>60?theme.energyFull:gs.morale>30?theme.energyMid:theme.energyLow}"></div>
+              </div>
+              <span class="hud-stat-value" :style="{color:theme.chipYellowText}">{{ gs.morale }}%</span>
             </div>
-            {{ gs.morale }}%
           </div>
           <!-- Day -->
-          <div class="pixel-hud-chip" :style="{background:theme.chipBlue,color:theme.chipBlueText,borderColor:theme.chipBlue}">
-            📅 G{{ gs.day }}/30
+          <div class="hud-stat" :style="{background:theme.chipBlue,borderColor:theme.chipBlue}" title="Current day">
+            <div class="hud-stat-label" :style="{color:theme.chipBlueText}">📅 DAY</div>
+            <div class="hud-stat-value" :style="{color:theme.chipBlueText}">{{ gs.day }}/30</div>
           </div>
           <!-- Deadline -->
-          <div class="pixel-hud-chip" :class="project.deadline<=5?'blinkanim':''"
-            :style="project.deadline<=5?{background:theme.chipRed,color:'#f08080',borderColor:theme.chipRed}:{background:theme.chipBrown,color:'#c8a070',borderColor:theme.chipBrown}">
-            ⏱ {{ project.deadline }}G KALDI
-          </div>
-          <!-- Contingency Reserve -->
-          <div class="pixel-hud-chip" :style="{background:'#1a2840',color:'#80b0e0',borderColor:'#1a2840'}" title="Contingency Reserve: Acil risk ödemeleri için ayrılan yedek bütçe">
-            🛡 YEDEK ${{ gs.contingencyReserve.toLocaleString() }}
-          </div>
-          <!-- Synergy indicator -->
-          <div v-if="synergyBonus > 0" class="pixel-hud-chip hud-chip-synergy">
-            🤝 SİNERJİ +{{ synergyBonus }}
-          </div>
-          <!-- Crit chance indicator -->
-          <div v-if="critChance > 0" class="pixel-hud-chip hud-chip-crit blinkanim">
-            ⭐ KRIT %{{ critChance }}
+          <div class="hud-stat" :class="project.deadline<=5?'blinkanim':''"
+            :style="project.deadline<=5?{background:theme.chipRed,borderColor:theme.chipRed}:{background:theme.chipBrown,borderColor:theme.chipBrown}" title="Days left until deadline">
+            <div class="hud-stat-label" :style="{color:project.deadline<=5?'#f0a0a0':'#c8a070'}">⏱ DAYS LEFT</div>
+            <div class="hud-stat-value" :style="{color:project.deadline<=5?'#f08080':'#e0c0a0'}">{{ project.deadline }}</div>
           </div>
         </div>
+
         <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:6px;color:#7a6040">PROJECT: NEON</span>
-          <button @click="showKnowledgeBase = true" class="pixel-btn" style="font-size: 6px; padding: 2px 4px;">📖 BİLGİ</button>
-          <button @click="toggleTheme" class="pixel-btn" style="font-size: 6px; padding: 2px 4px;">🎨</button>
+          <button @click="showKnowledgeBase = true" class="pixel-btn" style="font-size:11px;padding:8px 10px">📖 GUIDE</button>
+          <button @click="toggleTheme" class="pixel-btn" style="font-size:11px;padding:8px 10px">🎨</button>
           <ThemePanel :theme="theme" @update="(k,v)=>theme[k]=v" />
         </div>
       </header>
@@ -135,31 +126,14 @@
       <main class="flex-1 min-h-0 overflow-hidden w-full px-2 pt-2"
             style="display:flex;flex-direction:column;gap:6px">
 
-        <!-- DASHBOARD -->
+        <!-- DASHBOARD (office view) -->
         <div class="w-full flex-1 overflow-hidden" style="display:flex;flex-direction:column;gap:6px">
           <ProjectDashboard
             :project="project" :morale="gs.morale" :day="gs.day"
             :milestones="milestones" :dailyProgress="lastDailyProgress"
             :dailyCost="lastDailyCost" :processing="isProcessing"
             :employees="employees" :theme="theme"
-            :synergyBonus="synergyBonus"
-            :lastCritSuccess="lastCritSuccess"
-            :lastBugEvent="lastBugEvent"
-            @nextDay="handleNextDay">
-            
-            <template #controls>
-              <div class="flex flex-col gap-2 w-full shrink-0">
-                <button @click="showTeamShop = true" class="pixel-btn-green w-full py-3 text-sm flex items-center justify-center gap-2">
-                  <span>💼</span> EKİP VE YÜKSELTME
-                </button>
-                <button @click="showRiskCenter = true" class="pixel-btn-red w-full py-3 text-sm flex items-center justify-center gap-2 relative">
-                  <span>⚠️</span> RİSK & OLAYLAR
-                  <span v-if="pendingRisks.length" class="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs border-2 border-white" style="animation: pulse 2s infinite">{{ pendingRisks.length }}</span>
-                </button>
-              </div>
-            </template>
-            
-          </ProjectDashboard>
+            @nextDay="handleNextDay" />
         </div>
       </main>
 
@@ -175,70 +149,25 @@
     </template>
 
     <!-- ═══ MODALS ═══ -->
-    <Transition name="fade"><RiskModal v-if="triggeredRisk" :risk="triggeredRisk" @close="closeModal" /></Transition>
-    <Transition name="fade"><DaySummary v-if="showDaySummary" :summary="daySummaryData" @close="closeDaySummary" /></Transition>
     <Transition name="fade">
-      <DayInsightModal v-if="showDayInsight && daySummaryData" :summary="daySummaryData" :day="daySummaryData?.day" @close="closeDayInsight" />
-    </Transition>
-    <Transition name="fade">
-      <DilemmaModal v-if="showDilemma && currentDilemma" :dilemma="currentDilemma"
-        @choose="handleDilemmaChoice" @close="showDilemma=false" />
+      <RiskClassifyModal v-if="triggeredRisk" :risk="triggeredRisk" :theme="theme"
+        @classify="handleClassify" @close="closeClassify" />
     </Transition>
     <Transition name="fade">
       <KnowledgeBase v-if="showKnowledgeBase" :theme="theme" @close="showKnowledgeBase=false" />
-    </Transition>
-    <Transition name="fade">
-      <TeamShopModal v-if="showTeamShop" 
-        :employees="employees" 
-        :upgrades="upgrades" 
-        :money="gs.money" 
-        :theme="theme" 
-        :getSynergyPartners="getSynergyPartners"
-        @hire="e=>{ hireEmployee(e); spawnParticles(100,400,10,'hire') }"
-        @fire="fireEmployee" 
-        @overtime="setOvertime" 
-        @buy="buyUpgrade"
-        @close="showTeamShop=false" />
-    </Transition>
-    <Transition name="fade">
-      <RiskCenterModal v-if="showRiskCenter" 
-        :pendingRisks="pendingRisks" 
-        :allRisks="activeRiskPool"
-        :eventLog="eventLog" 
-        :theme="theme" 
-        @action="handleRiskAction"
-        @close="showRiskCenter=false" />
-    </Transition>
-    <Transition name="fade">
-      <ProjectPlanningModal v-if="showPlanningModal" :theme="theme" @planComplete="handlePlanComplete" />
-    </Transition>
-    <Transition name="fade">
-      <ScenarioSelectModal v-if="showScenarioModal" :theme="theme"
-        @scenarioSelected="handleScenarioSelected"
-        @skip="showScenarioModal = false; showPlanningModal = true" />
     </Transition>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
-import EmployeePanel from './components/EmployeePanel.vue'
 import ProjectDashboard from './components/projectdashboard.vue'
-import RiskCard from './components/RiskCard.vue'
-import RiskModal from './components/RiskModal.vue'
-import EventLog from './components/EventLog.vue'
-import DaySummary from './components/DaySummary.vue'
-import UpgradeShop from './components/UpgradeShop.vue'
 import ThemePanel from './components/ThemePanel.vue'
-import DilemmaModal from './components/DilemmaModal.vue'
 import KnowledgeBase from './components/KnowledgeBase.vue'
 import PostMortemReport from './components/PostMortemReport.vue'
-import TeamShopModal from './components/TeamShopModal.vue'
-import RiskCenterModal from './components/RiskCenterModal.vue'
-import DayInsightModal from './components/DayInsightModal.vue'
-import ProjectPlanningModal from './components/ProjectPlanningModal.vue'
-import ScenarioSelectModal from './components/ScenarioSelectModal.vue'
+import RiskClassifyModal from './components/RiskClassifyModal.vue'
 import { newTheme } from './design.js'
+import { classifyRisk, evaluateResponse, TUSLER_ANIMALS, RESPONSE_LABELS } from './tusler.js'
 
 const originalTheme = {
   bgGrass:'#2d5a1b', hudBg:'#4a3018', chipGreen:'#2a6020', chipGreenText:'#a0e080',
@@ -266,255 +195,78 @@ function toggleTheme() {
   Object.assign(theme, isNewTheme.value ? newTheme : originalTheme)
 }
 
+// ─── TUNING ───
+const DAILY_COST = 1500          // sabit günlük ofis gideri
+const RISK_CHANCE = 0.4          // 3. günden sonra her gün risk çıkma olasılığı
+// Seçilen stratejiyi uygulamanın sabit maliyeti (PMBOK risk yanıtları)
+const ACTION_COST = { avoid: 5000, transfer: 3000, mitigate: 2000, accept: 0 }
+
 // ─── REFS & STATE ───
-const showTeamShop = ref(false), showRiskCenter = ref(false), showDayInsight = ref(false)
-const triggeredRisk = ref(null), showDaySummary = ref(false), daySummaryData = ref(null)
+const triggeredRisk = ref(null)
 const isProcessing = ref(false), lastDailyProgress = ref(0), lastDailyCost = ref(0)
 const gameOverReason = ref(''), bgCanvas = ref(null), particleCanvas = ref(null)
-const lastCritSuccess = ref(false), lastBugEvent = ref(false)
-const showPlanningModal = ref(false)
-const showDilemma = ref(false), currentDilemma = ref(null)
 const showKnowledgeBase = ref(false)
 const eventLog = ref([])
-const stats = reactive({ critSuccesses: 0, bugsFixed: 0, dilemmasResolved: 0, risksProactivelyHandled: 0 })
-
-// ─── SCENARIO & COMMUNICATION STATE ───
-const showScenarioModal = ref(false)
-const activeScenario = ref(null)
-const moraleDecayModifier = ref(0)
-const scopeCommModifier = ref(0)
-const dailyCommCost = ref(0)
-
-// ─── CASCADE RISK SYSTEM ───
-const RISK_CASCADE_MAP = {
-  server:   [{ targetType: 'api', probBonus: 10, days: 3 }, { targetType: 'bug', probBonus: 5, days: 3 }],
-  security: [{ targetType: 'scope', probBonus: 15, days: 3 }],
-  bug:      [{ targetType: 'conflict', probBonus: 10, days: 3 }],
-  conflict: [{ targetType: 'bug', probBonus: 5, days: 2 }, { targetType: 'conflict', probBonus: 8, days: 2 }],
-}
-const activeCascades = ref([])
-
-function effectiveProb(risk) {
-  const bonus = activeCascades.value
-    .filter(c => c.targetType === risk.type)
-    .reduce((s, c) => s + c.probBonus, 0)
-  return Math.min(95, risk.prob + bonus)
-}
+const usedRiskIds = ref([])
+const stats = reactive({ critSuccesses: 0, bugsFixed: 0, dilemmasResolved: 0, risksProactivelyHandled: 0, tuslerCorrect: 0, tuslerTotal: 0 })
 
 const fx = reactive({ shake:false, moneyFlash:false, glitch:false, criticalSuccess:false, bugEvent:false })
-const gs = reactive({ status:'menu', money:100000, day:1, morale:75, contingencyReserve:15000, riskScore:0, score:0 })
-const project = reactive({ deadline:30, progress:0, totalEffort:1800 })
+const gs = reactive({ status:'menu', money:100000, day:1, morale:75, score:0 })
+const project = reactive({ deadline:30, progress:0, totalEffort:3000 })
 const milestones = reactive([
   { pct:25, label:'+$10K', bonus:10000, reached:false, icon:'💰' },
   { pct:50, label:'+$15K', bonus:15000, reached:false, icon:'🎯' },
   { pct:75, label:'+$20K', bonus:20000, reached:false, icon:'🚀' },
 ])
 
-// ─── EMPLOYEES ───
-// hiringCost: işe alım ücreti (tek seferlik). dailyCost: günlük maaş.
+// ─── EMPLOYEES (fixed team — ofis görünümü için, ids 1-8 masalarda) ───
 const defaultEmployees = () => [
-  { id:1, name:'Mert',    role:'Senior Dev', icon:'🧑‍💻', dailyCost:2000, hiringCost:8000,  productivity:28, moralBonus:0, desc:'Bug -%20 | QA/Data ile sinerji', hired:false, energy:100, overtime:false },
-  { id:2, name:'Bob',     role:'DevOps',     icon:'🔧',   dailyCost:1500, hiringCost:6000,  productivity:16, moralBonus:0, desc:'Server -%25 | Güvenlik ile sinerji', hired:false, energy:100, overtime:false },
-  { id:3, name:'Charlie', role:'QA',         icon:'🔍',   dailyCost:1200, hiringCost:4800,  productivity:10, moralBonus:0, desc:'Bug -%15 | Senior ile sinerji', hired:false, energy:100, overtime:false },
-  { id:4, name:'Diana',   role:'PM',         icon:'📊',   dailyCost:1000, hiringCost:4000,  productivity:7,  moralBonus:8, desc:'+8 moral/gün | Tüm ekiple sinerji', hired:false, energy:100, overtime:false },
-  { id:5, name:'Eve',     role:'Güvenlik',   icon:'🔒',   dailyCost:1300, hiringCost:5200,  productivity:7,  moralBonus:0, desc:'Siber -%30 | DevOps ile sinerji', hired:false, energy:100, overtime:false },
-  { id:6, name:'Frank',   role:'Frontend',   icon:'🎨',   dailyCost:1100, hiringCost:4400,  productivity:18, moralBonus:5, desc:'+5 moral/gün | AI ile sinerji', hired:false, energy:100, overtime:false },
-  { id:7, name:'Grace',   role:'AI Müh.',    icon:'🤖',   dailyCost:1800, hiringCost:7200,  productivity:30, moralBonus:0, desc:'Süper verimli | Frontend ile sinerji', hired:false, energy:100, overtime:false },
-  { id:8, name:'Hank',    role:'Stajyer',    icon:'👶',   dailyCost:400,  hiringCost:1200,  productivity:4,  moralBonus:0, desc:'Ucuz ama riskli — Stajyer Hatası riski yüksek', hired:false, energy:100, overtime:false },
-  { id:9, name:'İpek',    role:'BA',         icon:'📝',   dailyCost:1400, hiringCost:5600,  productivity:10, moralBonus:3, desc:'Scope -%25 | PM ile sinerji', hired:false, energy:100, overtime:false },
-  { id:10,name:'Kemal',   role:'Data Eng.',  icon:'🗄️',   dailyCost:1600, hiringCost:6400,  productivity:20, moralBonus:0, desc:'Server -%20 | Senior ile sinerji', hired:false, energy:100, overtime:false },
+  { id:1, name:'Mert',    role:'Senior Dev', icon:'🧑‍💻', dailyCost:2000, productivity:28, hired:true,  energy:100, overtime:false },
+  { id:2, name:'Bob',     role:'DevOps',     icon:'🔧',   dailyCost:1500, productivity:16, hired:true,  energy:100, overtime:false },
+  { id:3, name:'Charlie', role:'QA',         icon:'🔍',   dailyCost:1200, productivity:10, hired:true,  energy:100, overtime:false },
+  { id:4, name:'Diana',   role:'PM',         icon:'📊',   dailyCost:1000, productivity:7,  hired:true,  energy:100, overtime:false },
+  { id:5, name:'Eve',     role:'Security',   icon:'🔒',   dailyCost:1300, productivity:7,  hired:true,  energy:100, overtime:false },
+  { id:6, name:'Frank',   role:'Frontend',   icon:'🎨',   dailyCost:1100, productivity:18, hired:true,  energy:100, overtime:false },
+  { id:7, name:'Grace',   role:'AI Eng.',    icon:'🤖',   dailyCost:1800, productivity:30, hired:true,  energy:100, overtime:false },
+  { id:8, name:'Hank',    role:'Intern',     icon:'👶',   dailyCost:400,  productivity:4,  hired:true,  energy:100, overtime:false },
 ]
 const employees = ref(defaultEmployees())
 
-// Sinerji çiftleri (id çiftleri)
-const SYNERGY_PAIRS = [[1,3],[2,5],[4,1],[4,2],[4,3],[4,5],[4,6],[4,7],[4,9],[4,10],[6,7],[9,4],[10,1]]
-
-function getSynergyPartners(empId) {
-  return SYNERGY_PAIRS
-    .filter(([a,b]) => (a===empId||b===empId))
-    .map(([a,b]) => a===empId ? b : a)
-    .filter(partnerId => employees.value.find(e=>e.id===partnerId)?.hired)
-}
-
-const synergyBonus = computed(() => {
-  let bonus = 0
-  SYNERGY_PAIRS.forEach(([a,b]) => {
-    const empA = employees.value.find(e=>e.id===a)
-    const empB = employees.value.find(e=>e.id===b)
-    if (empA?.hired && empB?.hired) bonus += 3
-  })
-  return bonus
-})
-
-// ─── UPGRADES ───
-const defaultUpgrades = () => [
-  { id:'cicd',   name:'CI/CD Pipeline',  icon:'⚙️', cost:5000,  bought:false, desc:'+10 ilerleme/gün' },
-  { id:'review', name:'Code Review',     icon:'👁️', cost:3000,  bought:false, desc:'Bug riski -%20' },
-  { id:'cloud',  name:'Cloud Scaling',   icon:'☁️', cost:4000,  bought:false, desc:'Server riski -%30' },
-  { id:'copilot',name:'AI Copilot',      icon:'🧠', cost:6000,  bought:false, desc:'Dev\'lere +15 üretim' },
-  { id:'coffee', name:'Espresso Mak.',   icon:'☕', cost:1500,  bought:false, desc:'+5 moral/gün' },
-  { id:'monitor',name:'APM Monitor',     icon:'📡', cost:3500,  bought:false, desc:'Risk olasılık bilgisi' },
-  { id:'ergonomic',name:'Ergonomik Masa',icon:'🪑', cost:2500,  bought:false, desc:'Enerji tüketimi -%30' },
-  { id:'standup', name:'Daily Standup',  icon:'📋', cost:1000,  bought:false, desc:'Her gün +5 moral bonus' },
-  { id:'riskplan',name:'Risk Planı Belgesi',icon:'🛡️',cost:2000,  bought:false, desc:'Proaktif aksiyonda $1k iade' },
-  { id:'wbs',    name:'WBS Oluştur',     icon:'🗺️', cost:1500,  bought:false, desc:'+10 ilerleme, Scope -%15' },
-  { id:'burndown',name:'Burndown Chart', icon:'📉', cost:2000,  bought:false, desc:'Risk olasılığı -%5/gün' },
-  { id:'stakeholder',name:'Paydaş İletişimi',icon:'📞',cost:1800, bought:false, desc:'Scope/Çatışma -%20' },
-]
-const upgrades = ref(defaultUpgrades())
-
-// ─── RISKS ───
+// ─── RISKS (dört Tusler hayvanı da temsil edilecek şekilde) ───
 const allRisksPool = [
-  { id:1, name:'Sunucu Çöküşü',      desc:'Veritabanı aşırı yükten çöküyor.',      prob:45, cost:15000, delay:3, level:'high',   type:'server',   status:'pending', icon:'🔥' },
-  { id:2, name:'API Limiti',         desc:'Dış servisler engelliyor.',              prob:60, cost:3000,  delay:1, level:'medium', type:'api',      status:'pending', icon:'⛔' },
-  { id:3, name:'Güvenlik Açığı',     desc:'Kritik zero-day açığı!',                prob:30, cost:20000, delay:2, level:'high',   type:'security', status:'pending', icon:'🔓' },
-  { id:4, name:'Kapsam Kayması',     desc:'Müşteri yeni şeyler istiyor.',          prob:55, cost:5000,  delay:4, level:'medium', type:'scope',    status:'pending', icon:'📈' },
-  { id:5, name:'Takım Çatışması',    desc:'Devler kavga ediyor!',                  prob:40, cost:0,     delay:0, level:'low',    type:'conflict', status:'pending', icon:'⚡', moralDamage:25 },
-  { id:6, name:'Kritik Bug',         desc:"Production'da kritik hata!",            prob:50, cost:8000,  delay:2, level:'high',   type:'bug',      status:'pending', icon:'🐛' },
-  { id:7, name:'3. Parti Çöktü',     desc:'Bağımlı servis offline.',               prob:35, cost:4000,  delay:1, level:'medium', type:'api',      status:'pending', icon:'🔌' },
-  { id:8, name:'Veri Kaybı',         desc:'Yedekleme başarısız!',                  prob:25, cost:25000, delay:3, level:'high',   type:'server',   status:'pending', icon:'💾' },
-  { id:9, name:'Performans',         desc:'Sistem çok yavaş.',                     prob:45, cost:6000,  delay:2, level:'medium', type:'bug',      status:'pending', icon:'🐢' },
-  { id:10,name:'Teknik Borç',        desc:'Eski kod sorun yaratıyor.',             prob:60, cost:7000,  delay:3, level:'medium', type:'bug',      status:'pending', icon:'📚' },
-  { id:11,name:'DDoS Saldırısı',     desc:'Kötü trafik geliyor!',                 prob:20, cost:18000, delay:2, level:'high',   type:'security', status:'pending', icon:'💀' },
-  { id:12,name:'Mevzuat',            desc:'KVKK uyumluluğu gerekli.',             prob:25, cost:10000, delay:2, level:'medium', type:'scope',    status:'pending', icon:'⚖️' },
-  { id:13,name:'Stajyer Hatası',     desc:"Hank prod'a push etti!",               prob:70, cost:3000,  delay:1, level:'low',    type:'bug',      status:'pending', icon:'😱' },
-  { id:14,name:'Lisans Sorunu',      desc:'Tedarikçi lisansı bitiyor.',            prob:30, cost:5000,  delay:1, level:'medium', type:'api',      status:'pending', icon:'📋' },
-  { id:15,name:'İK Riski',           desc:'Kıdemli dev ayrılabilir!',             prob:35, cost:0,     delay:0, level:'high',   type:'conflict', status:'pending', icon:'🚪', moralDamage:30 },
-  { id:16,name:'Bulut Maliyet Patlaması', desc:'Gereksiz çalışan instance\'lar!', prob:40, cost:12000, delay:0, level:'high',   type:'server',   status:'pending', icon:'💸' },
-  { id:17,name:'Microservice Kaskadı', desc:'Bir servis diğerlerini kilitliyor.',  prob:30, cost:16000, delay:3, level:'high',   type:'server',   status:'pending', icon:'⛓️' },
-  { id:18,name:'Legacy Entegrasyon', desc:'Eski kod ile entegre olamıyoruz.',      prob:50, cost:9000,  delay:2, level:'medium', type:'bug',      status:'pending', icon:'🏛️' },
-  { id:19,name:'Mobil Uyumluluk Krizi', desc:'Yeni UI mobilde patladı.',           prob:45, cost:6000,  delay:1, level:'medium', type:'bug',      status:'pending', icon:'📱' },
-  { id:20,name:'SaaS Fiyat Artışı',  desc:'Tedarikçi %30 zam yaptı.',              prob:35, cost:8000,  delay:0, level:'medium', type:'api',      status:'pending', icon:'🧾' },
-  { id:21,name:'Open Source Güvenlik',desc:'Kullanılan kütüphanede açık çıktı!',   prob:20, cost:22000, delay:3, level:'high',   type:'security', status:'pending', icon:'🕷️' },
-  { id:22,name:'CDN Çöküşü',         desc:'Statik dosyalar yüklenmiyor.',          prob:30, cost:5000,  delay:1, level:'medium', type:'api',      status:'pending', icon:'🌍' },
-  { id:23,name:'Paydaş Çatışması',   desc:'Yatırımcı projeden memnun değil.',      prob:40, cost:0,     delay:1, level:'medium', type:'conflict', status:'pending', icon:'👔', moralDamage:20 },
-  { id:24,name:'Yönetim Değişimi',   desc:'Sponsor şirketten ayrıldı.',            prob:20, cost:10000, delay:2, level:'high',   type:'conflict', status:'pending', icon:'🌪️', moralDamage:15 },
-  { id:25,name:'Audit / Denetim',    desc:'Lisanssız kod tespiti!',                prob:25, cost:15000, delay:2, level:'high',   type:'scope',    status:'pending', icon:'🕵️' },
-  { id:26,name:'Ekip Burn-out',      desc:'Takım tükendi, moral sıfır.',           prob:55, cost:0,     delay:2, level:'medium', type:'conflict', status:'pending', icon:'🧟', moralDamage:35 },
-  { id:27,name:'Sosyal Mühendislik', desc:'Phishing ile şifre çalındı.',           prob:30, cost:12000, delay:1, level:'high',   type:'security', status:'pending', icon:'🎣' },
-  { id:28,name:'Veri İhlali (KVKK)', desc:'Müşteri datası sızdı, dev ceza!',       prob:15, cost:30000, delay:4, level:'high',   type:'security', status:'pending', icon:'🚨' },
-]
-const activeRiskPool = ref([])
-
-// ─── DILEMMAS ───
-const allDilemmas = [
-  { id:1, icon:'📈', title:'KAPSAM KAYMASI (Scope Creep)', 
-    desc:"Müşteri sözleşmede olmayan ufak ama 'şık' bir özellik (Gold Plating) istiyor.",
-    pmbokTag: 'Kapsam Yönetimi → Değişiklik Kontrol Süreci (Change Control)',
-    pmContext: 'Kapsam Kayması (Scope Creep), proje başarısızlığının #1 sebebidir. Her ek istek resmi Change Request sürecinden geçmeli ve Baseline güncellenmeli.',
-    optA:{ text:'✅ Kabul Et  +20 Moral, -3G', pmLabel:'⚠ Scope Creep kabul → Baseline bozulur', effect:()=>{ updateScore(-500); updateMorale(20); project.deadline-=3; addLog('[PMBOK]: Müşteri mutlu ama proje takvimi sıkıştı! (Scope Creep)','warning') } },
-    optB:{ text:'🚫 Reddet (Change Request İste)', pmLabel:'✅ Change Control → Baseline korunur', effect:()=>{ updateScore(1000); addLog('[PMBOK]: Ek kapsam talebi reddedildi, temel çizgi (baseline) korundu.','success') } } },
-  { id:2, icon:'💼', title:'KAYNAK RİSKİ (Turnover)', 
-    desc:'Kıdemli bir geliştirici rakip firmadan %30 zamlı teklif aldı.',
-    pmbokTag: 'İnsan Kaynakları Yönetimi → Kaynak Tutma (Retention)',
-    pmContext: 'Kilit kaynak kaybı (Turnover) hem kısa vadede verim hem uzun vadede bilgi (Knowledge Transfer) kaybına neden olur. Risk matrisi: Yüksek Etki / Orta Olasılık.',
-    optA:{ text:'💰 Zam Ver  -$8K', pmLabel:'✅ Risk Mitigate → Kaynağı tut', effect:()=>{ updateScore(800); updateMoney(-8000); addLog("[PMBOK]: Bütçeden feragat edilerek kilit kaynak elde tutuldu.",'success') } },
-    optB:{ text:'🚪 Reddet  -20 Moral', pmLabel:'⚠ Risk Accept → Moral ve hız düşer', effect:()=>{ updateScore(-500); updateMorale(-20); addLog("[PMBOK]: Geliştirici ayrıldı, takım morali ve hız düştü.",'warning') } } },
-  { id:3, icon:'⚡', title:'HIZLANDIRMA (Crashing)', 
-    desc:'Teslimatı hızlandırmak için ekibe fazla mesai yaptırmalı mıyız? (Schedule Compression)',
-    pmbokTag: 'Zaman Yönetimi → Crashing (Schedule Compression Tekniği)',
-    pmContext: 'Crashing: Takvimi sıkıştırmak için maliyet eklemek. Fast Tracking ise görevleri paralel yürütmektir. Her ikisi de risk taşır. Crashing → Maliyet artar, moral düşer.',
-    optA:{ text:'⏰ Mesaiye Kal +$15K / -20M', pmLabel:'⚡ Crashing → Süre kısalır, maliyet+burnout', effect:()=>{ updateScore(500); updateMoney(15000); updateMorale(-20); project.deadline-=1; addLog('[PMBOK]: Crashing uygulandı: Bütçe eklendi ama ekip yoruldu.','warning') } },
-    optB:{ text:'🛑 Hayır (Statüko Koru)', pmLabel:'🛡 Risk Accept → Normal tempo devam', effect:()=>{ updateScore(200); addLog('[PMBOK]: Normal tempoda devam ediliyor.','info') } } },
-  { id:4, icon:'🔍', title:'KALİTE GÜVENCESİ (QA)', 
-    desc:'Bir alt yüklenicinin kodunda potansiyel hatalar (Defects) var.',
-    pmbokTag: 'Kalite Yönetimi → Prevention vs Inspection maliyeti',
-    pmContext: 'PMBOK ilkesi: Hataları önlemek (Prevention), tespit etmekten (Inspection) ve düzeltmekten (Correction) her zaman daha ucuzdur. Teknik borç faiz gibi birikir.',
-    optA:{ text:'🛡️ Testleri Sıkılaştır -$5K', pmLabel:'✅ Prevention maliyet → Bug riski azalır', effect:()=>{ updateScore(1000); updateMoney(-5000); activeRiskPool.value.forEach(r=>{ if(r.type==='bug') r.prob=Math.max(5,r.prob-15) }); addLog('[PMBOK]: Kalite Kontrol (Prevention) maliyeti arttı ama Bug riski düştü.','success') } },
-    optB:{ text:'🤫 Kabul Et (Risk Primi Artar)', pmLabel:'⚠ Teknik Borç → Bug olasılığı +%20', effect:()=>{ updateScore(-800); activeRiskPool.value.forEach(r=>{ if(r.type==='bug') r.prob=Math.min(95,r.prob+20) }); addLog('[PMBOK]: Teknik borç kabul edildi, son kullanıcı hata riski yükseldi!','danger') } } },
-  { id:5, icon:'📜', title:'SÖZLEŞME RİSKİ',    
-    desc:'Tedarikçi firma lisans yenilemesi için sözleşme dışı ek ücret talep ediyor.',
-    pmbokTag: 'Tedarik Yönetimi → Sözleşme Türleri ve Risk Paylaşımı',
-    pmContext: 'Sabit fiyatlı (Fixed Price) sözleşmelerde tedarikçi riski taşır. Maliyet artı (Cost-Plus) sözleşmelerde ise alıcı taşır. Bu senaryo: Tedarikçi sözleşme dışı ücret istiyor.',
-    optA:{ text:'⚖️ İtiraz Et (Riskli)', pmLabel:'🎲 %50 şans → Başarılı veya $10k kayıp', effect:()=>{ updateScore(300); if(Math.random()<0.5){ addLog('[PMBOK]: İtiraz başarılı, sözleşme korundu.','success') } else { updateMoney(-10000); addLog('[PMBOK]: İtiraz başarısız, hukuki masraflar bütçeyi deldi!','danger') } } },
-    optB:{ text:'💸 Öde ve Geç -$4K', pmLabel:'✅ Contingency Reserve kullan → Devam et', effect:()=>{ updateScore(500); updateMoney(-4000); addLog('[PMBOK]: Risk kabul edildi ve Contingency Reserve (Yedek Akçe) kullanıldı.','warning') } } },
-  { id:6, icon:'👔', title:'PAYDAŞ YÖNETİMİ', 
-    desc:'Bir üst yönetici projeyi iptal etmek veya dondurmak istiyor.',
-    pmbokTag: 'Paydaş Yönetimi → Power/Interest Grid',
-    pmContext: 'Yüksek güçlü / yüksek ilgili paydaşları yakından yönetmek (Manage Closely) gerekir. Sponsoru ikna etmek projeyi kurtarabilir.',
-    optA:{ text:'📊 Sunum Yap (-2G, %60 Şans)', pmLabel:'🎲 İkna → Kurtar veya İptal', effect:()=>{ updateScore(800); project.deadline-=2; if(Math.random()<0.6){ addLog('[PMBOK]: Sponsor ikna edildi, proje güvende.','success') } else { updateMorale(-30); addLog('[PMBOK]: Sponsor ikna edilemedi, büyük moral kaybı!','danger') } } },
-    optB:{ text:'🛡️ Başka Sponsora İlet -$5K', pmLabel:'✅ Transfer → Hasarı önle', effect:()=>{ updateScore(500); updateMoney(-5000); addLog('[PMBOK]: Risk başka bir yöneticiye escalate edilerek bertaraf edildi.','info') } } },
-  { id:7, icon:'🏃', title:'FAST TRACKING (Paralel Çalışma)', 
-    desc:'İki bağımlı modülü aynı anda geliştirmeye başlayarak zaman kazanabilirsin.',
-    pmbokTag: 'Zaman Yönetimi → Fast Tracking',
-    pmContext: 'Fast tracking (Paralel çalışma), sırayla (sequential) yapılması gereken işleri aynı anda yapmaktır. Zaman kazandırır ama yeniden çalışma (rework) ve bug riskini artırır.',
-    optA:{ text:'⏩ Fast Track (+30 Üretim)', pmLabel:'⚠ Hız artar → Bug riski +%30', effect:()=>{ updateScore(500); lastDailyProgress.value+=30; project.progress+=30; activeRiskPool.value.forEach(r=>{ if(r.type==='bug') r.prob=Math.min(95,r.prob+30) }); addLog('[PMBOK]: Fast Tracking uygulandı. İlerleme arttı ama hata riski de fırladı!','warning') } },
-    optB:{ text:'🛑 Sıralı Devam Et', pmLabel:'✅ Güvenli → Risk yok', effect:()=>{ updateScore(200); addLog('[PMBOK]: Fast Tracking reddedildi, güvenli sıradan gidiliyor.','info') } } },
-  { id:8, icon:'💎', title:'KALİTE vs HIZLI TESLİMAT', 
-    desc:'Müşteri "yeter çalışsın" diyor. MVP mi gönderelim, kaliteye mi odaklanalım?',
-    pmbokTag: 'Kalite Yönetimi → Fitness for Use',
-    pmContext: 'MVP (Minimum Viable Product) hızlı değer teslimi sağlar ancak kaliteden ödün verilirse Teknik Borç birikir.',
-    optA:{ text:'📦 MVP Gönder (+30 İlerleme)', pmLabel:'⚠ Hız → Bug riski +%20', effect:()=>{ updateScore(300); project.progress+=30; activeRiskPool.value.forEach(r=>{ if(r.type==='bug') r.prob=Math.min(95,r.prob+20) }); addLog('[PMBOK]: MVP teslim edildi, hızlı ilerleme kaydedildi (Teknik Borç yükseldi).','warning') } },
-    optB:{ text:'🛡️ Kaliteli Gönder', pmLabel:'✅ Kalite Kontrol → Normal tempo', effect:()=>{ updateScore(800); addLog('[PMBOK]: Kaliteden ödün verilmedi, normal tempo.','info') } } },
-  { id:9, icon:'🛒', title:'MAKE or BUY (Outsource Kararı)', 
-    desc:'Kritik bir modülü sıfırdan mı yazalım, hazır bir çözüm mü satın alalım?',
-    pmbokTag: 'Tedarik Yönetimi → Make or Buy Analysis',
-    pmContext: 'Buy (Satın Al) kararı geliştirme riskini azaltır ve zaman kazandırır ancak tedarikçi (vendor) bağımlılığı riski yaratır.',
-    optA:{ text:'🛍️ Hazır Al (-$6K, +20 İlerl.)', pmLabel:'⚠ Zaman kazan → API Riski +%20', effect:()=>{ updateScore(500); updateMoney(-6000); project.progress+=20; activeRiskPool.value.forEach(r=>{ if(r.type==='api') r.prob=Math.min(95,r.prob+20) }); addLog('[PMBOK]: Modül outsource edildi. İlerleme arttı ama bağımlılık riski yükseldi.','warning') } },
-    optB:{ text:'💻 İçeride Yaz', pmLabel:'✅ Tam Kontrol → Risk yok', effect:()=>{ updateScore(800); addLog('[PMBOK]: İçeride geliştirme kararı alındı (Tam kontrol).','info') } } },
-  { id:10, icon:'🎲', title:'RİSK İŞTAHI (Risk Appetite)', 
-    desc:'Rakip firma benzer proje açıkladı. Agresif mi oynayalım?',
-    pmbokTag: 'Risk Yönetimi → Risk Appetite & Tolerance',
-    pmContext: 'Organizasyonun Risk İştahı yüksekse, fırsatları (opportunities) değerlendirmek için tehditleri (threats) göze alabilir.',
-    optA:{ text:'🔥 Hızlan (-2G, +$20K)', pmLabel:'⚠ Agresif → Tüm riskler +%10', effect:()=>{ updateScore(500); project.deadline-=2; updateMoney(20000); activeRiskPool.value.forEach(r=>{ r.prob=Math.min(95,r.prob+10) }); addLog('[PMBOK]: Agresif strateji! Bütçe eklendi ama proje takvimi sıkıştı ve riskler arttı!','warning') } },
-    optB:{ text:'🧘 Stabil Kal', pmLabel:'✅ Mevcut tempo korunur', effect:()=>{ updateScore(500); addLog('[PMBOK]: Risk toleransı aşılamadı, stabil tempo korunuyor.','info') } } },
-  { id:11, icon:'🚑', title:'KONTİNJAN PLAN AKTİVASYONU', 
-    desc:'Kritik bir sistem çöktü. Contingency Plan devreye girsin mi?',
-    pmbokTag: 'Risk Yönetimi → Contingency Plan Implementation',
-    pmContext: 'Contingency Plan, bir risk tetiklendiğinde uygulanacak B Planıdır. Contingency Reserve (Yedek Akçe) bu tür durumlar için ayrılır.',
-    optA:{ text:'🛡️ Reserve Kullan (-$8K)', pmLabel:'✅ Plan devrede → Hasar önlendi', effect:()=>{ updateScore(1000); const cost = Math.min(8000, gs.contingencyReserve); gs.contingencyReserve -= cost; const remain = 8000-cost; if(remain>0) updateMoney(-remain); addLog('[PMBOK]: Contingency Plan aktive edildi, hasar yedek akçeden karşılandı.','success') } },
-    optB:{ text:'🔧 Kurtarmaya Çalış', pmLabel:'🎲 %50 şans → Kurtul veya $15k hasar', effect:()=>{ updateScore(-500); if(Math.random()<0.5){ addLog('[PMBOK]: Sistem mucizevi şekilde kurtarıldı!','success') } else { updateMoney(-15000); addLog('[PMBOK]: Kurtarma başarısız, ağır hasar alındı!','danger') } } } },
-  { id:12, icon:'📝', title:'LESSONS LEARNED TOPLANTISI', 
-    desc:'Ekip yorgun ama PM bir Retrospective yapılmasını öneriyor.',
-    pmbokTag: 'Entegrasyon Yönetimi → Lessons Learned Register',
-    pmContext: 'Lessons Learned (Alınan Dersler) süreç iyileştirmenin temelidir. Kısa vadeli zaman kaybı, uzun vadeli kalite artışı sağlar.',
-    optA:{ text:'🗣️ Toplantı Yap (-1G)', pmLabel:'✅ Sürekli İyileşme → Moral+15, Bug -%10', effect:()=>{ updateScore(1200); project.deadline-=1; updateMorale(15); activeRiskPool.value.forEach(r=>{ if(r.type==='bug') r.prob=Math.max(5,r.prob-10) }); addLog('[PMBOK]: Lessons Learned yapıldı. Hata oranları düştü, moral yükseldi.','success') } },
-    optB:{ text:'⏭️ Atla (Zaman kazan)', pmLabel:'⚠ Status Quo', effect:()=>{ updateScore(-800); addLog('[PMBOK]: Retrospective atlandı, ders çıkarılmadı.','info') } } },
-]
-
-// ─── POSITIVE / NEGATIVE EVENTS ───
-const positiveEvents = [
-  {msg:'☕ Yeni kahve makinesi! Moral arttı.',   moralDelta:12, moneyDelta:0,    progressDelta:0},
-  {msg:'🎉 Takım öğle yemeğine çıktı!',         moralDelta:15, moneyDelta:0,    progressDelta:8},
-  {msg:'🚀 Yeni kütüphane işi hızlandırdı!',    moralDelta:5,  moneyDelta:0,    progressDelta:25},
-  {msg:'💰 Müşteri ek bütçe onayladı!',          moralDelta:10, moneyDelta:8000, progressDelta:0},
-  {msg:'🌟 Mert gece kritik sorunu çözdü!',     moralDelta:8,  moneyDelta:0,    progressDelta:35},
-  {msg:'📣 Blog yazısı viral oldu!',             moralDelta:22, moneyDelta:0,    progressDelta:0},
-  {msg:'🎵 Ofise müzik sistemi kuruldu!',        moralDelta:18, moneyDelta:0,    progressDelta:0},
-  {msg:'🏆 Ekip ödül aldı! Prestij yükseldi.',  moralDelta:20, moneyDelta:5000, progressDelta:0},
-  {msg:'🎯 Sprint hedefi erken tamamlandı!',    moralDelta:8,  moneyDelta:0,    progressDelta:30},
-  {msg:'📊 PM dashboard toplantısı verimli!',   moralDelta:12, moneyDelta:0,    progressDelta:0},
-  {msg:'🤝 Müşteri gereksinim netleştirdi.',     moralDelta:0,  moneyDelta:0,    progressDelta:20},
-  {msg:'🧪 Testler kritik bug yakaladı!',        moralDelta:10, moneyDelta:3000, progressDelta:0},
-  {msg:'🌐 Açık kaynak katkısı hızlandırdı!',    moralDelta:0,  moneyDelta:0,    progressDelta:40},
-  {msg:'📈 Yatırımcı milestone onayladı.',       moralDelta:0,  moneyDelta:12000,progressDelta:0},
-  {msg:'🏅 Ekip üyesi PMP aldı!',                moralDelta:20, moneyDelta:0,    progressDelta:15},
-]
-const negativeEvents = [
-  {msg:'🤧 Kritik dev hastalandı!',              moralDelta:-5,  moneyDelta:0,     progressDelta:-20},
-  {msg:'⚡ Elektrik kesintisi! 2 saat kayıp.',   moralDelta:-10, moneyDelta:0,     progressDelta:-18},
-  {msg:'📞 Müşteri sürpriz toplantı istedi!',    moralDelta:-5,  moneyDelta:0,     progressDelta:-28},
-  {msg:'☕ Kahve makinesi bozuldu!',             moralDelta:-15, moneyDelta:0,     progressDelta:0},
-  {msg:"🐛 Birisi prod'a test kodu push etti!", moralDelta:-12, moneyDelta:-2000, progressDelta:-10},
-  {msg:'💤 Fazla mesai verim düşürdü.',          moralDelta:-10, moneyDelta:0,     progressDelta:-12},
-  {msg:'🌧️ İstanbul\'da fırtına, ulaşım yok.', moralDelta:-8,  moneyDelta:0,     progressDelta:-15},
-  {msg:'📉 Enflasyon API maliyetini artırdı.',   moralDelta:0,   moneyDelta:-4000, progressDelta:0},
-  {msg:'🔄 Gereksinim belgesi çelişkili!',       moralDelta:-8,  moneyDelta:0,     progressDelta:-20},
-  {msg:'🧹 Teknik borç refactor zorunlu!',       moralDelta:0,   moneyDelta:0,     progressDelta:-25},
-  {msg:'😷 Ofiste grip salgını, 2 kişi yok.',    moralDelta:-20, moneyDelta:0,     progressDelta:-30},
-  {msg:'📋 Eksik dokümantasyon yavaşlattı.',     moralDelta:0,   moneyDelta:0,     progressDelta:-15},
-  {msg:'🔒 SSL sertifikası süresi doldu.',       moralDelta:0,   moneyDelta:-2000, progressDelta:-10},
-  {msg:'⚖️ Rakip firma patent ihlali iddiası!', moralDelta:-5,  moneyDelta:-8000, progressDelta:0},
+  { id:1, name:'Server Crash',         desc:'The database is overloading and going down.', prob:45, cost:15000, delay:3, level:'high',   type:'server',   icon:'🔥' },
+  { id:2, name:'API Rate Limit',       desc:'External services are blocking us.',          prob:60, cost:3000,  delay:1, level:'medium', type:'api',      icon:'⛔' },
+  { id:3, name:'Security Hole',        desc:'A critical zero-day vulnerability!',          prob:30, cost:20000, delay:2, level:'high',   type:'security', icon:'🔓' },
+  { id:4, name:'Scope Creep',          desc:'The client keeps asking for new things.',     prob:55, cost:5000,  delay:4, level:'medium', type:'scope',    icon:'📈' },
+  { id:5, name:'Team Conflict',        desc:'The devs are fighting!',                      prob:40, cost:0,     delay:0, level:'low',    type:'conflict', icon:'⚡', moralDamage:25 },
+  { id:6, name:'Critical Bug',         desc:'A critical error in production!',             prob:50, cost:8000,  delay:2, level:'high',   type:'bug',      icon:'🐛' },
+  { id:7, name:'Third Party Down',     desc:'A dependent service is offline.',             prob:35, cost:4000,  delay:1, level:'medium', type:'api',      icon:'🔌' },
+  { id:8, name:'Data Loss',            desc:'The backup failed!',                          prob:25, cost:25000, delay:3, level:'high',   type:'server',   icon:'💾' },
+  { id:9, name:'Performance',          desc:'The system is very slow.',                    prob:45, cost:6000,  delay:2, level:'medium', type:'bug',      icon:'🐢' },
+  { id:10,name:'Technical Debt',       desc:'Old code is causing problems.',               prob:60, cost:7000,  delay:3, level:'medium', type:'bug',      icon:'📚' },
+  { id:11,name:'DDoS Attack',          desc:'Malicious traffic is incoming!',              prob:20, cost:18000, delay:2, level:'high',   type:'security', icon:'💀' },
+  { id:12,name:'Regulation',           desc:'GDPR compliance is required.',                prob:25, cost:10000, delay:2, level:'medium', type:'scope',    icon:'⚖️' },
+  { id:13,name:'Intern Mistake',       desc:'Hank pushed to prod!',                        prob:70, cost:3000,  delay:1, level:'low',    type:'bug',      icon:'😱' },
+  { id:14,name:'License Issue',        desc:"A vendor's license is expiring.",             prob:30, cost:5000,  delay:1, level:'medium', type:'api',      icon:'📋' },
+  { id:15,name:'HR Risk',              desc:'A senior dev might leave!',                   prob:35, cost:0,     delay:0, level:'high',   type:'conflict', icon:'🚪', moralDamage:30 },
+  { id:16,name:'Cloud Cost Blowup',    desc:'Needless instances running everywhere!',      prob:40, cost:12000, delay:0, level:'high',   type:'server',   icon:'💸' },
+  { id:17,name:'Microservice Cascade', desc:'One service is locking up the others.',       prob:30, cost:16000, delay:3, level:'high',   type:'server',   icon:'⛓️' },
+  { id:18,name:'Legacy Integration',   desc:'We cannot integrate with old code.',          prob:50, cost:9000,  delay:2, level:'medium', type:'bug',      icon:'🏛️' },
+  { id:19,name:'Mobile Compat Crisis', desc:'The new UI broke on mobile.',                 prob:45, cost:6000,  delay:1, level:'medium', type:'bug',      icon:'📱' },
+  { id:20,name:'SaaS Price Hike',      desc:'A vendor raised prices by 30%.',              prob:35, cost:8000,  delay:0, level:'medium', type:'api',      icon:'🧾' },
+  { id:21,name:'Open Source Security', desc:'A library we use has a vulnerability!',        prob:20, cost:22000, delay:3, level:'high',   type:'security', icon:'🕷️' },
+  { id:22,name:'CDN Outage',           desc:'Static files are not loading.',               prob:30, cost:5000,  delay:1, level:'medium', type:'api',      icon:'🌍' },
+  { id:23,name:'Stakeholder Conflict', desc:'The investor is unhappy with the project.',   prob:40, cost:0,     delay:1, level:'medium', type:'conflict', icon:'👔', moralDamage:20 },
+  { id:24,name:'Management Change',    desc:'The sponsor left the company.',               prob:20, cost:10000, delay:2, level:'high',   type:'conflict', icon:'🌪️', moralDamage:15 },
+  { id:25,name:'Audit / Review',       desc:'Unlicensed code was found!',                  prob:25, cost:15000, delay:2, level:'high',   type:'scope',    icon:'🕵️' },
+  { id:26,name:'Team Burn-out',        desc:'The team is exhausted, morale at zero.',      prob:55, cost:0,     delay:2, level:'medium', type:'conflict', icon:'🧟', moralDamage:35 },
+  { id:27,name:'Social Engineering',   desc:'A password was stolen via phishing.',         prob:30, cost:12000, delay:1, level:'high',   type:'security', icon:'🎣' },
+  { id:28,name:'Data Breach (GDPR)',   desc:'Customer data leaked, huge fine!',            prob:15, cost:30000, delay:4, level:'high',   type:'security', icon:'🚨' },
 ]
 
 // ─── COMPUTED ───
-const pendingRisks   = computed(() => activeRiskPool.value.filter(r=>r.status==='pending'))
-const activeRisks    = computed(() => activeRiskPool.value.filter(r=>r.status==='active'))
-const completedPct   = computed(() => Math.floor(project.progress/project.totalEffort*100))
-const victoryScore   = computed(() => Math.floor(gs.money/100+project.deadline*500+gs.morale*100+stats.critSuccesses*1000))
-const critChance     = computed(() => gs.morale >= 70 ? 15 : gs.morale >= 55 ? 5 : 0)
-const bugChance      = computed(() => gs.morale < 40 ? 20 : gs.morale < 55 ? 8 : 0)
-const moraleIcon     = computed(() => gs.morale > 70 ? '🔥' : gs.morale > 50 ? '😊' : gs.morale > 30 ? '😐' : '😰')
+const completedPct = computed(() => Math.floor(project.progress/project.totalEffort*100))
+const moraleIcon   = computed(() => gs.morale > 70 ? '🔥' : gs.morale > 50 ? '😊' : gs.morale > 30 ? '😐' : '😰')
 
 // Danger level drives vignette + color grading
 const dangerLevel = computed(() => {
@@ -536,7 +288,6 @@ const vignetteStyle = computed(() => ({
 
 const mainFilter = computed(() => {
   if (fx.criticalSuccess) return 'brightness(1.2) saturate(1.8) hue-rotate(-15deg)'
-  if (fx.bugEvent)        return 'saturate(0.5) brightness(0.85) hue-rotate(180deg)'
   if (dangerLevel.value > 0.7) return 'saturate(1.35) hue-rotate(6deg)'
   if (dangerLevel.value > 0.4) return 'saturate(1.15)'
   return 'none'
@@ -544,13 +295,12 @@ const mainFilter = computed(() => {
 
 const tickerText = computed(() => {
   const messages = [
-    'Küresel yapay zeka pazarı %340 büyüdü...',
-    'Rakip şirket yeni ürün duyurdu...',
-    'Bulut maliyetleri artmaya devam ediyor...',
-    'Bir junior prod\'a yanlış push etti...',
-    `Proje %${completedPct.value} tamamlandı, ${project.deadline} gün kaldı...`,
-    `Ekip morali ${gs.morale > 60 ? 'yüksek! 🔥' : gs.morale > 35 ? 'normal 😊' : 'kritik düşüklükte! 😰'}`,
-    `Bütçe: $${gs.money.toLocaleString()} — ${gs.money > 50000 ? 'Güvende 💰' : 'Dikkatli ol!'}`,
+    'Global AI market grew 340%...',
+    'A rival company announced a new product...',
+    'Cloud costs keep rising...',
+    `Project ${completedPct.value}% complete, ${project.deadline} days left...`,
+    `Team morale is ${gs.morale > 60 ? 'high! 🔥' : gs.morale > 35 ? 'normal 😊' : 'critically low! 😰'}`,
+    `Budget: $${gs.money.toLocaleString()} — ${gs.money > 50000 ? 'Safe 💰' : 'Be careful!'}`,
   ]
   return messages.join('   ·   ')
 })
@@ -628,434 +378,133 @@ function checkMilestones() {
     if (!m.reached && p >= m.pct) {
       m.reached = true
       updateMoney(m.bonus)
-      addLog(`🎯 %${m.pct} kilometre taşı! ${m.label}`, 'milestone')
+      addLog(`🎯 ${m.pct}% milestone reached! ${m.label}`, 'milestone')
       spawnParticles(window.innerWidth/2, window.innerHeight/2, 20, 'crit')
     }
   }
 }
 
 function checkGameEnd() {
-  if (gs.money <= 0)                          { gameOverReason.value='Bütçe tükendi!';        gs.status='gameover'; return true }
-  if (project.deadline <= 0)                  { gameOverReason.value='Süre doldu!';            gs.status='gameover'; return true }
-  if (gs.morale <= 0)                         { gameOverReason.value='Ekip istifa etti!';      gs.status='gameover'; return true }
+  if (gs.money <= 0)                          { gameOverReason.value='Out of budget!';   gs.status='gameover'; return true }
+  if (project.deadline <= 0)                  { gameOverReason.value="Time's up!";       gs.status='gameover'; return true }
+  if (gs.morale <= 0)                         { gameOverReason.value='The team quit!';   gs.status='gameover'; return true }
   if (project.progress >= project.totalEffort) {
     gs.status = 'victory'
     const finalBonus = Math.floor(gs.money / 100) + (project.deadline * 100) + (gs.morale * 10)
     updateScore(finalBonus)
-    // SC-03: extra win condition — $30K remaining AND morale > 70
-    if (activeScenario.value === 'SC-03' && (gs.money < 30000 || gs.morale <= 70)) {
-      gs.status = 'gameover'
-      gameOverReason.value = 'SC-03: Bütçe ($30K+) veya moral (%70+) hedefi tutturulamadı!'
-    }
     return true
   }
   return false
 }
 
-// ─── PLAYER ACTIONS ───
-function hireEmployee(id) {
-  const e = employees.value.find(x=>x.id===id)
-  if (!e || e.hired || gs.money < e.hiringCost) return
-  e.hired = true; updateMoney(-e.hiringCost)
-  addLog(`👤 ${e.name} (${e.role}) işe alındı — İşe alım ücreti: $${e.hiringCost.toLocaleString()}`, 'hire')
-  if (id === 8) {
-    const r = allRisksPool.find(r=>r.id===13)
-    if (r && !activeRiskPool.value.find(x=>x.id===13)) activeRiskPool.value.push(JSON.parse(JSON.stringify(r)))
-  }
-}
-
-function fireEmployee(id) {
-  const e = employees.value.find(x=>x.id===id)
-  if (!e || !e.hired) return
-  e.hired = false; e.energy = 100; e.overtime = false
-  updateMorale(-12); addLog(`❌ ${e.name} işten çıkarıldı`, 'warning')
-}
-
-function setOvertime(id) {
-  const e = employees.value.find(x=>x.id===id)
-  if (!e || !e.hired) return
-  e.overtime = !e.overtime
-  addLog(`⏰ ${e.name} fazla mesai ${e.overtime?'açıldı':'kapatıldı'}`, 'info')
-}
-
-function buyUpgrade(uid) {
-  const u = upgrades.value.find(x=>x.id===uid)
-  if (!u || u.bought || gs.money < u.cost) return
-  u.bought = true; updateMoney(-u.cost)
-  addLog(`⚙️ Yükseltme: ${u.name}`, 'upgrade')
-  if (uid==='cloud')  activeRiskPool.value.forEach(r=>{ if(r.type==='server') r.prob=Math.max(5,r.prob-30) })
-  if (uid==='review') activeRiskPool.value.forEach(r=>{ if(r.type==='bug') r.prob=Math.max(5,r.prob-20) })
-}
-
-function handleRiskAction(riskId, actionType) {
-  const risk = activeRiskPool.value.find(r=>r.id===riskId)
+// ─── CLASSIFY A RISK (core mechanic) ───
+// Oyuncu bir hayvan seçer; o hayvanın ideal yanıtı, riskin gerçek hayvanına
+// göre değerlendirilir. İsabet → strateji ucuza biter, hasar yok. Hata → seçilen
+// stratejinin maliyeti + artakalan hasar bütçe/moral/takvimden düşer.
+function handleClassify(guessKey) {
+  const risk = triggeredRisk.value
   if (!risk) return
+  const trueAnimal = classifyRisk(risk)
+  const response = TUSLER_ANIMALS[guessKey].idealResponse
+  const { verdict, scoreDelta, lesson } = evaluateResponse(trueAnimal.key, response)
+
+  stats.tuslerTotal++
   stats.risksProactivelyHandled++
-  const preEmv = Math.round((risk.prob / 100) * (risk.cost || 0))
-  const a = {
-    mitigate: () => {
-      updateScore(300); updateMoney(-2000)
-      risk.prob = Math.floor(risk.prob / 2); risk.status = 'active'
-      addLog(`🛡️ [PM NOTU - Mitigate]: "${risk.name}" olasılığı yarıya indirildi (-$2k).`, 'warning')
-      const postEmv = Math.round((risk.prob / 100) * (risk.cost || 0))
-      const saved = preEmv - postEmv
-      addLog(`📘 Mitigate: $2K ile EMV $${preEmv.toLocaleString()}→$${postEmv.toLocaleString()}'e düştü. Beklenen tasarruf: $${saved.toLocaleString()}.`, 'pmbok')
-      if (activeScenario.value === 'SC-03' && preEmv > 2000) updateScore(700)
-    },
-    avoid: () => {
-      updateScore(500); updateMoney(-5000); risk.status = 'resolved'
-      addLog(`🛑 [PM NOTU - Avoid]: "${risk.name}" tamamen önlendi (-$5k).`, 'success')
-      const rational = preEmv > 5000 ? 'Rasyonel: EMV > $5K, maliyet karşılanıyor.' : 'Dikkat: EMV < $5K — Mitigate daha ekonomik olabilirdi.'
-      addLog(`📘 Avoid: Risk tamamen ortadan kalktı. Residual risk: $0. ${rational}`, 'pmbok')
-      if (activeScenario.value === 'SC-03' && preEmv > 5000) updateScore(500)
-    },
-    transfer: () => {
-      updateScore(400); updateMoney(-3000); risk.cost = 0; risk.moralDamage = 0; risk.status = 'active'
-      addLog(`📄 [PM NOTU - Transfer]: "${risk.name}" aktarıldı (-$3k).`, 'info')
-      addLog(`📘 Transfer: Finansal riski devretti. Tetiklenirse $0 ödersiniz. (EMV: $${preEmv.toLocaleString()})`, 'pmbok')
-    },
-    accept: () => {
-      updateScore(100); risk.status = 'active'; risk._wasAccepted = true
-      addLog(`✅ [PM NOTU - Accept]: "${risk.name}" kabul edildi. Proaktif bütçe harcanmadı.`, 'info')
-      if (preEmv < 2000) {
-        addLog(`📘 ✓ Rasyonel Accept: EMV ($${preEmv.toLocaleString()}) < $2K mitigate maliyeti. Akıllı bütçe yönetimi!`, 'pmbok')
-        if (activeScenario.value === 'SC-03') updateScore(800)
-      } else {
-        addLog(`📘 ⚠ Yüksek riskli Accept! EMV $${preEmv.toLocaleString()}. Risk tetiklenirse tam hasarı ödersiniz.`, 'pmbok')
-      }
-    },
+  if (verdict === 'ideal') stats.tuslerCorrect++
+
+  const factor = verdict === 'ideal' ? 0 : verdict === 'ok' ? 0.3 : 1
+  const actionCost = ACTION_COST[response] || 0
+  const resMoney = Math.round((risk.cost || 0) * factor)
+  const resMorale = Math.round((risk.moralDamage || 0) * factor)
+  const resDelay = Math.round((risk.delay || 0) * factor)
+
+  if (actionCost) updateMoney(-actionCost)
+  if (resMoney)  updateMoney(-resMoney)
+  if (resMorale) updateMorale(-resMorale)
+  if (resDelay)  project.deadline -= resDelay
+  if (scoreDelta) updateScore(scoreDelta)
+
+  const cx = window.innerWidth / 2, cy = window.innerHeight / 2
+  if (verdict === 'ideal') {
+    triggerFx('criticalSuccess', 1200)
+    spawnParticles(cx, cy, 20, 'crit')
+  } else {
+    triggerFx('shake', 400); triggerFx('glitch', 500)
+    if (resMoney) triggerFx('moneyFlash')
+    spawnParticles(cx, cy, 14, 'bug')
   }
-  a[actionType]?.()
+
+  addLog(lesson, 'pmbok')
+  const bits = []
+  if (actionCost) bits.push(`strategy -$${actionCost.toLocaleString()}`)
+  if (resMoney)  bits.push(`damage -$${resMoney.toLocaleString()}`)
+  if (resMorale) bits.push(`-${resMorale} morale`)
+  if (resDelay)  bits.push(`-${resDelay} days`)
+  addLog(`${risk.icon} "${risk.name}" → ${RESPONSE_LABELS[response]}${bits.length ? ' (' + bits.join(', ') + ')' : ''}`, verdict === 'ideal' ? 'success' : 'warning')
 }
 
-// ─── DILEMMA SYSTEM ───
-function tryTriggerDilemma() {
-  if (gs.day < 3) return
-  if (Math.random() > 0.22) return
-  const resolved = new Set(eventLog.value.filter(e=>e.type==='dilemma').map(e=>e.dilemmaId))
-  const available = allDilemmas.filter(d=>!resolved.has(d.id))
-  if (!available.length) return
-  const chosen = available[Math.floor(Math.random()*available.length)]
-  currentDilemma.value = chosen
-  showDilemma.value = true
-}
-
-function handleDilemmaChoice(opt) {
-  if (!currentDilemma.value) return
-  const choice = opt === 'a' ? currentDilemma.value.optA : currentDilemma.value.optB
-  choice.effect()
-  addLog(`❓ İkilem: "${currentDilemma.value.title}" → ${choice.text}`, 'dilemma')
-  eventLog.value[0].dilemmaId = currentDilemma.value.id
-  if (currentDilemma.value.pmContext) {
-    addLog(`📘 PMBOK: ${currentDilemma.value.pmContext}`, 'pmbok')
-  }
-  stats.dilemmasResolved++
-  showDilemma.value = false
-  currentDilemma.value = null
+function closeClassify() {
+  triggeredRisk.value = null
+  checkGameEnd()
 }
 
 // ─── PROCESS NEXT DAY ───
-async function handleNextDay(eventData) {
-  // Spawn particles at button area
+async function handleNextDay() {
   spawnParticles(window.innerWidth/2, window.innerHeight - 120, 14, 'day')
   await processNextDay()
 }
 
 async function processNextDay() {
-  if (isProcessing.value || gs.status !== 'playing') return
+  if (isProcessing.value || gs.status !== 'playing' || triggeredRisk.value) return
   isProcessing.value = true
 
-  gs.day++; project.deadline--
-  let dp = 10, dc = 0
-  const ev = []
+  gs.day++
+  project.deadline--
 
-  // Cascade tick: decrement active cascades
-  activeCascades.value.forEach(c => c.daysLeft--)
-  activeCascades.value = activeCascades.value.filter(c => c.daysLeft > 0)
-
-  // Upgrades
-  const hasCopilot  = upgrades.value.find(u=>u.id==='copilot')?.bought
-  const hasCicd     = upgrades.value.find(u=>u.id==='cicd')?.bought
-  const hasCoffee   = upgrades.value.find(u=>u.id==='coffee')?.bought
-  const hasErgo     = upgrades.value.find(u=>u.id==='ergonomic')?.bought
-  const hasStandup  = upgrades.value.find(u=>u.id==='standup')?.bought
-
-  if (hasCicd)    { dp += 10; ev.push({text:'⚙️ CI/CD: +10 ilerleme', type:'success'}) }
-  if (hasCoffee)  { updateMorale(5);  ev.push({text:'☕ Espresso: +5 moral', type:'success'}) }
-  if (hasStandup) { updateMorale(5);  ev.push({text:'📋 Standup: +5 moral', type:'success'}) }
-
-  // Morale multiplier
+  // Sabit ekipten gelen günlük ilerleme (moral çarpanıyla)
   const mm = gs.morale >= 70 ? 1.2 : gs.morale >= 40 ? 1.0 : 0.75
-
-  // Employee contributions
-  employees.value.forEach(e => {
-    if (!e.hired) return
-    dc += e.dailyCost
-    const energyDrain = (e.overtime ? 20 : 10) * (hasErgo ? 0.7 : 1)
-    e.energy = Math.max(0, e.energy - energyDrain)
-    const copilotB = (hasCopilot && ['Senior Dev','Frontend Dev','AI Müh.','Stajyer'].includes(e.role)) ? 8 : 0
-    dp += Math.floor((e.productivity + copilotB) * (e.energy/100) * mm * (e.overtime?1.25:1))
-    if (e.moralBonus > 0) updateMorale(e.moralBonus)
-    if (e.id === 6) updateMorale(5)
-    if (e.energy === 0) ev.push({text:`😴 ${e.name} tamamen tükendi!`, type:'warning'})
-  })
-
-  // Synergy bonus
-  const syn = synergyBonus.value
-  if (syn > 0) { dp += syn; ev.push({text:`🤝 Ekip sinerjisi: +${syn} puan`, type:'success'}) }
-
-  // Team size morale penalty (coordination overhead for large teams)
-  const hiredCount = employees.value.filter(e => e.hired).length
-  if (hiredCount > 5) {
-    const overPenalty = -(hiredCount - 5)
-    updateMorale(overPenalty)
-    ev.push({text:`👥 Koordinasyon yükü: ${overPenalty} moral (${hiredCount} kişi)`, type:'warning'})
-  }
-
-  // Base morale decay (communication strategy modifies this)
-  updateMorale(-3 + moraleDecayModifier.value)
-
-  // ── CRITICAL SUCCESS ── (morale > 70, 15% chance)
-  lastCritSuccess.value = false
-  if (gs.morale >= 70 && Math.random() < critChance.value/100) {
-    dp = Math.floor(dp * 1.4)
-    lastCritSuccess.value = true
-    stats.critSuccesses++
-    updateScore(300)
-    triggerFx('criticalSuccess', 2000)
-    ev.push({text:'⭐ KRİTİK BAŞARI! İlerleme ×1.4!', type:'success'})
-    addLog('⭐ KRİTİK BAŞARI!', 'milestone')
-    spawnParticles(window.innerWidth/2, window.innerHeight/2, 24, 'crit')
-  }
-
-  // ── BUG EVENT ── (low morale)
-  lastBugEvent.value = false
-  if (!lastCritSuccess.value && bugChance.value > 0 && Math.random() < bugChance.value/100) {
-    const bugLoss = Math.floor(dp * 0.35)
-    dp -= bugLoss
-    lastBugEvent.value = true
-    stats.bugsFixed++
-    updateScore(-200)
-    triggerFx('bugEvent', 1800)
-    triggerFx('glitch', 600)
-    ev.push({text:`🐛 Moral düşük! Bug patlaması: -${bugLoss} puan`, type:'warning'})
-    addLog('🐛 Bug patlaması! Moral düşük.', 'danger')
-    spawnParticles(window.innerWidth/2, window.innerHeight/2, 12, 'bug')
-  }
-
-  // ── RANDOM EVENT ──
-  if (Math.random() < 0.40) {
-    const isPos = Math.random() < 0.5
-    const pool = isPos ? positiveEvents : negativeEvents
-    const re = pool[Math.floor(Math.random()*pool.length)]
-    updateMorale(re.moralDelta)
-    if (re.moneyDelta) updateMoney(re.moneyDelta)
-    dp += re.progressDelta
-    ev.push({text: re.msg, type: isPos ? 'event-good' : 'event-bad'})
-    addLog(re.msg, isPos ? 'success' : 'warning')
-  }
-
-  // ── NEW RANDOM RISK ──
-  const spawnChance = activeScenario.value === 'SC-01' ? 0.50 : 0.25
-  if (gs.day >= 4 && Math.random() < spawnChance) {
-    const avail = allRisksPool.filter(r=>!activeRiskPool.value.find(ar=>ar.id===r.id))
-    if (avail.length) {
-      const nr = JSON.parse(JSON.stringify(avail[Math.floor(Math.random()*avail.length)]))
-      if (nr.type === 'scope' && scopeCommModifier.value !== 0)
-        nr.prob = Math.max(5, Math.min(95, nr.prob + scopeCommModifier.value))
-      activeRiskPool.value.push(nr)
-      addLog(`⚠️ Yeni tehdit: "${nr.name}"`, 'warning')
-      triggerFx('glitch', 400)
-    }
-  }
-
-  // ── ACTIVE RISK TRIGGERS ──
-  let trd = null
-  for (const risk of activeRisks.value) {
-    if (Math.random() * 100 < effectiveProb(risk)) { trd = risk; break }
-  }
-
+  const baseProd = employees.value.filter(e => e.hired).reduce((s, e) => s + e.productivity, 0)
+  const dp = Math.round(baseProd * mm)
   lastDailyProgress.value = dp
-  lastDailyCost.value = dc
-  updateMoney(-dc)
-  if (dailyCommCost.value !== 0) updateMoney(-dailyCommCost.value)
-  project.progress = Math.min(project.totalEffort, project.progress + Math.max(0, dp))
+  lastDailyCost.value = DAILY_COST
+  updateMoney(-DAILY_COST)
+  updateMorale(-1)
+  project.progress = Math.min(project.totalEffort, project.progress + dp)
   checkMilestones()
+  triggerFx('glitch', 300)
 
-  // Day advance glitch
-  triggerFx('glitch', 500)
+  isProcessing.value = false
+  if (checkGameEnd()) return
 
-  let usedReserve = false
-  if (trd) {
-    triggeredRisk.value = trd
-    triggerFx('shake', 500)
-    triggerFx('glitch', 700)
-    if (trd.moralDamage) updateMorale(-trd.moralDamage)
-    // Contingency Reserve önce tüketilir, sonra ana bütçe
-    const totalDamage = trd.cost || 0
-    if (gs.contingencyReserve > 0 && totalDamage > 0) {
-      usedReserve = true
-      const fromReserve = Math.min(gs.contingencyReserve, totalDamage)
-      gs.contingencyReserve -= fromReserve
-      const remainder = totalDamage - fromReserve
-      if (remainder > 0) updateMoney(-remainder)
-      addLog(`🚨 RİSK TETİKLENDİ: "${trd.name}" — Contingency Reserve'den $${fromReserve.toLocaleString()} kullanıldı${remainder>0?', Ana bütçeden $'+remainder.toLocaleString()+' ek hasar':''}`, 'danger')
-    } else {
-      updateMoney(-totalDamage)
-      addLog(`🚨 RİSK TETİKLENDİ: "${trd.name}" -$${totalDamage.toLocaleString()} (Yedek bütçe bitti!)`, 'danger')
-    }
-    project.deadline -= trd.delay
-    trd.status = 'resolved'
-    spawnParticles(window.innerWidth/2, window.innerHeight/2, 16, 'bug')
-
-    // Cascade: trigger related risk probability increases
-    if (RISK_CASCADE_MAP[trd.type]) {
-      const typeLabels = { api: 'API', bug: 'Bug', scope: 'Kapsam', conflict: 'Çatışma', server: 'Sunucu', security: 'Güvenlik' }
-      RISK_CASCADE_MAP[trd.type].forEach(c => {
-        activeCascades.value.push({ targetType: c.targetType, probBonus: c.probBonus, daysLeft: c.days })
-        const label = typeLabels[c.targetType] || c.targetType
-        ev.push({ text: `🔗 DOMINO: ${trd.name} → ${label} riski +%${c.probBonus} (${c.days} gün)`, type: 'cascade' })
-        addLog(`🔗 DOMINO: "${trd.name}" tetiklendi → ${label} riskleri +%${c.probBonus} olasılık (${c.days} gün)`, 'warning')
-      })
+  // Bir süre sonra risk ortaya çıkar → oyuncu sınıflandırır
+  if (gs.day >= 3 && Math.random() < RISK_CHANCE) {
+    const avail = allRisksPool.filter(r => !usedRiskIds.value.includes(r.id))
+    if (avail.length) {
+      const r = JSON.parse(JSON.stringify(avail[Math.floor(Math.random() * avail.length)]))
+      usedRiskIds.value.push(r.id)
+      triggeredRisk.value = r
+      triggerFx('shake', 400)
+      addLog(`⚠️ A new risk appeared: "${r.name}" — classify it!`, 'warning')
     }
   }
-
-  // PMBOK Anlık Ders hesaplama
-  let pmbokInsight = ''
-  const totalDailySpend = dc + (dailyCommCost.value > 0 ? dailyCommCost.value : 0)
-  if (trd && trd._wasAccepted && (trd.cost || 0) > 0) {
-    const saving = (trd.cost || 0) - 2000
-    pmbokInsight = `Bu risk Accept edilmişti. Mitigate ($2K) ile $${saving.toLocaleString()} tasarruf sağlanırdı.`
-  } else if (lastCritSuccess.value) {
-    pmbokInsight = 'Kritik Başarı! PMBOK: Yüksek moral → verimlilik artışı → schedule variance azalır.'
-  } else if (gs.morale < 40) {
-    pmbokInsight = 'Tehlike! Moral < %40 → Burnout riski aktif. PMBOK: İnsan kaynağı risk planı yapın.'
-  } else if (totalDailySpend > 20000) {
-    pmbokInsight = "Yüksek günlük harcama! Contingency Reserve'nizi koruyun (PMBOK: Reserve Analysis)."
-  } else if (!trd && gs.day > 10) {
-    pmbokInsight = 'Temiz gün! Proaktif mitigation stratejiniz işe yarıyor.'
-  }
-
-  daySummaryData.value = {
-    day: gs.day, progress: dp, cost: dc, events: ev, morale: gs.morale,
-    triggeredRisk: trd, critSuccess: lastCritSuccess.value, bugEvent: lastBugEvent.value,
-    synergyBonus: syn,
-    usedReserve: usedReserve,
-    activeRiskCount: activeRiskPool.value.filter(r => r.status === 'active' || r.status === 'pending').length,
-    totalProgress: project.progress,
-    totalEffort: project.totalEffort,
-    money: gs.money,
-    hasAnyUpgrade: upgrades.value.some(u => u.bought),
-    pmbokInsight,
-  }
-  const nothingHappened = (dc === 0) && (ev.length === 0) && !trd && !lastCritSuccess.value && !lastBugEvent.value;
-  
-  if (nothingHappened) {
-    isProcessing.value = false
-    checkGameEnd()
-    setTimeout(tryTriggerDilemma, 300)
-  } else {
-    showDaySummary.value = true
-    isProcessing.value = false
-    checkGameEnd()
-  }
 }
 
-function closeDaySummary() {
-  showDaySummary.value = false
-  // Show PM insight popup based on today's events
-  showDayInsight.value = true
-}
-
-function closeDayInsight() {
-  showDayInsight.value = false
-  // Maybe trigger dilemma after insight
-  setTimeout(tryTriggerDilemma, 300)
-}
-
-function closeModal() { triggeredRisk.value = null; checkGameEnd() }
-
-function handleScenarioSelected(id) {
-  activeScenario.value = id
-  showScenarioModal.value = false
-  showPlanningModal.value = true
-}
-
-function handlePlanComplete(plan) {
-  showPlanningModal.value = false
-  startGame(plan)
-}
-
-function startGame(plan = null) {
+// ─── GAME LIFECYCLE ───
+function startGame() {
   gs.status = 'playing'
-  
-  if (plan) {
-    let baseMoney = 100000
-    let probMod = 0
-    if (plan.appetite === 'low') { baseMoney = 80000; probMod = -10 }
-    else if (plan.appetite === 'high') { baseMoney = 120000; probMod = 10 }
-
-    gs.contingencyReserve = plan.reserve
-    gs.money = baseMoney - plan.reserve
-
-    // Communication strategy modifiers
-    const commMap = {
-      intensive: { morale: 2, scope: 10, cost: 500 },
-      minimal:   { morale: -2, scope: -10, cost: -300 },
-      balanced:  { morale: 0, scope: 0, cost: 0 },
-    }
-    const cm = commMap[plan.communication] || commMap.balanced
-    moraleDecayModifier.value = cm.morale
-    scopeCommModifier.value   = cm.scope
-    dailyCommCost.value       = cm.cost
-
-    activeRiskPool.value = [
-      JSON.parse(JSON.stringify(allRisksPool[0])), // Server
-      JSON.parse(JSON.stringify(allRisksPool[3])), // Scope
-      JSON.parse(JSON.stringify(allRisksPool[4])), // Conflict
-    ]
-
-    activeRiskPool.value.forEach(r => {
-      r.prob = Math.max(5, Math.min(95, r.prob + probMod))
-      let isFocus = false
-      if (plan.focus === 'technical' && (r.type === 'server' || r.type === 'bug' || r.type === 'security')) isFocus = true
-      if (plan.focus === 'human' && r.type === 'conflict') isFocus = true
-      if (plan.focus === 'scope' && r.type === 'scope') isFocus = true
-
-      if (isFocus) r.prob = Math.max(5, r.prob - 20)
-      else r.prob = Math.min(95, r.prob + 10)
-
-      if (r.type === 'scope') r.prob = Math.max(5, Math.min(95, r.prob + cm.scope))
-    })
-
-    // Scenario-specific overrides
-    if (activeScenario.value === 'SC-01') gs.money += 10000
-    if (activeScenario.value === 'SC-02') project.deadline = 20
-  } else {
-    activeRiskPool.value = [
-      JSON.parse(JSON.stringify(allRisksPool[0])),
-      JSON.parse(JSON.stringify(allRisksPool[1])),
-      JSON.parse(JSON.stringify(allRisksPool[5])),
-    ]
-  }
-
-  addLog('🟢 Sistem başlatıldı. Risk Management Planı devrede.', 'success')
+  addLog('🟢 PROJECT: NEON started. Advance the days; as risks appear, classify each to the right animal!', 'success')
 }
 
 function resetGame() {
-  Object.assign(gs, {status:'menu',money:100000,day:1,morale:75,contingencyReserve:15000,riskScore:0,score:0})
-  Object.assign(project, {progress:0,deadline:30})
+  Object.assign(gs, { status:'menu', money:100000, day:1, morale:75, score:0 })
+  Object.assign(project, { progress:0, deadline:30, totalEffort:3000 })
   employees.value = defaultEmployees()
-  upgrades.value = defaultUpgrades()
-  activeRiskPool.value = []
   eventLog.value = []
-  milestones.forEach(m=>m.reached=false)
+  usedRiskIds.value = []
+  milestones.forEach(m => m.reached = false)
   lastDailyProgress.value = 0; lastDailyCost.value = 0
-  Object.assign(stats, {critSuccesses:0,bugsFixed:0,dilemmasResolved:0,risksProactivelyHandled:0})
-  lastCritSuccess.value = false; lastBugEvent.value = false
-  activeScenario.value = null
-  moraleDecayModifier.value = 0; scopeCommModifier.value = 0; dailyCommCost.value = 0
-  activeCascades.value = []
+  Object.assign(stats, { critSuccesses:0, bugsFixed:0, dilemmasResolved:0, risksProactivelyHandled:0, tuslerCorrect:0, tuslerTotal:0 })
+  triggeredRisk.value = null
 }
 
 // ─── LIFECYCLE ───
@@ -1090,7 +539,9 @@ onUnmounted(() => {
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
-* { font-family:'Press Start 2P',monospace; box-sizing:border-box; image-rendering:pixelated; }
+/* Readable mono is the default; pixel font is opt-in via .pixel / identity classes below. */
+* { font-family:'Share Tech Mono','Courier New',monospace; box-sizing:border-box; image-rendering:pixelated; }
+.pixel { font-family:'Press Start 2P',monospace; }
 
 /* ─── VIGNETTE ─── */
 .vignette-overlay {
@@ -1120,6 +571,7 @@ onUnmounted(() => {
 }
 .crit-text {
   position:absolute;top:30%;left:50%;transform:translateX(-50%);
+  font-family:'Press Start 2P',monospace;
   font-size:18px;color:#ffe040;text-shadow:0 0 20px #ffb000,0 0 40px #ff8000;
   animation:critText 2s ease-out forwards;
 }
@@ -1147,6 +599,11 @@ onUnmounted(() => {
 /* ─── HUD ─── */
 .pixel-hud-bar { border-bottom:4px solid #2a1008;box-shadow:0 4px 0 #1a0a04; }
 .pixel-hud-chip { display:flex;align-items:center;gap:4px;padding:3px 8px;font-size:7px;border:2px solid;box-shadow:inset 1px 1px 0 rgba(255,255,255,0.15),2px 2px 0 #1a0a04; }
+.hud-stat { display:flex;flex-direction:column;justify-content:center;gap:3px;padding:6px 12px;border:2px solid;box-shadow:inset 1px 1px 0 rgba(255,255,255,0.15),2px 2px 0 #1a0a04;min-width:72px; }
+.hud-stat-label { font-size:11px;letter-spacing:1px;font-family:'Share Tech Mono',monospace;white-space:nowrap; }
+.hud-stat-value { font-size:17px;font-family:'Press Start 2P',monospace;white-space:nowrap;line-height:1.2; }
+.hud-stat-flash { background:#602020!important;border-color:#301010!important; }
+.hud-stat-flash .hud-stat-label, .hud-stat-flash .hud-stat-value { color:#f08080!important; }
 .hud-chip-red    { background:#602020!important;color:#f08080!important;border-color:#301010!important; }
 .hud-chip-synergy { background:#203840;color:#60d0c0;border-color:#104030; }
 .hud-chip-crit   { background:#302000;color:#f0c000;border-color:#504000; }
