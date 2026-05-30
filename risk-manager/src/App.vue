@@ -31,9 +31,9 @@
           </div>
           <div class="px-6 pb-6 flex flex-col gap-6 pt-4">
             <div class="text-center" style="line-height:2.5">
-              <div style="font-size:32px;color:#fff;text-shadow:4px 4px 0 #000;letter-spacing:4px">RISK</div>
-              <div style="font-size:32px;color:#fff;text-shadow:4px 4px 0 #000;letter-spacing:2px">MANAGER</div>
-              <div style="font-size:10px;color:#a3b18a;margin-top:4px;letter-spacing:3px">TUSLER PROTOCOL // 2026</div>
+              <div style="font-family:'Press Start 2P',monospace;font-size:32px;color:#fff;text-shadow:4px 4px 0 #000;letter-spacing:4px">RISK</div>
+              <div style="font-family:'Press Start 2P',monospace;font-size:32px;color:#fff;text-shadow:4px 4px 0 #000;letter-spacing:2px">MANAGER</div>
+              <div style="font-family:'Press Start 2P',monospace;font-size:10px;color:#a3b18a;margin-top:4px;letter-spacing:3px">TUSLER PROTOCOL // 2026</div>
             </div>
             <div class="pixel-inset p-4 text-center text-sm" :style="{ backgroundColor: theme.panelBg, color: theme.riskDescText }">
               Complete PROJECT: NEON in 30 days.<br>As risks appear, classify each one to the right animal by its probability × impact!
@@ -622,7 +622,7 @@ onUnmounted(() => {
 .pixel-tab:hover { background:rgba(255,255,255,0.05); }
 
 /* ─── TITLE BARS ─── */
-.pixel-title-bar       { background:#4a3018;border-bottom:3px solid #2a1008; }
+.pixel-title-bar       { background:#4a3018;border-bottom:3px solid #2a1008;font-family:'Press Start 2P',monospace; }
 .pixel-title-bar-red   { background:#602020;border-bottom:3px solid #3a1010; }
 .pixel-title-bar-green { background:#206020;border-bottom:3px solid #103010; }
 

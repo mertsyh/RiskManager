@@ -4,10 +4,10 @@
     <!-- ═══ OFFICE MAP (LEFT) ═══ -->
     <div class="office-panel" :style="{ backgroundColor: theme.panelBg, borderColor: theme.panelBorder }" style="flex:3;min-height:0;display:flex;flex-direction:column;">
       <div class="office-titlebar" :style="{ backgroundColor: theme.titleBarBg, color: theme.titleText }">
-        <span style="font-size:10px;letter-spacing:2px">🏢 OFİS — CANLI GÖRÜNÜM</span>
+        <span style="font-size:12px;letter-spacing:2px">🏢 OFFICE — LIVE VIEW</span>
         <div style="display:flex;gap:10px;align-items:center">
-          <span v-if="synergyBonus>0" style="font-size:10px;color:#60d0c0">🤝 +{{ synergyBonus }} SİNERJİ</span>
-          <span style="font-size:10px;">{{ hiredCount }}/8 AKTİF</span>
+          <span v-if="synergyBonus>0" style="font-size:12px;color:#60d0c0">🤝 +{{ synergyBonus }} SYNERGY</span>
+          <span style="font-size:12px;">{{ hiredCount }}/8 ACTIVE</span>
         </div>
       </div>
 
@@ -51,7 +51,7 @@
           </template>
 
           <div v-else-if="employees[i]" class="empty-slot">
-            <div class="empty-label">{{ employees[i].name }}<br><span style="color:#5a4028">İŞE AL</span></div>
+            <div class="empty-label">{{ employees[i].name }}<br><span style="color:#5a4028">HIRE</span></div>
           </div>
         </div>
 
@@ -60,10 +60,10 @@
 
         <!-- 5. Critical / Bug event overlay text -->
         <Transition name="crit">
-          <div v-if="lastCritSuccess" class="event-overlay crit-overlay">⭐ KRİTİK BAŞARI!</div>
+          <div v-if="lastCritSuccess" class="event-overlay crit-overlay">⭐ CRITICAL SUCCESS!</div>
         </Transition>
         <Transition name="crit">
-          <div v-if="lastBugEvent" class="event-overlay bug-overlay">🐛 BUG PATLAMASI!</div>
+          <div v-if="lastBugEvent" class="event-overlay bug-overlay">🐛 BUG OUTBREAK!</div>
         </Transition>
       </div>
     </div>
@@ -90,8 +90,8 @@
         <div style="display:flex; flex-direction:column; gap:8px;">
         <!-- Progress bar -->
         <div>
-          <div style="display:flex;justify-content:space-between;font-size:11px;color:#b08050;margin-bottom:5px">
-            <span>İLERLEME</span>
+          <div style="display:flex;justify-content:space-between;font-size:13px;color:#b08050;margin-bottom:5px">
+            <span>PROGRESS</span>
             <span style="color:#c8a060">{{ Math.floor(project.progress) }} / {{ project.totalEffort }}</span>
           </div>
           <div class="progress-track">
@@ -119,35 +119,35 @@
         <!-- Stats grid -->
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px">
           <div class="stat-box">
-            <div class="stat-label">GÜNLÜK<br>MALİYET</div>
+            <div class="stat-label">DAILY<br>COST</div>
             <div class="stat-value" style="color:#e87060">-${{ dailyCost.toLocaleString() }}</div>
           </div>
           <div class="stat-box">
-            <div class="stat-label">MORAL<br>KATSAYI</div>
+            <div class="stat-label">MORALE<br>MULT.</div>
             <div class="stat-value"
               :style="{color:morale>=60?'#58c848':morale>=35?'#c09820':'#e05858'}">
               {{ morale>=70?'×1.2':morale>=40?'×1.0':'×0.75' }}
             </div>
           </div>
           <div class="stat-box">
-            <div class="stat-label">KRİT<br>ŞANS</div>
+            <div class="stat-label">CRIT<br>CHANCE</div>
             <div class="stat-value"
               :style="{color:critChance>10?'#ffe040':critChance>0?'#c0a020':'#3a3020'}">
               {{ critChance }}%
             </div>
           </div>
           <div class="stat-box">
-            <div class="stat-label">KALAN<br>SÜRE</div>
+            <div class="stat-label">DAYS<br>LEFT</div>
             <div class="stat-value"
               :style="{color:project.deadline<=5?'#e05858':project.deadline<=10?'#c09820':'#5888e0'}">
-              {{ project.deadline }}g
+              {{ project.deadline }}d
             </div>
           </div>
         </div>
 
         <!-- Daily progress row -->
         <div class="daily-row">
-          <span style="font-size:11px;color:#6a4828;letter-spacing:1px">GÜNLÜK İLERLEME</span>
+          <span style="font-size:13px;color:#6a4828;letter-spacing:1px">DAILY PROGRESS</span>
           <div style="display:flex;align-items:center;gap:8px">
             <span v-if="lastCritSuccess" class="badge-crit">⭐ 2×</span>
             <span v-if="lastBugEvent"    class="badge-bug">🐛 BUG</span>
@@ -173,7 +173,7 @@
           boxShadow: processing ? 'none' : '0 7px 0 #081008,inset 0 1px 0 rgba(255,255,255,0.15)',
           cursor: processing ? 'wait' : 'pointer',
         }"
-      >{{ processing ? '⏳ İŞLENİYOR' : '▶▶ SONRAKİ GÜN' }}</button>
+      >{{ processing ? '⏳ PROCESSING' : '▶▶ NEXT DAY' }}</button>
     </div>
   </div>
 </template>
@@ -343,7 +343,8 @@ onUnmounted(() => {
 }
 .office-titlebar {
   background:#2a1408;border-bottom:3px solid #1a0804;
-  padding:5px 10px;display:flex;justify-content:space-between;align-items:center;
+  padding:6px 12px;display:flex;justify-content:space-between;align-items:center;
+  font-family:'Press Start 2P',monospace;
 }
 .stats-panel {
   background:#5a3818;border:4px solid #2a1208;
@@ -352,7 +353,8 @@ onUnmounted(() => {
 }
 .stats-titlebar {
   background:#2a1408;border-bottom:3px solid #1a0804;
-  padding:5px 10px;display:flex;justify-content:space-between;
+  padding:6px 12px;display:flex;justify-content:space-between;
+  font-family:'Press Start 2P',monospace;
 }
 
 /* ─── MAP ─── */
@@ -445,7 +447,7 @@ onUnmounted(() => {
 }
 .char-name {
   font-family:'Press Start 2P',monospace;
-  font-size:7px; color:#ffe4a0;
+  font-size:8px; color:#ffe4a0;
   background:rgba(10,6,2,0.85);
   border:1px solid rgba(90,48,24,0.8);
   padding:3px 6px;white-space:nowrap;
@@ -517,23 +519,23 @@ onUnmounted(() => {
 }
 @keyframes shimmer{from{transform:translateX(-100%)}to{transform:translateX(200%)}}
 .ms-tick{position:absolute;top:0;bottom:0;width:3px;transform:translateX(-50%)}
-.progress-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:rgba(255,255,255,0.8)}
-.ms-chip{flex:1;text-align:center;padding:6px 4px;border:2px solid;font-size:9px;font-family:'Press Start 2P',monospace}
+.progress-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;color:rgba(255,255,255,0.85);font-family:'Press Start 2P',monospace}
+.ms-chip{flex:1;text-align:center;padding:7px 4px;border:2px solid;font-size:11px;font-family:'Press Start 2P',monospace}
 
 /* ─── STAT BOXES ─── */
 .stat-box{background:#180c04;border:3px solid #301808;box-shadow:inset 2px 2px 0 #100802;padding:10px;text-align:center}
-.stat-label{font-size:9px;color:#6a4828;margin-bottom:5px;line-height:1.8}
-.stat-value{font-size:16px}
-.daily-row{background:#180c04;border:3px solid #301808;padding:9px 12px;display:flex;justify-content:space-between;align-items:center}
+.stat-label{font-size:12px;color:#8a6438;margin-bottom:6px;line-height:1.5;letter-spacing:1px}
+.stat-value{font-size:20px;font-family:'Press Start 2P',monospace}
+.daily-row{background:#180c04;border:3px solid #301808;padding:10px 12px;display:flex;justify-content:space-between;align-items:center}
 
 /* ─── BADGES ─── */
-.badge-crit{font-size:9px;color:#ffe040;font-family:'Press Start 2P',monospace;animation:blinkanim 0.5s step-start 4}
-.badge-bug {font-size:9px;color:#f04040;font-family:'Press Start 2P',monospace}
-.badge-syn {font-size:9px;color:#60d0c0;font-family:'Press Start 2P',monospace}
+.badge-crit{font-size:11px;color:#ffe040;font-family:'Press Start 2P',monospace;animation:blinkanim 0.5s step-start 4}
+.badge-bug {font-size:11px;color:#f04040;font-family:'Press Start 2P',monospace}
+.badge-syn {font-size:11px;color:#60d0c0;font-family:'Press Start 2P',monospace}
 @keyframes blinkanim{50%{opacity:0}}
 
 /* ─── DAY BUTTON ─── */
-.day-btn{font-family:'Press Start 2P',monospace;font-size:13px;padding:20px;border:4px solid;width:100%;letter-spacing:3px;flex-shrink:0;transition:transform 0.1s,box-shadow 0.1s}
+.day-btn{font-family:'Press Start 2P',monospace;font-size:16px;padding:22px;border:4px solid;width:100%;letter-spacing:3px;flex-shrink:0;transition:transform 0.1s,box-shadow 0.1s}
 .day-btn:hover:not(:disabled){filter:brightness(1.15)}
 .day-btn:active:not(:disabled){transform:translateY(7px);box-shadow:none!important}
 </style>

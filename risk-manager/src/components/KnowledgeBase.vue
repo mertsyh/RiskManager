@@ -1,71 +1,71 @@
 <template>
   <div class="fixed inset-0 z-[60] flex items-center justify-center bg-gray-900 bg-opacity-90 p-4">
-    <div class="pixel-panel p-0 overflow-hidden w-[660px] max-h-[92vh] flex flex-col border-4 shadow-lg"
+    <div class="pixel-panel p-0 overflow-hidden w-[760px] max-h-[92vh] flex flex-col border-4 shadow-lg"
          :style="{ borderColor: theme.titleText, backgroundColor: theme.panelBg }">
-      
+
       <!-- Header -->
-      <div class="px-4 py-3 flex justify-between items-center"
+      <div class="px-5 py-4 flex justify-between items-center"
            :style="{ backgroundColor: theme.titleBarBg, color: theme.titleText }">
-        <div class="flex items-center gap-2">
-          <span class="text-xl">📚</span>
-          <span class="text-sm tracking-widest">RİSK YÖNETİMİ BİLGİ BANKASI (PMBOK®)</span>
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">📚</span>
+          <span class="kb-title">RISK MANAGEMENT KNOWLEDGE BASE (PMBOK®)</span>
         </div>
-        <button @click="$emit('close')" class="hover:text-red-400 text-lg">✖</button>
+        <button @click="$emit('close')" class="hover:text-red-400 text-2xl">✖</button>
       </div>
 
       <!-- Tabs -->
       <div class="flex border-b-2 flex-wrap" :style="{ borderColor: theme.titleBarBg }">
         <button v-for="tab in tabs" :key="tab.id"
                 @click="activeTab = tab.id"
-                class="flex-1 py-2 text-xs transition-colors"
+                class="flex-1 py-3 text-sm transition-colors"
                 :style="activeTab === tab.id ? { backgroundColor: theme.tabActiveBg, color: theme.tabActiveText } : { color: theme.riskDescText }">
           {{ tab.name }}
         </button>
       </div>
 
       <!-- Content Area -->
-      <div class="p-4 overflow-y-auto pixel-scrollbar flex-1 text-xs"
-           style="line-height: 1.7;"
+      <div class="p-5 overflow-y-auto pixel-scrollbar flex-1 text-sm"
+           style="line-height: 1.6;"
            :style="{ color: theme.riskDescText }">
-        
-        <!-- TEMELLER TAB -->
+
+        <!-- BASICS TAB -->
         <div v-if="activeTab === 'basics'" class="flex flex-col gap-4">
-          <div class="p-3 bg-black/30 rounded border border-white/10">
-            <h3 class="text-sm mb-2" :style="{ color: theme.chipYellowText }">Proje Risk Yönetimi Nedir?</h3>
-            <p>Risk, gerçekleşmesi durumunda projenin hedeflerinden en az biri üzerinde (zaman, maliyet, kapsam veya kalite) olumlu veya olumsuz etki yaratacak <strong>belirsiz</strong> bir olay veya durumdur.</p>
+          <div class="p-4 bg-black/30 rounded border border-white/10">
+            <h3 class="text-base mb-2" :style="{ color: theme.chipYellowText }">What is Project Risk Management?</h3>
+            <p>A risk is an <strong>uncertain</strong> event or condition that, if it occurs, has a positive or negative effect on at least one project objective (time, cost, scope or quality).</p>
           </div>
-          <div class="p-3 bg-black/30 rounded border border-white/10">
-            <h3 class="text-sm mb-2" :style="{ color: theme.chipYellowText }">Demir Üçgen (Iron Triangle)</h3>
-            <p class="mb-2">Her proje 3 kısıtta dengelenir. Birini değiştirince diğerleri etkilenir:</p>
-            <div class="grid grid-cols-3 gap-2 text-center">
-              <div class="p-2 bg-black/40 rounded border border-yellow-900">
-                <div class="text-lg">📅</div>
-                <div :style="{ color: theme.chipYellowText }">Zaman</div>
-                <div class="text-[10px] mt-1">Deadline / Takvim</div>
+          <div class="p-4 bg-black/30 rounded border border-white/10">
+            <h3 class="text-base mb-2" :style="{ color: theme.chipYellowText }">The Iron Triangle</h3>
+            <p class="mb-2">Every project balances 3 constraints. Change one and the others are affected:</p>
+            <div class="grid grid-cols-3 gap-3 text-center">
+              <div class="p-3 bg-black/40 rounded border border-yellow-900">
+                <div class="text-2xl">📅</div>
+                <div :style="{ color: theme.chipYellowText }">Time</div>
+                <div class="text-xs mt-1">Deadline / Schedule</div>
               </div>
-              <div class="p-2 bg-black/40 rounded border border-green-900">
-                <div class="text-lg">💰</div>
-                <div :style="{ color: theme.chipGreenText }">Maliyet</div>
-                <div class="text-[10px] mt-1">Bütçe / Kaynaklar</div>
+              <div class="p-3 bg-black/40 rounded border border-green-900">
+                <div class="text-2xl">💰</div>
+                <div :style="{ color: theme.chipGreenText }">Cost</div>
+                <div class="text-xs mt-1">Budget / Resources</div>
               </div>
-              <div class="p-2 bg-black/40 rounded border border-blue-900">
-                <div class="text-lg">🎯</div>
-                <div :style="{ color: theme.chipBlueText }">Kapsam</div>
-                <div class="text-[10px] mt-1">Özellikler / Kalite</div>
+              <div class="p-3 bg-black/40 rounded border border-blue-900">
+                <div class="text-2xl">🎯</div>
+                <div :style="{ color: theme.chipBlueText }">Scope</div>
+                <div class="text-xs mt-1">Features / Quality</div>
               </div>
             </div>
-            <div class="mt-2 p-2 bg-yellow-900/20 border border-yellow-800/30 rounded text-[10px]">
-              💡 <strong>Oyunda:</strong> Deadline (süre), bütçe ve moral hepsi bu üçgenin yansımalarıdır.
+            <div class="mt-3 p-3 bg-yellow-900/20 border border-yellow-800/30 rounded text-xs">
+              💡 <strong>In the game:</strong> Deadline (time), budget and morale are all reflections of this triangle.
             </div>
           </div>
-          <div class="p-3 bg-black/30 rounded border border-white/10">
-            <h3 class="text-sm mb-2" :style="{ color: theme.chipYellowText }">Risk Yönetimi Süreçleri (PMBOK)</h3>
+          <div class="p-4 bg-black/30 rounded border border-white/10">
+            <h3 class="text-base mb-2" :style="{ color: theme.chipYellowText }">Risk Management Processes (PMBOK)</h3>
             <ul class="list-none flex flex-col gap-2">
-              <li class="flex gap-2"><span :style="{ color: theme.chipGreenText }">①</span> <div><strong>Tanımlama (Identify):</strong> Hangi risklerin projeyi etkileyebileceğini belirleme → <em>Risk Kaydı oluşturulur</em></div></li>
-              <li class="flex gap-2"><span :style="{ color: theme.chipGreenText }">②</span> <div><strong>Nitel Analiz:</strong> Olasılık/Etki Matrisi ile hızlı önceliklendirme</div></li>
-              <li class="flex gap-2"><span :style="{ color: theme.chipGreenText }">③</span> <div><strong>Nicel Analiz:</strong> EMV hesabı ile sayısal değerlendirme</div></li>
-              <li class="flex gap-2"><span :style="{ color: theme.chipGreenText }">④</span> <div><strong>Yanıt Planlama:</strong> Avoid / Mitigate / Transfer / Accept</div></li>
-              <li class="flex gap-2"><span :style="{ color: theme.chipGreenText }">⑤</span> <div><strong>İzleme & Kontrol:</strong> Proje boyunca sürekli takip</div></li>
+              <li class="flex gap-2"><span :style="{ color: theme.chipGreenText }">①</span> <div><strong>Identify:</strong> Determine which risks could affect the project → <em>a Risk Register is created</em></div></li>
+              <li class="flex gap-2"><span :style="{ color: theme.chipGreenText }">②</span> <div><strong>Qualitative Analysis:</strong> Quick prioritization with a Probability/Impact matrix</div></li>
+              <li class="flex gap-2"><span :style="{ color: theme.chipGreenText }">③</span> <div><strong>Quantitative Analysis:</strong> Numerical evaluation via EMV</div></li>
+              <li class="flex gap-2"><span :style="{ color: theme.chipGreenText }">④</span> <div><strong>Response Planning:</strong> Avoid / Mitigate / Transfer / Accept</div></li>
+              <li class="flex gap-2"><span :style="{ color: theme.chipGreenText }">⑤</span> <div><strong>Monitor &amp; Control:</strong> Continuous tracking throughout the project</div></li>
             </ul>
           </div>
         </div>
@@ -73,197 +73,196 @@
         <!-- TUSLER TAB -->
         <div v-if="activeTab === 'tusler'" class="flex flex-col gap-4">
           <!-- Intro -->
-          <div class="p-3 bg-black/30 rounded border border-white/10">
-            <h3 class="text-sm mb-2" :style="{ color: theme.chipYellowText }">Tusler'in Hayvan Metaforu</h3>
-            <p>Robert Tusler her riski bir <strong>Olasılık × Etki</strong> matrisine yerleştirip dört hayvanla eşleştirir. Soyut yüzdeler yerine hayvanlar; paydaşların riski anında kavramasını sağlar — ve her hayvan, alınması gereken doğru yanıtı fısıldar.</p>
-            <div class="mt-2 p-2 bg-green-900/20 border border-green-800/30 rounded text-[10px]">
-              🎮 <strong>Oyunda:</strong> Her risk kartında hayvan rozetini; Risk Merkezi → MATRİS sekmesinde ise canlı 2×2 hayvan haritanı görürsün.
+          <div class="p-4 bg-black/30 rounded border border-white/10">
+            <h3 class="text-base mb-2" :style="{ color: theme.chipYellowText }">Tusler's Animal Metaphor</h3>
+            <p>Robert Tusler places every risk on a <strong>Probability × Impact</strong> matrix and maps it to one of four animals. Instead of abstract percentages, animals let stakeholders grasp a risk instantly — and each animal whispers the right response to take.</p>
+            <div class="mt-2 p-3 bg-green-900/20 border border-green-800/30 rounded text-xs">
+              🎮 <strong>In the game:</strong> every risk pop-up plots the risk as a dot on a live 2×2 Probability × Impact plane.
             </div>
           </div>
 
           <!-- 2×2 visual -->
-          <div class="p-3 bg-black/30 rounded border border-white/10">
-            <h3 class="text-sm mb-3" :style="{ color: theme.chipYellowText }">2×2 Matris</h3>
+          <div class="p-4 bg-black/30 rounded border border-white/10">
+            <h3 class="text-base mb-3" :style="{ color: theme.chipYellowText }">The 2×2 Matrix</h3>
             <div class="grid grid-cols-2 gap-2">
-              <div v-for="key in TUSLER_GRID" :key="key" class="p-2 rounded text-center"
+              <div v-for="key in TUSLER_GRID" :key="key" class="p-3 rounded text-center"
                    :style="{ border: '2px solid ' + TUSLER_ANIMALS[key].color, background: TUSLER_ANIMALS[key].color + '14' }">
-                <div class="text-2xl">{{ TUSLER_ANIMALS[key].emoji }}</div>
-                <div class="text-[11px] mt-1" :style="{ color: TUSLER_ANIMALS[key].color }">{{ TUSLER_ANIMALS[key].nameTr }}</div>
-                <div class="text-[8px] mt-1 text-gray-400">{{ TUSLER_ANIMALS[key].probBand }}<br>{{ TUSLER_ANIMALS[key].impactBand }}</div>
-                <div class="text-[8px] mt-1" :style="{ color: TUSLER_ANIMALS[key].color }">→ {{ TUSLER_ANIMALS[key].recoTr }}</div>
+                <div class="text-3xl">{{ TUSLER_ANIMALS[key].emoji }}</div>
+                <div class="text-sm mt-1" :style="{ color: TUSLER_ANIMALS[key].color }">{{ TUSLER_ANIMALS[key].name }}</div>
+                <div class="text-xs mt-1 text-gray-400">{{ TUSLER_ANIMALS[key].probBand }}<br>{{ TUSLER_ANIMALS[key].impactBand }}</div>
+                <div class="text-xs mt-1" :style="{ color: TUSLER_ANIMALS[key].color }">→ {{ TUSLER_ANIMALS[key].reco }}</div>
               </div>
             </div>
-            <div class="flex justify-between text-[8px] text-gray-500 mt-2 px-1">
-              <span>← Yatay eksen: Olasılık →</span>
-              <span>↕ Dikey eksen: Etki</span>
+            <div class="flex justify-between text-xs text-gray-500 mt-2 px-1">
+              <span>← Horizontal axis: Probability →</span>
+              <span>↕ Vertical axis: Impact</span>
             </div>
           </div>
 
           <!-- Animal → response detail cards -->
           <div v-for="key in tuslerOrder" :key="key"
-               class="flex gap-3 items-start p-3 bg-black/30 rounded border border-white/10">
-            <div class="text-3xl flex-shrink-0">{{ TUSLER_ANIMALS[key].emoji }}</div>
+               class="flex gap-3 items-start p-4 bg-black/30 rounded border border-white/10">
+            <div class="text-4xl flex-shrink-0">{{ TUSLER_ANIMALS[key].emoji }}</div>
             <div class="flex-1">
               <div class="flex items-center justify-between mb-1 flex-wrap gap-1">
-                <h4 class="text-sm" :style="{ color: TUSLER_ANIMALS[key].color }">{{ TUSLER_ANIMALS[key].nameTr }} ({{ TUSLER_ANIMALS[key].nameEn }})</h4>
-                <span class="text-[9px] px-2 py-0.5 rounded" :style="{ backgroundColor: TUSLER_ANIMALS[key].color + '22', color: TUSLER_ANIMALS[key].color }">{{ TUSLER_ANIMALS[key].probBand }} × {{ TUSLER_ANIMALS[key].impactBand }}</span>
+                <h4 class="text-base" :style="{ color: TUSLER_ANIMALS[key].color }">{{ TUSLER_ANIMALS[key].name }}</h4>
+                <span class="text-xs px-2 py-0.5 rounded" :style="{ backgroundColor: TUSLER_ANIMALS[key].color + '22', color: TUSLER_ANIMALS[key].color }">{{ TUSLER_ANIMALS[key].probBand }} × {{ TUSLER_ANIMALS[key].impactBand }}</span>
               </div>
-              <p class="text-[10px] mb-2">{{ TUSLER_ANIMALS[key].rationale }}</p>
-              <div class="p-2 bg-black/30 rounded text-[10px]" :style="{ borderLeft: '3px solid ' + TUSLER_ANIMALS[key].color }">
-                <strong>İdeal Yanıt (PMBOK):</strong> {{ RESPONSE_LABELS[TUSLER_ANIMALS[key].idealResponse] }}
+              <p class="text-sm mb-2">{{ TUSLER_ANIMALS[key].rationale }}</p>
+              <div class="p-2 bg-black/30 rounded text-sm" :style="{ borderLeft: '3px solid ' + TUSLER_ANIMALS[key].color }">
+                <strong>Ideal Response (PMBOK):</strong> {{ RESPONSE_LABELS[TUSLER_ANIMALS[key].idealResponse] }}
               </div>
-              <div class="mt-1 text-[10px]" :style="{ color: theme.chipGreenText }">💡 {{ TUSLER_ANIMALS[key].tipTr }}</div>
+              <div class="mt-1 text-sm" :style="{ color: theme.chipGreenText }">💡 {{ TUSLER_ANIMALS[key].tip }}</div>
             </div>
           </div>
 
           <!-- Closing / teaching point + attribution -->
-          <div class="p-3 bg-black/30 rounded border border-yellow-800/30">
-            <div class="text-[10px] mb-2">🎮 <strong>Oyundaki not sistemi:</strong> Riske hayvanının ideal yanıtını uygularsan (🐯→Önle, 🐊→Aktar, 🐶→Azalt, 🐱→Kabul Et) bonus puan + ders kazanırsın. Yanlış eşleşmede ceza yok; sadece doğru hamleyi açıklayan nazik bir not gelir.</div>
-            <div class="text-[10px] mb-2 p-2 bg-green-900/20 border border-green-800/30 rounded">💡 <strong>Önemli:</strong> Bu oyundaki yüksek-etkili risklerin çoğu 🐊 Timsah'tır — düşük olasılık ama yıkıcı. Gerçek hayatta da en tehlikeli riskler çoğu zaman nadir görünenlerdir; <strong>Yedek Akçe (Contingency Reserve)</strong> tam bu yüzden vardır.</div>
-            <div class="text-[9px] text-gray-500">📚 Kaynak: Robert Tusler'in risk sınıflandırma şeması (Tusler's Risk Classification Scheme).</div>
+          <div class="p-4 bg-black/30 rounded border border-yellow-800/30">
+            <div class="text-sm mb-2">🎮 <strong>The game's scoring:</strong> apply an animal's ideal response (🐯→Avoid, 🐊→Transfer, 🐶→Mitigate, 🐱→Accept) and you earn bonus points + a lesson. A wrong match has no penalty — just a gentle note explaining the correct move.</div>
+            <div class="text-sm mb-2 p-2 bg-green-900/20 border border-green-800/30 rounded">💡 <strong>Important:</strong> most high-impact risks in this game are 🐊 Alligators — low probability but devastating. In real life the most dangerous risks are often the rare-looking ones; that is exactly why a <strong>Contingency Reserve</strong> exists.</div>
+            <div class="text-xs text-gray-500">📚 Source: Robert Tusler's Risk Classification Scheme.</div>
           </div>
         </div>
 
-        <!-- STRATEJİLER TAB -->
+        <!-- STRATEGIES TAB -->
         <div v-if="activeTab === 'strategies'" class="flex flex-col gap-4">
-          <p class="p-2 bg-black/20 rounded">Tehditlere karşı kullanılan <strong>4 PMBOK stratejisi</strong> ve oyundaki maliyetleri:</p>
-          
+          <p class="p-3 bg-black/20 rounded">The <strong>4 PMBOK strategies</strong> against threats and their in-game costs:</p>
+
           <div v-for="s in strategies" :key="s.key"
-               class="flex gap-3 items-start p-3 bg-black/30 rounded border border-white/10">
-            <div class="text-2xl flex-shrink-0">{{ s.icon }}</div>
+               class="flex gap-3 items-start p-4 bg-black/30 rounded border border-white/10">
+            <div class="text-3xl flex-shrink-0">{{ s.icon }}</div>
             <div class="flex-1">
               <div class="flex items-center justify-between mb-1">
-                <h4 class="text-sm" :style="{ color: s.color }">{{ s.title }}</h4>
-                <span class="text-[10px] px-2 py-0.5 rounded" :style="{ backgroundColor: s.color + '22', color: s.color }">{{ s.cost }}</span>
+                <h4 class="text-base" :style="{ color: s.color }">{{ s.title }}</h4>
+                <span class="text-xs px-2 py-0.5 rounded" :style="{ backgroundColor: s.color + '22', color: s.color }">{{ s.cost }}</span>
               </div>
-              <p class="text-[10px] mb-2">{{ s.desc }}</p>
-              <div class="p-2 bg-black/30 rounded text-[10px]" :style="{ borderLeft: '3px solid ' + s.color }">
-                <strong>Örnek:</strong> {{ s.example }}
+              <p class="text-sm mb-2">{{ s.desc }}</p>
+              <div class="p-2 bg-black/30 rounded text-sm" :style="{ borderLeft: '3px solid ' + s.color }">
+                <strong>Example:</strong> {{ s.example }}
               </div>
-              <div class="mt-1 text-[10px]" :style="{ color: theme.chipGreenText }">
-                🎮 Oyunda: {{ s.game }}
+              <div class="mt-1 text-sm" :style="{ color: theme.chipGreenText }">
+                🎮 In the game: {{ s.game }}
               </div>
             </div>
           </div>
 
-          <div class="p-3 bg-black/30 rounded border border-yellow-800/30">
-            <h4 class="text-xs mb-2" :style="{ color: theme.chipYellowText }">⚠️ Fırsatlar için Stratejiler (Pozitif Risk)</h4>
-            <ul class="list-disc pl-4 flex flex-col gap-1 text-[10px]">
-              <li><strong>Exploit (Kazan):</strong> Fırsatı kesin gerçekleştir (örn: ekstra kaynak ver)</li>
-              <li><strong>Enhance (Artır):</strong> Olasılığını/etkisini yükselt</li>
-              <li><strong>Share (Paylaş):</strong> Ortakla birlikte değerlen</li>
+          <div class="p-4 bg-black/30 rounded border border-yellow-800/30">
+            <h4 class="text-sm mb-2" :style="{ color: theme.chipYellowText }">⚠️ Strategies for Opportunities (Positive Risk)</h4>
+            <ul class="list-disc pl-5 flex flex-col gap-1 text-sm">
+              <li><strong>Exploit:</strong> Make sure the opportunity happens (e.g. add extra resources)</li>
+              <li><strong>Enhance:</strong> Increase its probability/impact</li>
+              <li><strong>Share:</strong> Capture it together with a partner</li>
             </ul>
-            <div class="mt-2 text-[10px]">🎮 Oyunda: Yüksek moral → Kritik Başarı = Exploit stratejisi!</div>
+            <div class="mt-2 text-sm">🎮 In the game: high morale → Critical Success = an Exploit strategy!</div>
           </div>
         </div>
 
-        <!-- METRİKLER TAB -->
+        <!-- METRICS TAB -->
         <div v-if="activeTab === 'metrics'" class="flex flex-col gap-4">
-          <div class="p-3 bg-black/30 rounded border border-white/10">
-            <h3 class="text-sm mb-2" :style="{ color: theme.chipYellowText }">EMV (Expected Monetary Value)</h3>
-            <p class="mb-2">Bir riskin ortalama maliyetini hesaplamak için kullanılan istatistiksel yöntemdir.</p>
-            <div class="p-2 bg-black/50 text-center border border-white/20 mb-3 font-bold" :style="{ color: theme.chipGreenText }">
-              EMV = Risk Olasılığı (%) × Riskin Etkisi ($)
+          <div class="p-4 bg-black/30 rounded border border-white/10">
+            <h3 class="text-base mb-2" :style="{ color: theme.chipYellowText }">EMV (Expected Monetary Value)</h3>
+            <p class="mb-2">A statistical method used to compute the average cost of a risk.</p>
+            <div class="p-3 bg-black/50 text-center border border-white/20 mb-3 font-bold" :style="{ color: theme.chipGreenText }">
+              EMV = Risk Probability (%) × Risk Impact ($)
             </div>
             <div class="grid grid-cols-2 gap-3">
-              <div class="p-2 bg-red-900/30 border border-red-800/30 rounded">
-                <div class="text-[10px] mb-1" :style="{ color: '#f08080' }">Tehlikeli görünen risk:</div>
-                <div class="text-[10px]">Olasılık: %10 × Etki: $100,000</div>
-                <div class="text-xs mt-1 font-bold text-red-300">EMV = $10,000</div>
+              <div class="p-3 bg-red-900/30 border border-red-800/30 rounded">
+                <div class="text-sm mb-1" :style="{ color: '#f08080' }">Scary-looking risk:</div>
+                <div class="text-sm">Probability: 10% × Impact: $100,000</div>
+                <div class="text-base mt-1 font-bold text-red-300">EMV = $10,000</div>
               </div>
-              <div class="p-2 bg-yellow-900/30 border border-yellow-800/30 rounded">
-                <div class="text-[10px] mb-1" :style="{ color: theme.chipYellowText }">Daha az zararlı:</div>
-                <div class="text-[10px]">Olasılık: %80 × Etki: $5,000</div>
-                <div class="text-xs mt-1 font-bold text-yellow-300">EMV = $4,000</div>
+              <div class="p-3 bg-yellow-900/30 border border-yellow-800/30 rounded">
+                <div class="text-sm mb-1" :style="{ color: theme.chipYellowText }">Less harmful:</div>
+                <div class="text-sm">Probability: 80% × Impact: $5,000</div>
+                <div class="text-base mt-1 font-bold text-yellow-300">EMV = $4,000</div>
               </div>
             </div>
-            <div class="mt-2 p-2 bg-green-900/20 border border-green-800/30 rounded text-[10px]">
-              💡 <strong>Oyunda:</strong> Her risk kartında EMV gösterilir. Yüksek EMV'li risklere önce müdahale edin!
+            <div class="mt-3 p-3 bg-green-900/20 border border-green-800/30 rounded text-sm">
+              💡 <strong>In the game:</strong> every risk pop-up shows its EMV. Tackle high-EMV risks first!
             </div>
           </div>
 
-          <div class="p-3 bg-black/30 rounded border border-white/10">
-            <h3 class="text-sm mb-2" :style="{ color: theme.chipYellowText }">EVM (Earned Value Management)</h3>
-            <div class="grid grid-cols-3 gap-2 text-center text-[10px]">
-              <div class="p-2 bg-black/40 rounded">
+          <div class="p-4 bg-black/30 rounded border border-white/10">
+            <h3 class="text-base mb-2" :style="{ color: theme.chipYellowText }">EVM (Earned Value Management)</h3>
+            <div class="grid grid-cols-3 gap-2 text-center text-sm">
+              <div class="p-3 bg-black/40 rounded">
                 <div class="font-bold text-blue-300">PV</div>
-                <div>Planlanan Değer</div>
-                <div class="mt-1 text-gray-400">Bu noktada ne kadar tamamlanmalıydı?</div>
+                <div>Planned Value</div>
+                <div class="mt-1 text-gray-400">How much should be done by now?</div>
               </div>
-              <div class="p-2 bg-black/40 rounded">
+              <div class="p-3 bg-black/40 rounded">
                 <div class="font-bold text-green-300">EV</div>
-                <div>Kazanılan Değer</div>
-                <div class="mt-1 text-gray-400">Gerçekte ne kadar tamamlandı?</div>
+                <div>Earned Value</div>
+                <div class="mt-1 text-gray-400">How much is actually done?</div>
               </div>
-              <div class="p-2 bg-black/40 rounded">
+              <div class="p-3 bg-black/40 rounded">
                 <div class="font-bold text-red-300">AC</div>
-                <div>Gerçek Maliyet</div>
-                <div class="mt-1 text-gray-400">Ne kadar harcandı?</div>
+                <div>Actual Cost</div>
+                <div class="mt-1 text-gray-400">How much was spent?</div>
               </div>
             </div>
-            <div class="mt-2 text-[10px] flex flex-col gap-1">
-              <div>• <strong>SV (Schedule Variance):</strong> EV - PV → Negatifse gecikmeli!</div>
-              <div>• <strong>CV (Cost Variance):</strong> EV - AC → Negatifse bütçe aşımı!</div>
+            <div class="mt-2 text-sm flex flex-col gap-1">
+              <div>• <strong>SV (Schedule Variance):</strong> EV - PV → negative means behind schedule!</div>
+              <div>• <strong>CV (Cost Variance):</strong> EV - AC → negative means over budget!</div>
             </div>
           </div>
 
-          <div class="p-3 bg-black/30 rounded border border-white/10">
-            <h3 class="text-sm mb-2" :style="{ color: theme.chipYellowText }">Sinerji Bonus Formülü</h3>
-            <p class="text-[10px]">Her sinerji çifti +8 ilerleme/gün sağlar. Doğru ekip kombinasyonu üstel verim yaratır.</p>
-            <div class="mt-2 p-2 bg-black/40 rounded text-[10px]">
-              <div class="mb-1 font-bold" :style="{ color: theme.chipYellowText }">Oyundaki Sinerji Çiftleri:</div>
-              <div>🧑‍💻 Senior Dev + 🔍 QA → Kalite döngüsü</div>
-              <div>🔧 DevOps + 🔒 Güvenlik → Altyapı kalesi</div>
-              <div>📊 PM + tüm ekip → Koordinasyon çarpanı</div>
-              <div>🎨 Frontend + 🤖 AI → Hız x2</div>
+          <div class="p-4 bg-black/30 rounded border border-white/10">
+            <h3 class="text-base mb-2" :style="{ color: theme.chipYellowText }">Synergy Bonus Formula</h3>
+            <p class="text-sm">Each synergy pair adds +8 progress/day. The right team combination creates exponential output.</p>
+            <div class="mt-2 p-3 bg-black/40 rounded text-sm">
+              <div class="mb-1 font-bold" :style="{ color: theme.chipYellowText }">In-game synergy pairs:</div>
+              <div>🧑‍💻 Senior Dev + 🔍 QA → quality loop</div>
+              <div>🔧 DevOps + 🔒 Security → infrastructure fortress</div>
+              <div>📊 PM + whole team → coordination multiplier</div>
+              <div>🎨 Frontend + 🤖 AI → speed x2</div>
             </div>
           </div>
         </div>
 
-        <!-- SÖZLÜK TAB -->
+        <!-- GLOSSARY TAB -->
         <div v-if="activeTab === 'glossary'" class="flex flex-col gap-3">
-          <div class="p-2 bg-black/20 rounded text-[10px]">
-            📖 PMBOK® standardı terimlerinin Türkçe karşılıkları ve oyundaki yansımaları:
+          <div class="p-3 bg-black/20 rounded text-sm">
+            📖 PMBOK® standard terms and how they map into the game:
           </div>
           <div v-for="term in glossary" :key="term.en"
-               class="p-3 bg-black/30 rounded border border-white/10 flex gap-3">
-            <div class="text-lg flex-shrink-0">{{ term.icon }}</div>
+               class="p-4 bg-black/30 rounded border border-white/10 flex gap-3">
+            <div class="text-xl flex-shrink-0">{{ term.icon }}</div>
             <div>
               <div class="flex gap-2 items-baseline flex-wrap mb-1">
-                <span class="text-xs font-bold" :style="{ color: theme.chipYellowText }">{{ term.en }}</span>
-                <span class="text-[10px]" :style="{ color: theme.chipGreenText }">→ {{ term.tr }}</span>
+                <span class="text-sm font-bold" :style="{ color: theme.chipYellowText }">{{ term.en }}</span>
               </div>
-              <div class="text-[10px] mb-1">{{ term.desc }}</div>
-              <div v-if="term.game" class="text-[10px] px-2 py-1 rounded" style="background: rgba(0,100,200,0.15); border-left: 2px solid #4080c0;">
+              <div class="text-sm mb-1">{{ term.desc }}</div>
+              <div v-if="term.game" class="text-sm px-2 py-1 rounded" style="background: rgba(0,100,200,0.15); border-left: 2px solid #4080c0;">
                 🎮 {{ term.game }}
               </div>
             </div>
           </div>
         </div>
 
-        <!-- GERÇEK DÜNYA TAB -->
+        <!-- REAL WORLD TAB -->
         <div v-if="activeTab === 'realworld'" class="flex flex-col gap-4">
-          <div class="p-2 bg-black/20 rounded text-[10px]">
-            🌍 Gerçek dünyada yaşanmış, oyun mekaniklerinin referans aldığı PM vakaları:
+          <div class="p-3 bg-black/20 rounded text-sm">
+            🌍 Real-world PM cases the game mechanics are based on:
           </div>
           <div v-for="case_ in realCases" :key="case_.title"
-               class="p-3 bg-black/30 rounded border border-white/10">
+               class="p-4 bg-black/30 rounded border border-white/10">
             <div class="flex items-center gap-2 mb-2">
-              <span class="text-xl">{{ case_.icon }}</span>
+              <span class="text-2xl">{{ case_.icon }}</span>
               <div>
-                <div class="text-xs font-bold" :style="{ color: theme.chipYellowText }">{{ case_.title }}</div>
-                <div class="text-[10px]" style="color: #888;">{{ case_.company }} · {{ case_.year }}</div>
+                <div class="text-sm font-bold" :style="{ color: theme.chipYellowText }">{{ case_.title }}</div>
+                <div class="text-sm" style="color: #888;">{{ case_.company }} · {{ case_.year }}</div>
               </div>
             </div>
-            <p class="text-[10px] mb-2">{{ case_.story }}</p>
-            <div class="p-2 bg-red-900/20 border border-red-800/30 rounded text-[10px] mb-2">
-              <strong style="color: #f08080;">Hata:</strong> {{ case_.mistake }}
+            <p class="text-sm mb-2">{{ case_.story }}</p>
+            <div class="p-2 bg-red-900/20 border border-red-800/30 rounded text-sm mb-2">
+              <strong style="color: #f08080;">Mistake:</strong> {{ case_.mistake }}
             </div>
-            <div class="p-2 bg-green-900/20 border border-green-800/30 rounded text-[10px] mb-2">
-              <strong :style="{ color: theme.chipGreenText }">Ders:</strong> {{ case_.lesson }}
+            <div class="p-2 bg-green-900/20 border border-green-800/30 rounded text-sm mb-2">
+              <strong :style="{ color: theme.chipGreenText }">Lesson:</strong> {{ case_.lesson }}
             </div>
-            <div class="p-2 rounded text-[10px]" style="background: rgba(80,40,200,0.15); border-left: 2px solid #8060e0;">
-              🎮 <strong>Oyundaki karşılığı:</strong> {{ case_.game }}
+            <div class="p-2 rounded text-sm" style="background: rgba(80,40,200,0.15); border-left: 2px solid #8060e0;">
+              🎮 <strong>In the game:</strong> {{ case_.game }}
             </div>
           </div>
         </div>
@@ -281,98 +280,98 @@ const props = defineProps({ theme: Object })
 const emit = defineEmits(['close'])
 
 const tabs = [
-  { id: 'basics',     name: '📘 TEMELLER' },
+  { id: 'basics',     name: '📘 BASICS' },
   { id: 'tusler',     name: '🦁 TUSLER' },
-  { id: 'strategies', name: '🛡️ STRATEJİLER' },
-  { id: 'metrics',    name: '📊 METRİKLER' },
-  { id: 'glossary',   name: '📖 SÖZLÜK' },
-  { id: 'realworld',  name: '🌍 GERÇEK DÜNYA' },
+  { id: 'strategies', name: '🛡️ STRATEGIES' },
+  { id: 'metrics',    name: '📊 METRICS' },
+  { id: 'glossary',   name: '📖 GLOSSARY' },
+  { id: 'realworld',  name: '🌍 REAL WORLD' },
 ]
 const activeTab = ref('basics')
 
-// Tusler hayvan sınıflandırması (paylaşılan modülden)
+// Tusler animal classification (from the shared module)
 const tuslerOrder = ['tiger', 'alligator', 'puppy', 'kitten']
 
 const strategies = [
   {
-    key: 'avoid', icon: '🛑', title: 'Kaçınma (Avoid)',
-    color: '#f08080', cost: 'Oyun: $5,000',
-    desc: 'Riski tamamen ortadan kaldırmak için proje planını değiştirmektir. Risk olasılığı ve etkisi sıfırlanır.',
-    example: 'Güvenlik açığı bulunan üçüncü parti kütüphaneyi projeden çıkarmak.',
-    game: 'Risk "resolved" durumuna geçer, artık tetiklenemez. En pahalı ama en güvenli.'
+    key: 'avoid', icon: '🛑', title: 'Avoid',
+    color: '#f08080', cost: 'Game: $5,000',
+    desc: 'Change the project plan to eliminate the risk entirely. Its probability and impact drop to zero.',
+    example: 'Remove a third-party library that has a security vulnerability from the project.',
+    game: 'The risk becomes "resolved" and can no longer trigger. The most expensive but safest option.'
   },
   {
-    key: 'mitigate', icon: '🛡️', title: 'Azaltma (Mitigate)',
-    color: '#d8a830', cost: 'Oyun: $2,000',
-    desc: 'Riskin olasılığını veya potansiyel etkisini kabul edilebilir bir seviyeye düşürür.',
-    example: 'Bug riskine karşı QA uzmanı işe almak veya otomatik test eklemek.',
-    game: 'Risk olasılığı yarıya iner. Hâlâ tetiklenebilir ama daha az olası.'
+    key: 'mitigate', icon: '🛡️', title: 'Mitigate',
+    color: '#d8a830', cost: 'Game: $2,000',
+    desc: 'Reduce the probability or potential impact of a risk to an acceptable level.',
+    example: 'Hire a QA engineer or add automated tests to counter bug risk.',
+    game: 'The risk probability is halved. It can still trigger, but is less likely.'
   },
   {
-    key: 'transfer', icon: '📄', title: 'Aktarma (Transfer)',
-    color: '#5890e0', cost: 'Oyun: $3,000',
-    desc: 'Riskin finansal etkisini ve yönetim sorumluluğunu üçüncü bir tarafa devreder.',
-    example: 'Sunucu çöküşü için sigorta yaptırmak veya DevOps\'u outsource etmek.',
-    game: 'Risk gerçekleşse bile maliyet/moral hasarı sıfırlanır. Risk hâlâ yaşıyor.'
+    key: 'transfer', icon: '📄', title: 'Transfer',
+    color: '#5890e0', cost: 'Game: $3,000',
+    desc: 'Shift the financial impact and management responsibility of a risk to a third party.',
+    example: 'Buy insurance for a server crash, or outsource DevOps.',
+    game: 'Even if the risk happens, the cost/morale damage is zeroed out. The risk is still alive.'
   },
   {
-    key: 'accept', icon: '✅', title: 'Kabullenme (Accept)',
-    color: '#907860', cost: 'Oyun: Ücretsiz',
-    desc: 'Hiçbir proaktif aksiyon alınmaz. EMV düşük riskler için rasyonel bir karardır.',
-    example: 'Düşük olasılıklı, düşük etkili bir riski bilerek görmezden gelmek.',
-    game: 'Para harcanmaz ama risk "active" kalır ve tetiklenirse tam hasar alırsın.'
+    key: 'accept', icon: '✅', title: 'Accept',
+    color: '#907860', cost: 'Game: Free',
+    desc: 'Take no proactive action. A rational choice for low-EMV risks.',
+    example: 'Deliberately ignore a low-probability, low-impact risk.',
+    game: 'No money is spent, but the risk stays "active" and deals full damage if it triggers.'
   },
 ]
 
 const glossary = [
-  { icon: '📋', en: 'Risk Register', tr: 'Risk Kaydı', desc: 'Tüm tanımlanmış risklerin, olasılıklarının, etkilerinin ve yanıt planlarının tutulduğu canlı belge.', game: 'Risk Merkezi\'ndeki tehdit listesi senin Risk Register\'ın.' },
-  { icon: '🗺️', en: 'Risk Matrix', tr: 'Olasılık/Etki Matrisi', desc: 'Riskleri Yüksek/Orta/Düşük olarak kategorize eden 2 boyutlu ızgara. Nitel (qualitative) analiz aracı.', game: 'Risk kartlarındaki Kritik/Orta/Düşük renk kodları bu matristen gelir.' },
-  { icon: '💰', en: 'Contingency Reserve', tr: 'Yedek Akçe', desc: 'Bilinen riskler için ayrılan, önceden onaylanmış bütçe tamponu. EMV toplamına göre belirlenir.', game: 'Başlangıç bütçen ($100k) içinde gizli yedek akçen var. İyi yönet!' },
-  { icon: '📈', en: 'Scope Creep', tr: 'Kapsam Kayması', desc: 'Proje kapsamının resmi onay alınmadan yavaş yavaş genişlemesi. IT projelerinin #1 başarısızlık nedeni.', game: 'İkilem sistemi "Kapsam Kayması" vakası içerir. Reddet → baseline koru.' },
-  { icon: '⏰', en: 'Crashing', tr: 'Hızlandırma', desc: 'Proje takvimini sıkıştırmak için ekstra maliyet (fazla mesai, kaynak) eklemektir. Süreyi kısaltır, maliyeti artırır.', game: 'Mesai açmak = Crashing. Hız artar ama moral ve enerji düşer.' },
-  { icon: '📉', en: 'Technical Debt', tr: 'Teknik Borç', desc: 'Kısa vadeli hız kazancı için kod kalitesinden ödün vermek. Uzun vadede bakım maliyeti ve bug riski olarak geri döner.', game: '"Teknik Borç" risk kartı bug olasılığını artırır.' },
-  { icon: '🎯', en: 'Baseline', tr: 'Temel Çizgi', desc: 'Onaylanmış proje planı (kapsam, takvim, bütçe). Değişiklikler bu çizgiye göre ölçülür.', game: '30 gün / $100k / 1000 effort senin baseline\'ın.' },
-  { icon: '🔄', en: 'Lessons Learned', tr: 'Alınan Dersler', desc: 'Proje kapanışında (Closing) yapılan geriye dönük değerlendirme. Gelecek projelere girdi sağlar.', game: 'Oyun bitince gelen Post-Mortem ekranı senin Lessons Learned\'ın.' },
-  { icon: '🤝', en: 'Stakeholder', tr: 'Paydaş', desc: 'Projeden etkilenen veya projeyi etkileyen herkes. Müşteri, ekip, yönetim, tedarikçiler vs.', game: 'Müşteri (scope creep ister), ekip (moral), yatırımcı (bütçe) oyundaki paydaşlarındır.' },
-  { icon: '🔀', en: 'Change Control', tr: 'Değişiklik Kontrolü', desc: 'Proje kapsamına/takvimine yapılmak istenen değişikliklerin formal süreçten geçirilmesi.', game: 'İkilem\'de "Change Request İste" seçeneği = Change Control uygulamak.' },
+  { icon: '📋', en: 'Risk Register', desc: 'The living document holding all identified risks, their probabilities, impacts and response plans.', game: 'The threat list in the game is your Risk Register.' },
+  { icon: '🗺️', en: 'Risk Matrix', desc: 'A 2D grid categorizing risks as High/Medium/Low. A qualitative analysis tool.', game: 'The Critical/Moderate/Minor color codes on risk cards come from this matrix.' },
+  { icon: '💰', en: 'Contingency Reserve', desc: 'A pre-approved budget buffer set aside for known risks. Sized against total EMV.', game: 'Your starting budget ($100k) hides a contingency reserve. Manage it well!' },
+  { icon: '📈', en: 'Scope Creep', desc: 'The gradual, unapproved expansion of project scope. The #1 cause of IT project failure.', game: 'The "Scope Creep" risk pushes your deadline — classify and respond to protect the baseline.' },
+  { icon: '⏰', en: 'Crashing', desc: 'Compressing the schedule by adding extra cost (overtime, resources). Shortens time, raises cost.', game: 'Working overtime = crashing. Speed rises but morale and energy fall.' },
+  { icon: '📉', en: 'Technical Debt', desc: 'Trading code quality for short-term speed. It returns later as maintenance cost and bug risk.', game: 'The "Technical Debt" risk card raises the bug probability.' },
+  { icon: '🎯', en: 'Baseline', desc: 'The approved project plan (scope, schedule, budget). Changes are measured against it.', game: '30 days / $100k / 3000 effort is your baseline.' },
+  { icon: '🔄', en: 'Lessons Learned', desc: 'The retrospective done at project Closing. Feeds future projects.', game: 'The Post-Mortem screen at the end of the game is your Lessons Learned.' },
+  { icon: '🤝', en: 'Stakeholder', desc: 'Anyone affected by or affecting the project. Client, team, management, vendors, etc.', game: 'The client (scope creep), team (morale) and investor (budget) are your stakeholders.' },
+  { icon: '🔀', en: 'Change Control', desc: 'Running requested changes to scope/schedule through a formal process.', game: 'Responding deliberately to a risk instead of ignoring it is applying change control.' },
 ]
 
 const realCases = [
   {
-    icon: '🚀', title: 'Mars İklim Uydu Felaketi',
+    icon: '🚀', title: 'Mars Climate Orbiter Disaster',
     company: 'NASA / Lockheed Martin', year: '1999',
-    story: '$327 milyon değerindeki uzay aracı, iki farklı ekibin birinin metrik (newton), diğerinin imperial (pound) birim kullandığını fark etmemesi yüzünden Mars atmosferinde yandı.',
-    mistake: 'Entegrasyon riski tanımlanmadı. İki ekip arasında iletişim planı yoktu (Risk: "3. Parti Entegrasyon").',
-    lesson: 'Proje Yönetimi\'nde "Varsayım Log\'u" (Assumption Log) kritiktir. Her ekip aynı birimi mi kullanıyor?',
-    game: '"3. Parti Çöktü" ve "Güvenlik Açığı" riskleri benzer entegrasyon başarısızlıklarını simüle eder.'
+    story: 'A $327 million spacecraft burned up in the Martian atmosphere because one team used metric (newtons) and the other imperial (pounds) units, and nobody noticed.',
+    mistake: 'The integration risk was never identified. There was no communication plan between the two teams (Risk: "Third Party Integration").',
+    lesson: 'In project management an "Assumption Log" is critical. Is every team using the same units?',
+    game: 'The "Third Party Down" and "Security Hole" risks simulate similar integration failures.'
   },
   {
     icon: '🏦', title: 'Knight Capital Flash Crash',
     company: 'Knight Capital Group', year: '2012',
-    story: 'Bir yazılım güncellemesi sırasında eski bir algoritma yanlışlıkla production\'a deploy edildi. 45 dakikada $440 milyon kayıp yaşandı ve şirket iflasın eşiğine geldi.',
-    mistake: 'Değişiklik kontrolü (Change Control) uygulanmadı. Rollback planı yoktu. Deployment riski "Accept" edilmişti.',
-    lesson: '"Stajyer prod\'a push etti" senaryosu tam bu! CI/CD Pipeline ve Code Review yatırımı bu tür felaketleri önler.',
-    game: '"Stajyer Hatası", "Kritik Bug" riskleri ve CI/CD + Code Review yükseltmeleri bu vakadan ilham aldı.'
+    story: 'During a software update an old algorithm was accidentally deployed to production. In 45 minutes the firm lost $440 million and nearly went bankrupt.',
+    mistake: 'Change control was not applied. There was no rollback plan. The deployment risk had been "accepted".',
+    lesson: 'The "intern pushed to prod" scenario is exactly this! Investing in a CI/CD pipeline and code review prevents such disasters.',
+    game: 'The "Intern Mistake" and "Critical Bug" risks were inspired by this case.'
   },
   {
-    icon: '🏗️', title: 'Denver Havalimanı Bagaj Sistemi',
+    icon: '🏗️', title: 'Denver Airport Baggage System',
     company: 'Denver International Airport', year: '1995',
-    story: 'Otomatik bagaj sistemi 2 yıl gecikmeli açıldı. Kapsam sürekli genişledi (Scope Creep), maliyetler $3.2 milyar aştı. Teknik borç birikimi sistemi çalışamaz hale getirdi.',
-    mistake: 'Change Control süreci yoktu. Her "ufak" ek istek kabul edildi. Riski kimse Accept etmedi ama Transfer da etmedi.',
-    lesson: 'Scope Creep\'e "Evet" demek zaman/maliyet üçgenini otomatik bozar. Formal Change Request zorunludur.',
-    game: 'İkilem sistemi "Kapsam Kayması" vakası ve "Teknik Borç" riski bu senaryodan türetildi.'
+    story: 'The automated baggage system opened 2 years late. Scope kept expanding (scope creep), costs exceeded $3.2 billion, and accumulated technical debt made the system unusable.',
+    mistake: 'There was no change control process. Every "small" extra request was accepted. Nobody accepted or transferred the risk.',
+    lesson: 'Saying "yes" to scope creep automatically breaks the time/cost triangle. A formal change request is mandatory.',
+    game: 'The "Scope Creep" and "Technical Debt" risks are derived from this scenario.'
   },
   {
-    icon: '🎮', title: 'Cyberpunk 2077 Erken Çıkış',
+    icon: '🎮', title: 'Cyberpunk 2077 Early Launch',
     company: 'CD Projekt Red', year: '2020',
-    story: 'Yönetim baskısı altında erken release kararı alındı. Ekip tükendi (Burnout), teknik borç birikti. Çıkış günü PlayStation Store\'dan kaldırıldı, $51M iade yapıldı.',
-    mistake: 'Ekip moralini görmezden gelen Crashing uygulandı. Bug riski Transfer edilemedi ve Accept edilmedi, "görmezden gelindi".',
-    lesson: 'Moralin düşmesi sadece hüzün değil, doğrudan kod kalitesini ve bug olasılığını artıran ölçülebilir bir risk faktörüdür.',
-    game: 'Düşük moral → Bug Patlaması mekanik\'i tam bu ilişkiyi modeller. Morali yüksek tut!'
+    story: 'Under management pressure an early release was decided. The team burned out, technical debt piled up. On launch day it was pulled from the PlayStation Store and $51M was refunded.',
+    mistake: 'Crashing was applied while ignoring team morale. The bug risk was neither transferred nor accepted — it was "ignored".',
+    lesson: 'Falling morale is not just sadness; it is a measurable risk factor that directly raises bug probability.',
+    game: 'The low morale → Bug Outbreak mechanic models exactly this relationship. Keep morale high!'
   },
 ]
 </script>
 
 <style scoped>
-/* Scoped styles if necessary */
+.kb-title { font-size: 14px; letter-spacing: 2px; font-family: 'Press Start 2P', monospace; }
 </style>
