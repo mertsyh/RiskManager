@@ -13,7 +13,7 @@
   <!-- ══ CLASSIFY HIT FLASH ══ -->
   <Transition name="fade">
     <div v-if="fx.criticalSuccess" class="crit-flash">
-      <div class="crit-text">⭐ PERFECT CLASSIFY!</div>
+      <div class="crit-text">✓ RISK CONTAINED!</div>
     </div>
   </Transition>
 
@@ -116,6 +116,8 @@
         </div>
 
         <div style="display:flex;align-items:center;gap:8px">
+          <button @click="showManagement = true" class="pixel-btn" style="font-size:11px;padding:8px 10px">🏢 MANAGE</button>
+          <button @click="showRiskCenter = true" class="pixel-btn" style="font-size:11px;padding:8px 10px">📋 LOG</button>
           <button @click="showKnowledgeBase = true" class="pixel-btn" style="font-size:11px;padding:8px 10px">📖 GUIDE</button>
           <button @click="toggleTheme" class="pixel-btn" style="font-size:11px;padding:8px 10px">🎨</button>
           <ThemePanel :theme="theme" @update="(k,v)=>theme[k]=v" />
@@ -132,8 +134,8 @@
             :project="project" :morale="gs.morale" :day="gs.day"
             :milestones="milestones" :dailyProgress="lastDailyProgress"
             :dailyCost="lastDailyCost" :processing="isProcessing"
-            :employees="employees" :theme="theme"
-            @nextDay="handleNextDay" />
+            :employees="employees" :theme="theme" :reductionByType="reductionByType"
+            @nextDay="handleNextDay" @openManage="showManagement=true" />
         </div>
       </main>
 
@@ -151,7 +153,20 @@
     <!-- ═══ MODALS ═══ -->
     <Transition name="fade">
       <RiskClassifyModal v-if="triggeredRisk" :risk="triggeredRisk" :theme="theme"
-        @classify="handleClassify" @close="closeClassify" />
+        @resolve="handleResolve" />
+    </Transition>
+    <Transition name="fade">
+      <DaySummaryModal v-if="daySummary && !triggeredRisk" :summary="daySummary" :theme="theme"
+        @close="daySummary=null" />
+    </Transition>
+    <Transition name="fade">
+      <ManagementModal v-if="showManagement" :theme="theme" :money="gs.money"
+        :employees="employees" :upgrades="upgrades"
+        @hire="hireEmployee" @buyUpgrade="buyUpgrade" @close="showManagement=false" />
+    </Transition>
+    <Transition name="fade">
+      <RiskCenterModal v-if="showRiskCenter" :theme="theme" :eventLog="eventLog"
+        :reductionByType="reductionByType" :stats="stats" @close="showRiskCenter=false" />
     </Transition>
     <Transition name="fade">
       <KnowledgeBase v-if="showKnowledgeBase" :theme="theme" @close="showKnowledgeBase=false" />
@@ -166,8 +181,11 @@ import ThemePanel from './components/ThemePanel.vue'
 import KnowledgeBase from './components/KnowledgeBase.vue'
 import PostMortemReport from './components/PostMortemReport.vue'
 import RiskClassifyModal from './components/RiskClassifyModal.vue'
+import ManagementModal from './components/ManagementModal.vue'
+import RiskCenterModal from './components/RiskCenterModal.vue'
+import DaySummaryModal from './components/DaySummaryModal.vue'
 import { newTheme } from './design.js'
-import { classifyRisk, evaluateResponse, TUSLER_ANIMALS, RESPONSE_LABELS } from './tusler.js'
+import { classifyRisk, evaluateResponse, applyMitigation, riskEmv, effortPointsFor, TUSLER_ANIMALS, RESPONSE_LABELS, EP_COST } from './tusler.js'
 
 const originalTheme = {
   bgGrass:'#2d5a1b', hudBg:'#4a3018', chipGreen:'#2a6020', chipGreenText:'#a0e080',
@@ -196,16 +214,19 @@ function toggleTheme() {
 }
 
 // ─── TUNING ───
-const DAILY_COST = 1500          // sabit günlük ofis gideri
+// (Mini-oyun ayarları — EP/cut/EP_COST — src/tusler.js'te toplandı.)
+const DAILY_COST = 1200          // sabit günlük ofis gideri (çalışan maaşları AYRICA eklenir)
 const RISK_CHANCE = 0.4          // 3. günden sonra her gün risk çıkma olasılığı
-// Seçilen stratejiyi uygulamanın sabit maliyeti (PMBOK risk yanıtları)
-const ACTION_COST = { avoid: 5000, transfer: 3000, mitigate: 2000, accept: 0 }
+const REDUCTION_CAP = 0.6        // bir risk tipindeki toplam olasılık azaltma tavanı (%60)
 
 // ─── REFS & STATE ───
 const triggeredRisk = ref(null)
 const isProcessing = ref(false), lastDailyProgress = ref(0), lastDailyCost = ref(0)
 const gameOverReason = ref(''), bgCanvas = ref(null), particleCanvas = ref(null)
 const showKnowledgeBase = ref(false)
+const showManagement = ref(false)
+const showRiskCenter = ref(false)
+const daySummary = ref(null)
 const eventLog = ref([])
 const usedRiskIds = ref([])
 const stats = reactive({ critSuccesses: 0, bugsFixed: 0, dilemmasResolved: 0, risksProactivelyHandled: 0, tuslerCorrect: 0, tuslerTotal: 0 })
@@ -219,18 +240,31 @@ const milestones = reactive([
   { pct:75, label:'+$20K', bonus:20000, reached:false, icon:'🚀' },
 ])
 
-// ─── EMPLOYEES (fixed team — ofis görünümü için, ids 1-8 masalarda) ───
+// ─── EMPLOYEES (roster — ids 1-8 masalarda) ───
+// Çekirdek takım (1,6,8) hired başlar; gerisi 🏢 MANAGE'den işe alınır.
+// `category` risk `type`'ıyla eşleşir; `reduction` o kategorinin olasılığını kalıcı düşürür (FR3).
 const defaultEmployees = () => [
-  { id:1, name:'Mert',    role:'Senior Dev', icon:'🧑‍💻', dailyCost:2000, productivity:28, hired:true,  energy:100, overtime:false },
-  { id:2, name:'Bob',     role:'DevOps',     icon:'🔧',   dailyCost:1500, productivity:16, hired:true,  energy:100, overtime:false },
-  { id:3, name:'Charlie', role:'QA',         icon:'🔍',   dailyCost:1200, productivity:10, hired:true,  energy:100, overtime:false },
-  { id:4, name:'Diana',   role:'PM',         icon:'📊',   dailyCost:1000, productivity:7,  hired:true,  energy:100, overtime:false },
-  { id:5, name:'Eve',     role:'Security',   icon:'🔒',   dailyCost:1300, productivity:7,  hired:true,  energy:100, overtime:false },
-  { id:6, name:'Frank',   role:'Frontend',   icon:'🎨',   dailyCost:1100, productivity:18, hired:true,  energy:100, overtime:false },
-  { id:7, name:'Grace',   role:'AI Eng.',    icon:'🤖',   dailyCost:1800, productivity:30, hired:true,  energy:100, overtime:false },
-  { id:8, name:'Hank',    role:'Intern',     icon:'👶',   dailyCost:400,  productivity:4,  hired:true,  energy:100, overtime:false },
+  { id:1, name:'Mert',    role:'Senior Dev', icon:'🧑‍💻', dailyCost:700, productivity:28, category:'bug',      reduction:15, hired:true,  energy:100, overtime:false },
+  { id:2, name:'Bob',     role:'DevOps',     icon:'🔧',   dailyCost:550, productivity:16, category:'server',   reduction:25, hired:false, energy:100, overtime:false },
+  { id:3, name:'Charlie', role:'QA',         icon:'🔍',   dailyCost:450, productivity:10, category:'bug',      reduction:25, hired:false, energy:100, overtime:false },
+  { id:4, name:'Diana',   role:'PM',         icon:'📊',   dailyCost:400, productivity:7,  category:'scope',    reduction:30, hired:false, energy:100, overtime:false },
+  { id:5, name:'Eve',     role:'Security',   icon:'🔒',   dailyCost:500, productivity:7,  category:'security', reduction:30, hired:false, energy:100, overtime:false },
+  { id:6, name:'Frank',   role:'Frontend',   icon:'🎨',   dailyCost:450, productivity:18, category:'bug',      reduction:10, hired:true,  energy:100, overtime:false },
+  { id:7, name:'Grace',   role:'AI Eng.',    icon:'🤖',   dailyCost:700, productivity:30, category:'api',      reduction:15, hired:false, energy:100, overtime:false },
+  { id:8, name:'Hank',    role:'Intern',     icon:'👶',   dailyCost:200, productivity:4,  category:null,       reduction:0,  hired:true,  energy:100, overtime:false },
 ]
 const employees = ref(defaultEmployees())
+
+// ─── UPGRADES (tek seferlik satın alım, kalıcı olasılık azaltma — FR7) ───
+const defaultUpgrades = () => [
+  { id:'code-review', name:'Code Review',     icon:'🔍', cost:8000,  category:'bug',      reduction:20, purchased:false, desc:'Automated review lowers bug probability.' },
+  { id:'cicd',        name:'CI/CD Pipeline',  icon:'🔁', cost:10000, category:'api',      reduction:25, purchased:false, desc:'Cuts integration / third-party failures.' },
+  { id:'sec-audit',   name:'Security Audit',  icon:'🛡️', cost:12000, category:'security', reduction:30, purchased:false, desc:'Lowers vulnerability probability.' },
+  { id:'risk-dash',   name:'Risk Dashboard',  icon:'📊', cost:15000, category:'all',      reduction:15, purchased:false, desc:'Monitors every risk type: −15% across the board.' },
+  { id:'cloud-scale', name:'Cloud Scaling',   icon:'☁️', cost:9000,  category:'server',   reduction:30, purchased:false, desc:'Lowers server crash probability.' },
+  { id:'espresso',    name:'Espresso Machine',icon:'☕', cost:5000,  category:'morale',   reduction:0,  purchased:false, morale:2, desc:'Passive +2 morale every day.' },
+]
+const upgrades = ref(defaultUpgrades())
 
 // ─── RISKS (dört Tusler hayvanı da temsil edilecek şekilde) ───
 const allRisksPool = [
@@ -267,6 +301,25 @@ const allRisksPool = [
 // ─── COMPUTED ───
 const completedPct = computed(() => Math.floor(project.progress/project.totalEffort*100))
 const moraleIcon   = computed(() => gs.morale > 70 ? '🔥' : gs.morale > 50 ? '😊' : gs.morale > 30 ? '😐' : '😰')
+
+// Aktif uzman + yükseltmelerin risk tipi başına toplam olasılık azaltması (0..REDUCTION_CAP).
+// 'all' tipi yükseltme her risk tipine eklenir. Bu, bir riskin etkin olasılığını düşürür
+// ve sınıflandırmayı kaydırabilir (🐯 Tiger → 🐶 Puppy) — proaktif Mitigate dersi (US-02/03).
+const RISK_TYPES = ['server', 'api', 'security', 'scope', 'bug', 'conflict']
+const reductionByType = computed(() => {
+  const sum = {}
+  const add = (type, pct) => { if (type) sum[type] = (sum[type] || 0) + pct }
+  let allPct = 0
+  employees.value.forEach(e => { if (e.hired) add(e.category, e.reduction || 0) })
+  upgrades.value.forEach(u => {
+    if (!u.purchased) return
+    if (u.category === 'all') allPct += u.reduction
+    else add(u.category, u.reduction || 0)
+  })
+  const out = {}
+  RISK_TYPES.forEach(t => { out[t] = Math.min(REDUCTION_CAP, ((sum[t] || 0) + allPct) / 100) })
+  return out
+})
 
 // Danger level drives vignette + color grading
 const dangerLevel = computed(() => {
@@ -374,14 +427,17 @@ function updateMorale(d) {
 
 function checkMilestones() {
   const p = completedPct.value
+  const reached = []
   for (const m of milestones) {
     if (!m.reached && p >= m.pct) {
       m.reached = true
       updateMoney(m.bonus)
       addLog(`🎯 ${m.pct}% milestone reached! ${m.label}`, 'milestone')
       spawnParticles(window.innerWidth/2, window.innerHeight/2, 20, 'crit')
+      reached.push(m)
     }
   }
+  return reached
 }
 
 function checkGameEnd() {
@@ -397,11 +453,12 @@ function checkGameEnd() {
   return false
 }
 
-// ─── CLASSIFY A RISK (core mechanic) ───
-// Oyuncu bir hayvan seçer; o hayvanın ideal yanıtı, riskin gerçek hayvanına
-// göre değerlendirilir. İsabet → strateji ucuza biter, hasar yok. Hata → seçilen
-// stratejinin maliyeti + artakalan hasar bütçe/moral/takvimden düşer.
-function handleClassify(guessKey) {
+// ─── RESOLVE A RISK (classify + execution minigame) ───
+// Oyuncu hayvanı seçer (sınıflandırma) → kazandığı efor puanlarını (EP) Olasılık/Etki
+// kesmek arasında dağıtır (mini-oyun) → kalan residual olasılığa karşı zar atılır.
+// Skor KARAR kalitesini ödüllendirir (doğru sınıflandırma + düşük residual EMV), zarı değil
+// → şefkat modeli: şanssız bir tetiklenme iyi oyunu cezalandırmaz.
+function handleResolve({ guessKey, probPoints = 0, impactPoints = 0 }) {
   const risk = triggeredRisk.value
   if (!risk) return
   const trueAnimal = classifyRisk(risk)
@@ -412,40 +469,72 @@ function handleClassify(guessKey) {
   stats.risksProactivelyHandled++
   if (verdict === 'ideal') stats.tuslerCorrect++
 
-  const factor = verdict === 'ideal' ? 0 : verdict === 'ok' ? 0.3 : 1
-  const actionCost = ACTION_COST[response] || 0
-  const resMoney = Math.round((risk.cost || 0) * factor)
-  const resMorale = Math.round((risk.moralDamage || 0) * factor)
-  const resDelay = Math.round((risk.delay || 0) * factor)
+  // EP'yi verdict'in izin verdiği tavanla sınırla (güvenlik).
+  const ep = effortPointsFor(verdict)
+  const pp = Math.max(0, Math.min(probPoints, ep))
+  const ip = Math.max(0, Math.min(impactPoints, ep - pp))
 
-  if (actionCost) updateMoney(-actionCost)
-  if (resMoney)  updateMoney(-resMoney)
-  if (resMorale) updateMorale(-resMorale)
-  if (resDelay)  project.deadline -= resDelay
+  const baseEmv = riskEmv(risk)
+  const m = applyMitigation(risk, pp, ip)
+  const execCost = (pp + ip) * EP_COST
+  if (execCost) updateMoney(-execCost)
   if (scoreDelta) updateScore(scoreDelta)
 
+  // Residual olasılığa karşı zar at (FR5: olasılığa karşı tetikleme).
+  const triggered = Math.random() * 100 < m.residualProb
   const cx = window.innerWidth / 2, cy = window.innerHeight / 2
-  if (verdict === 'ideal') {
+  const bits = []
+  if (execCost) bits.push(`exec -$${execCost.toLocaleString()}`)
+
+  if (triggered) {
+    if (m.residualMoney)  updateMoney(-m.residualMoney)
+    if (m.residualMorale) updateMorale(-m.residualMorale)
+    if (m.residualDelay)  project.deadline -= m.residualDelay
+    triggerFx('shake', 400); triggerFx('glitch', 500)
+    if (m.residualMoney) triggerFx('moneyFlash')
+    spawnParticles(cx, cy, 14, 'bug')
+    if (m.residualMoney)  bits.push(`damage -$${m.residualMoney.toLocaleString()}`)
+    if (m.residualMorale) bits.push(`-${m.residualMorale} morale`)
+    if (m.residualDelay)  bits.push(`-${m.residualDelay} days`)
+  } else {
     triggerFx('criticalSuccess', 1200)
     spawnParticles(cx, cy, 20, 'crit')
-  } else {
-    triggerFx('shake', 400); triggerFx('glitch', 500)
-    if (resMoney) triggerFx('moneyFlash')
-    spawnParticles(cx, cy, 14, 'bug')
+    updateScore(100)   // contained bonus
+    bits.push('contained ✓')
   }
 
+  // Karar kalitesi bonusu: düşürülen EMV (şansa bağlı değil).
+  const emvReduced = Math.max(0, baseEmv - m.residualEmv)
+  if (emvReduced) updateScore(Math.round(emvReduced / 100))
+
   addLog(lesson, 'pmbok')
-  const bits = []
-  if (actionCost) bits.push(`strategy -$${actionCost.toLocaleString()}`)
-  if (resMoney)  bits.push(`damage -$${resMoney.toLocaleString()}`)
-  if (resMorale) bits.push(`-${resMorale} morale`)
-  if (resDelay)  bits.push(`-${resDelay} days`)
-  addLog(`${risk.icon} "${risk.name}" → ${RESPONSE_LABELS[response]}${bits.length ? ' (' + bits.join(', ') + ')' : ''}`, verdict === 'ideal' ? 'success' : 'warning')
+  addLog(`${risk.icon} "${risk.name}" → ${RESPONSE_LABELS[response]} (${bits.join(', ')})`, triggered ? 'warning' : 'success')
+
+  closeClassify()
 }
 
 function closeClassify() {
   triggeredRisk.value = null
   checkGameEnd()
+}
+
+// ─── SHOP: hire specialists / buy upgrades (FR3 + FR7) ───
+function hireEmployee(id) {
+  const e = employees.value.find(x => x.id === id)
+  if (!e || e.hired) return
+  e.hired = true
+  spawnParticles(window.innerWidth / 2, window.innerHeight / 2, 16, 'hire')
+  const red = e.reduction ? ` (${e.category} risk −${e.reduction}%)` : ''
+  addLog(`🧑‍💻 Hired ${e.name} — ${e.role}, $${e.dailyCost.toLocaleString()}/day${red}`, 'success')
+}
+
+function buyUpgrade(id) {
+  const u = upgrades.value.find(x => x.id === id)
+  if (!u || u.purchased || gs.money < u.cost) return
+  u.purchased = true
+  updateMoney(-u.cost)
+  spawnParticles(window.innerWidth / 2, window.innerHeight / 2, 16, 'hire')
+  addLog(`⚙️ Bought ${u.name} — ${u.category === 'all' ? 'all risks' : u.category} ${u.reduction ? '−' + u.reduction + '%' : ''}`, 'success')
 }
 
 // ─── PROCESS NEXT DAY ───
@@ -455,36 +544,61 @@ async function handleNextDay() {
 }
 
 async function processNextDay() {
-  if (isProcessing.value || gs.status !== 'playing' || triggeredRisk.value) return
+  if (isProcessing.value || gs.status !== 'playing' || triggeredRisk.value || daySummary.value) return
   isProcessing.value = true
 
   gs.day++
   project.deadline--
 
-  // Sabit ekipten gelen günlük ilerleme (moral çarpanıyla)
+  // İşe alınan ekipten günlük ilerleme (moral çarpanıyla)
   const mm = gs.morale >= 70 ? 1.2 : gs.morale >= 40 ? 1.0 : 0.75
   const baseProd = employees.value.filter(e => e.hired).reduce((s, e) => s + e.productivity, 0)
   const dp = Math.round(baseProd * mm)
+  // Günlük gider = sabit ofis gideri + işe alınanların maaşları (FR1/FR3)
+  const salaries = employees.value.filter(e => e.hired).reduce((s, e) => s + (e.dailyCost || 0), 0)
+  const dailyCost = DAILY_COST + salaries
   lastDailyProgress.value = dp
-  lastDailyCost.value = DAILY_COST
-  updateMoney(-DAILY_COST)
+  lastDailyCost.value = dailyCost
+  updateMoney(-dailyCost)
   updateMorale(-1)
+  // Espresso Machine yükseltmesi: pasif moral telafisi
+  const espresso = upgrades.value.find(u => u.id === 'espresso' && u.purchased)
+  if (espresso) updateMorale(espresso.morale || 0)
   project.progress = Math.min(project.totalEffort, project.progress + dp)
-  checkMilestones()
+  const reachedMs = checkMilestones()
   triggerFx('glitch', 300)
 
   isProcessing.value = false
   if (checkGameEnd()) return
 
   // Bir süre sonra risk ortaya çıkar → oyuncu sınıflandırır
+  let riskSpawned = false
   if (gs.day >= 3 && Math.random() < RISK_CHANCE) {
     const avail = allRisksPool.filter(r => !usedRiskIds.value.includes(r.id))
     if (avail.length) {
       const r = JSON.parse(JSON.stringify(avail[Math.floor(Math.random() * avail.length)]))
       usedRiskIds.value.push(r.id)
+      // Aktif mitigasyonları uygula → etkin olasılık (sınıflandırmayı kaydırabilir)
+      r.baseProb = r.prob
+      const red = reductionByType.value[r.type] || 0
+      r.prob = Math.max(0, Math.round(r.prob * (1 - red)))
       triggeredRisk.value = r
       triggerFx('shake', 400)
       addLog(`⚠️ A new risk appeared: "${r.name}" — classify it!`, 'warning')
+      riskSpawned = true
+    }
+  }
+
+  // Risk çıkmadıysa kısa gün özeti göster (In-Scope Day Summary)
+  if (!riskSpawned) {
+    daySummary.value = {
+      day: gs.day,
+      progress: dp,
+      cost: dailyCost,
+      morale: gs.morale,
+      deadline: project.deadline,
+      completedPct: completedPct.value,
+      milestone: reachedMs.length ? reachedMs[reachedMs.length - 1] : null,
     }
   }
 }
@@ -499,12 +613,17 @@ function resetGame() {
   Object.assign(gs, { status:'menu', money:100000, day:1, morale:75, score:0 })
   Object.assign(project, { progress:0, deadline:30, totalEffort:3000 })
   employees.value = defaultEmployees()
+  upgrades.value = defaultUpgrades()
   eventLog.value = []
   usedRiskIds.value = []
   milestones.forEach(m => m.reached = false)
   lastDailyProgress.value = 0; lastDailyCost.value = 0
   Object.assign(stats, { critSuccesses:0, bugsFixed:0, dilemmasResolved:0, risksProactivelyHandled:0, tuslerCorrect:0, tuslerTotal:0 })
   triggeredRisk.value = null
+  daySummary.value = null
+  showManagement.value = false
+  showRiskCenter.value = false
+  showKnowledgeBase.value = false
 }
 
 // ─── LIFECYCLE ───

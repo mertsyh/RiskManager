@@ -5,7 +5,7 @@
       <!-- Title bar -->
       <div class="rk-titlebar">
         <span style="font-size:22px">⚠️</span>
-        <span>NEW RISK — CLASSIFY IT</span>
+        <span>{{ revealed ? 'EXECUTE YOUR RESPONSE' : 'NEW RISK — CLASSIFY IT' }}</span>
         <span class="rk-titlebar-sub">Tusler · Probability × Impact</span>
       </div>
 
@@ -31,7 +31,10 @@
             <div class="rk-meter-fill" :style="{ width: risk.prob + '%', background: probHigh ? '#e8902a' : '#5a86a0' }"></div>
             <div class="rk-meter-split" :style="{ left: PROB_SPLIT + '%' }" title="High / Low split"></div>
           </div>
-          <div class="rk-meter-foot">{{ probHigh ? 'HIGH — likely to happen' : 'LOW — unlikely' }}</div>
+          <div class="rk-meter-foot">
+            <template v-if="risk.baseProb && risk.baseProb !== risk.prob">↓ from {{ risk.baseProb }}% (mitigations) · </template>
+            {{ probHigh ? 'HIGH — likely to happen' : 'LOW — unlikely' }}
+          </div>
         </div>
         <!-- Impact -->
         <div class="rk-meter">
@@ -52,7 +55,7 @@
         <!-- EMV -->
         <div class="rk-emv" title="Expected Monetary Value = Probability × Impact">
           <div class="rk-emv-label">EMV</div>
-          <div class="rk-emv-val">${{ emv.toLocaleString() }}</div>
+          <div class="rk-emv-val">${{ baseEmv.toLocaleString() }}</div>
           <div class="rk-emv-sub">prob × impact</div>
         </div>
       </div>
@@ -107,12 +110,72 @@
         </div>
       </div>
 
-      <!-- Lesson + continue -->
+      <!-- Lesson -->
       <Transition name="fade">
         <div v-if="revealed" class="rk-lesson">{{ result.lesson }}</div>
       </Transition>
+
+      <!-- ═══ PHASE 2: RESPONSE EXECUTION MINIGAME (resource allocation) ═══ -->
+      <Transition name="fade">
+        <div v-if="revealed" class="rk-exec">
+          <div class="rk-exec-head">
+            <span>⚙️ EXECUTE RESPONSE — spend your effort</span>
+            <span class="rk-ep" title="Correct classification earns more Effort Points">
+              EP
+              <span v-for="n in ep" :key="n" class="rk-dot" :class="{ 'rk-dot-on': n <= usedEp }"></span>
+              <span class="rk-ep-num">{{ remainingEp }} left</span>
+            </span>
+          </div>
+
+          <!-- Cut Probability -->
+          <div class="rk-track">
+            <div class="rk-track-info">
+              <div class="rk-track-name">🎲 Cut Probability</div>
+              <div class="rk-track-effect">{{ risk.prob }}% → <strong :style="{ color:'#f0a040' }">{{ residual.residualProb }}%</strong></div>
+            </div>
+            <div class="rk-track-ctl">
+              <button class="rk-step" :disabled="probPoints<=0" @click="probPoints--">−</button>
+              <span class="rk-track-pts"><span v-for="n in ep" :key="n" class="rk-dot rk-dot-prob" :class="{ 'rk-dot-on': n <= probPoints }"></span></span>
+              <button class="rk-step" :disabled="remainingEp<=0" @click="probPoints++">＋</button>
+            </div>
+          </div>
+
+          <!-- Cut Impact -->
+          <div class="rk-track">
+            <div class="rk-track-info">
+              <div class="rk-track-name">💥 Cut Impact</div>
+              <div class="rk-track-effect">
+                <template v-if="risk.cost > 0">${{ risk.cost.toLocaleString() }} → <strong :style="{ color:'#f06850' }">${{ residual.residualMoney.toLocaleString() }}</strong></template>
+                <template v-if="risk.moralDamage">{{ risk.cost > 0 ? ' · ' : '' }}-{{ risk.moralDamage }} → <strong>-{{ residual.residualMorale }}</strong> morale</template>
+                <template v-if="!risk.cost && !risk.moralDamage">minor</template>
+              </div>
+            </div>
+            <div class="rk-track-ctl">
+              <button class="rk-step" :disabled="impactPoints<=0" @click="impactPoints--">−</button>
+              <span class="rk-track-pts"><span v-for="n in ep" :key="n" class="rk-dot rk-dot-impact" :class="{ 'rk-dot-on': n <= impactPoints }"></span></span>
+              <button class="rk-step" :disabled="remainingEp<=0" @click="impactPoints++">＋</button>
+            </div>
+          </div>
+
+          <!-- Live residual EMV + cost -->
+          <div class="rk-residual">
+            <div class="rk-residual-emv">
+              <span class="rk-residual-label">Residual EMV</span>
+              <span class="rk-residual-val">
+                ${{ baseEmv.toLocaleString() }} → <strong :style="{ color: residual.residualEmv < baseEmv ? '#6fe05a' : '#d0dcb0' }">${{ residual.residualEmv.toLocaleString() }}</strong>
+              </span>
+            </div>
+            <div class="rk-residual-cost">Execution cost: <strong style="color:#e8a050">-${{ execCost.toLocaleString() }}</strong></div>
+          </div>
+          <div class="rk-exec-hint">
+            💡 Unspent EP is the <strong>Accept</strong> move — saves money, but the residual probability is rolled. Match the spend to the animal!
+          </div>
+        </div>
+      </Transition>
+
+      <!-- Footer -->
       <div class="rk-footer">
-        <button v-if="revealed" class="rk-btn-continue" @click="$emit('close')">CONTINUE ▶</button>
+        <button v-if="revealed" class="rk-btn-continue" @click="execute">EXECUTE RESPONSE ▶</button>
         <div v-else class="rk-hint">Click an animal…</div>
       </div>
 
@@ -122,10 +185,10 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { classifyRisk, evaluateResponse, impactValue, TUSLER_ANIMALS, TUSLER_GRID, RESPONSE_LABELS, PROB_SPLIT, IMPACT_SPLIT } from '../tusler.js'
+import { classifyRisk, evaluateResponse, applyMitigation, riskEmv, effortPointsFor, impactValue, TUSLER_ANIMALS, TUSLER_GRID, RESPONSE_LABELS, PROB_SPLIT, IMPACT_SPLIT, EP_COST } from '../tusler.js'
 
 const props = defineProps({ risk: Object, theme: Object })
-const emit = defineEmits(['classify', 'close'])
+const emit = defineEmits(['resolve'])
 
 const guess = ref(null)
 const revealed = computed(() => guess.value !== null)
@@ -136,7 +199,7 @@ const cells = TUSLER_GRID.map(key => TUSLER_ANIMALS[key])
 const trueAnimal = computed(() => classifyRisk(props.risk))
 const isCorrect = computed(() => guess.value === trueAnimal.value.key)
 const idealLabel = computed(() => RESPONSE_LABELS[trueAnimal.value.idealResponse])
-const emv = computed(() => Math.round((props.risk.prob / 100) * (props.risk.cost || 0)))
+const baseEmv = computed(() => riskEmv(props.risk))
 
 // ── Indicators ──
 const IMPACT_AXIS_MAX = 32000
@@ -159,10 +222,24 @@ const result = computed(() =>
     : null
 )
 
+// ── Phase 2: effort-point allocation (the minigame) ──
+const ep = computed(() => (result.value ? effortPointsFor(result.value.verdict) : 0))
+const probPoints = ref(0)
+const impactPoints = ref(0)
+const usedEp = computed(() => probPoints.value + impactPoints.value)
+const remainingEp = computed(() => Math.max(0, ep.value - usedEp.value))
+const residual = computed(() => applyMitigation(props.risk, probPoints.value, impactPoints.value))
+const execCost = computed(() => usedEp.value * EP_COST)
+
 function pick(key) {
   if (revealed.value) return
   guess.value = key
-  emit('classify', key)
+  probPoints.value = 0
+  impactPoints.value = 0
+}
+
+function execute() {
+  emit('resolve', { guessKey: guess.value, probPoints: probPoints.value, impactPoints: impactPoints.value })
 }
 </script>
 
@@ -263,12 +340,53 @@ function pick(key) {
 .rk-tag-true  { color: #082; background: #6fe05a; }
 .rk-tag-wrong { color: #fff; background: #c03030; }
 
-/* ── Lesson + footer ── */
+/* ── Lesson ── */
 .rk-lesson {
-  margin: 0 18px 14px; padding: 12px 14px; font-size: 14px; line-height: 1.55;
+  margin: 0 18px 8px; padding: 12px 14px; font-size: 14px; line-height: 1.55;
   color: #d0dcb0; background: #0c140a; border: 1px solid #1c3010; border-left: 4px solid #5fb84f;
 }
-.rk-footer { padding: 0 18px 18px; display: flex; justify-content: center; }
+
+/* ── Phase 2: execution / allocation ── */
+.rk-exec { margin: 6px 18px 4px; padding: 12px 14px; background: #0a0f16; border: 2px solid #1c2c40; }
+.rk-exec-head {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  font-size: 13px; color: #8fb0d0; letter-spacing: 1px; margin-bottom: 12px;
+  font-family: 'Press Start 2P', monospace; line-height: 1.5;
+}
+.rk-ep { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+.rk-ep-num { font-size: 11px; color: #6a86a0; margin-left: 4px; font-family: 'Share Tech Mono', monospace; }
+.rk-dot { width: 11px; height: 11px; border-radius: 50%; border: 2px solid #3a4a5a; background: #10161e; display: inline-block; }
+.rk-dot-on { background: #7ec0ff; border-color: #aee0ff; box-shadow: 0 0 6px rgba(126,192,255,0.6); }
+.rk-dot-prob.rk-dot-on { background: #f0a040; border-color: #ffd090; box-shadow: 0 0 6px rgba(240,160,64,0.6); }
+.rk-dot-impact.rk-dot-on { background: #f06850; border-color: #ffb0a0; box-shadow: 0 0 6px rgba(240,104,80,0.6); }
+
+.rk-track { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid #16202c; }
+.rk-track-info { flex: 1; min-width: 0; }
+.rk-track-name { font-size: 14px; color: #cdddf0; }
+.rk-track-effect { font-size: 13px; color: #8a9aaa; margin-top: 2px; }
+.rk-track-ctl { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.rk-track-pts { display: flex; gap: 4px; }
+.rk-step {
+  width: 30px; height: 30px; font-size: 18px; line-height: 1; cursor: pointer;
+  background: #1c3450; color: #aee0ff; border: 2px solid #2c4a68; font-family: 'Share Tech Mono', monospace;
+  transition: filter 0.1s, transform 0.1s;
+}
+.rk-step:not(:disabled):hover { filter: brightness(1.3); }
+.rk-step:not(:disabled):active { transform: translateY(2px); }
+.rk-step:disabled { opacity: 0.3; cursor: default; }
+
+.rk-residual {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin-top: 10px; padding: 10px 12px; background: #08120c; border: 1px solid #1c4030;
+}
+.rk-residual-label { font-size: 12px; color: #70e0a0; letter-spacing: 1px; margin-right: 8px; }
+.rk-residual-val { font-size: 16px; color: #d0dcb0; }
+.rk-residual-cost { font-size: 13px; color: #9a8a6a; }
+.rk-exec-hint { font-size: 12px; color: #7a8a72; line-height: 1.5; margin-top: 8px; }
+.rk-exec-hint strong { color: #c0d0a0; }
+
+/* ── Footer ── */
+.rk-footer { padding: 12px 18px 18px; display: flex; justify-content: center; }
 .rk-hint { font-size: 14px; color: #8a6c40; padding: 8px; }
 .rk-btn-continue {
   font-family: 'Press Start 2P', monospace; font-size: 15px; cursor: pointer;

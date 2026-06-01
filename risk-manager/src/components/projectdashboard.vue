@@ -6,8 +6,9 @@
       <div class="office-titlebar" :style="{ backgroundColor: theme.titleBarBg, color: theme.titleText }">
         <span style="font-size:12px;letter-spacing:2px">🏢 OFFICE — LIVE VIEW</span>
         <div style="display:flex;gap:10px;align-items:center">
-          <span v-if="synergyBonus>0" style="font-size:12px;color:#60d0c0">🤝 +{{ synergyBonus }} SYNERGY</span>
+          <span v-if="mitigationCount>0" style="font-size:12px;color:#80e060">🛡️ {{ mitigationCount }} MITIGATIONS</span>
           <span style="font-size:12px;">{{ hiredCount }}/8 ACTIVE</span>
+          <button @click="$emit('openManage')" class="office-manage-btn">🏢 MANAGE</button>
         </div>
       </div>
 
@@ -183,9 +184,9 @@ import { computed, ref, onMounted, onUnmounted } from 'vue'
 
 const props = defineProps([
   'project','morale','day','milestones','dailyProgress','dailyCost',
-  'processing','employees','theme','synergyBonus','lastCritSuccess','lastBugEvent'
+  'processing','employees','theme','synergyBonus','lastCritSuccess','lastBugEvent','reductionByType'
 ])
-defineEmits(['nextDay'])
+defineEmits(['nextDay','openManage'])
 
 const mapContainer = ref(null)
 const fxCanvas     = ref(null)
@@ -195,6 +196,8 @@ const progressPercent = computed(() =>
   Math.min(100, Math.floor(props.project.progress / props.project.totalEffort * 100)))
 const hiredCount = computed(() =>
   props.employees?.filter(e=>e.hired).length || 0)
+const mitigationCount = computed(() =>
+  Object.values(props.reductionByType || {}).filter(v => v > 0).length)
 const critChance = computed(() =>
   props.morale >= 70 ? 15 : props.morale >= 55 ? 5 : 0)
 const dangerLevel = computed(() => {
@@ -346,6 +349,13 @@ onUnmounted(() => {
   padding:6px 12px;display:flex;justify-content:space-between;align-items:center;
   font-family:'Press Start 2P',monospace;
 }
+.office-manage-btn {
+  font-family:'Press Start 2P',monospace;font-size:9px;cursor:pointer;
+  padding:5px 8px;background:#4a6030;color:#c8e090;border:2px solid #2a3818;
+  box-shadow:0 2px 0 #1a2010;transition:filter 0.1s,transform 0.1s;
+}
+.office-manage-btn:hover{filter:brightness(1.2)}
+.office-manage-btn:active{transform:translateY(2px);box-shadow:0 0 0}
 .stats-panel {
   background:#5a3818;border:4px solid #2a1208;
   box-shadow:inset 3px 3px 0 #7a5030,inset -3px -3px 0 #3a2010,3px 3px 0 #0a0402;
