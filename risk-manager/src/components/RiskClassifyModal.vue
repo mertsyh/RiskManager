@@ -60,7 +60,7 @@
       <!-- Prompt -->
       <div class="rk-prompt">
         <template v-if="!revealed">
-          🦁 Read the graph below: where the <strong>dot</strong> lands tells you the animal. Then pick the matching animal &amp; its response.
+          🦁 Check the <strong>🎲 PROBABILITY</strong> and <strong>💥 IMPACT</strong> meters above, then pick the quadrant that matches.
         </template>
         <template v-else>
           <span :style="{ color: isCorrect ? '#6fe05a' : '#f0b040' }">{{ isCorrect ? '✅ Correct classification!' : '🦁 Tusler corrects you:' }}</span>
@@ -69,71 +69,42 @@
         </template>
       </div>
 
-      <!-- ═══ XY SCATTER PLANE (Probability × Impact) ═══ -->
-      <div class="rk-graph-wrap">
-        <svg class="rk-graph" viewBox="0 0 360 320" preserveAspectRatio="xMidYMid meet">
-          <!-- Quadrant fills -->
-          <g>
-            <rect v-for="q in quads" :key="q.key"
-              :x="q.x" :y="q.y" :width="q.w" :height="q.h"
-              :fill="q.a.color"
-              :fill-opacity="revealed && q.key === trueAnimal.key ? 0.34 : 0.12"
-              :stroke="revealed && q.key === trueAnimal.key ? q.a.color
-                       : (revealed && !isCorrect && q.key === guess ? '#e06060' : '#000')"
-              :stroke-opacity="revealed && (q.key === trueAnimal.key || (!isCorrect && q.key === guess)) ? 0.95 : 0.35"
-              :stroke-width="revealed && (q.key === trueAnimal.key || (!isCorrect && q.key === guess)) ? 2.5 : 1" />
-            <!-- Quadrant labels -->
-            <g v-for="q in quads" :key="q.key + '-lbl'" :style="{ opacity: revealed && q.key !== trueAnimal.key && q.key !== guess ? 0.45 : 1 }">
-              <text :x="q.cx" :y="q.cy - 14" text-anchor="middle" font-size="26">{{ q.a.emoji }}</text>
-              <text :x="q.cx" :y="q.cy + 10" text-anchor="middle" font-size="12" :fill="q.a.color" font-family="'Press Start 2P',monospace">{{ q.a.name }}</text>
-              <text :x="q.cx" :y="q.cy + 26" text-anchor="middle" font-size="11" :fill="q.a.color" opacity="0.85">{{ RESPONSE_LABELS[q.a.idealResponse] }}</text>
-            </g>
-          </g>
+      <!-- ═══ ANIMAL CHOICE MATRIX (Probability × Impact) ═══ -->
+      <div class="rk-choose-hint" v-if="!revealed">PICK THE QUADRANT MATCHING ITS PROBABILITY × IMPACT ↓</div>
+      <div class="rk-matrix">
+        <!-- Vertical IMPACT axis, arrow pointing up, sits left of the grid -->
+        <div class="rk-axis rk-axis-impact">
+          <span class="rk-axis-arrow">↑</span>
+          <span class="rk-axis-name">IMPACT</span>
+        </div>
 
-          <!-- Axis frame -->
-          <rect :x="geo.x0" :y="geo.y0" :width="geo.w" :height="geo.h" fill="none" stroke="#5a4a30" stroke-width="1.5" />
+        <div class="rk-grid">
+          <button v-for="a in cells" :key="a.key"
+            class="rk-cell"
+            :class="{
+              'rk-cell-true': revealed && a.key === trueAnimal.key,
+              'rk-cell-wrong': revealed && !isCorrect && a.key === guess,
+              'rk-cell-dim': revealed && a.key !== trueAnimal.key && a.key !== guess,
+            }"
+            :style="{ borderColor: a.color }"
+            :disabled="revealed"
+            @click="pick(a.key)">
+            <div class="rk-cell-head" :style="{ color: a.color }">
+              <span class="rk-cell-emoji">{{ a.emoji }}</span>
+              <span class="rk-cell-name">{{ a.name }}</span>
+            </div>
+            <div class="rk-cell-bands">{{ a.probBand }} · {{ a.impactBand }}</div>
+            <div class="rk-cell-reco" :style="{ color: a.color }">→ {{ a.reco }}</div>
+            <div v-if="revealed && a.key === trueAnimal.key" class="rk-tag rk-tag-true">✓ CORRECT</div>
+            <div v-else-if="revealed && !isCorrect && a.key === guess" class="rk-tag rk-tag-wrong">✕ YOUR PICK</div>
+          </button>
+        </div>
 
-          <!-- Guide lines from the dot to each axis -->
-          <line :x1="geo.dotX" :y1="geo.dotY" :x2="geo.dotX" :y2="geo.y1" stroke="#ffe066" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.8" />
-          <line :x1="geo.dotX" :y1="geo.dotY" :x2="geo.x0" :y2="geo.dotY" stroke="#ffe066" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.8" />
-
-          <!-- The risk dot -->
-          <circle :cx="geo.dotX" :cy="geo.dotY" r="13" fill="#ffe066" opacity="0.25" class="rk-dot-pulse" />
-          <circle :cx="geo.dotX" :cy="geo.dotY" r="7" fill="#fff" stroke="#ffb000" stroke-width="3" />
-
-          <!-- Value read-outs near axes -->
-          <text :x="geo.dotX" :y="geo.y1 + 16" text-anchor="middle" font-size="11" fill="#ffe066" font-family="'Press Start 2P',monospace">{{ risk.prob }}%</text>
-          <text :x="geo.x0 - 6" :y="geo.dotY + 4" text-anchor="end" font-size="11" fill="#ffe066" font-family="'Press Start 2P',monospace">{{ impactShort }}</text>
-
-          <!-- Axis labels -->
-          <text :x="geo.x0 + geo.w / 2" y="312" text-anchor="middle" font-size="11" fill="#b0a080">PROBABILITY  (least → most)  →</text>
-          <text x="14" :y="geo.y0 + geo.h / 2" text-anchor="middle" font-size="11" fill="#b0a080"
-            :transform="`rotate(-90 14 ${geo.y0 + geo.h / 2})`">IMPACT  (least → most)  →</text>
-        </svg>
-      </div>
-
-      <!-- ═══ ANIMAL CHOICE BUTTONS ═══ -->
-      <div class="rk-choose-hint" v-if="!revealed">PICK THE ANIMAL THAT MATCHES THE DOT ↓</div>
-      <div class="rk-grid">
-        <button v-for="a in cells" :key="a.key"
-          class="rk-cell"
-          :class="{
-            'rk-cell-true': revealed && a.key === trueAnimal.key,
-            'rk-cell-wrong': revealed && !isCorrect && a.key === guess,
-            'rk-cell-dim': revealed && a.key !== trueAnimal.key && a.key !== guess,
-          }"
-          :style="{ borderColor: a.color }"
-          :disabled="revealed"
-          @click="pick(a.key)">
-          <div class="rk-cell-head" :style="{ color: a.color }">
-            <span class="rk-cell-emoji">{{ a.emoji }}</span>
-            <span class="rk-cell-name">{{ a.name }}</span>
-          </div>
-          <div class="rk-cell-bands">{{ a.probBand }} · {{ a.impactBand }}</div>
-          <div class="rk-cell-reco" :style="{ color: a.color }">→ {{ a.reco }}</div>
-          <div v-if="revealed && a.key === trueAnimal.key" class="rk-tag rk-tag-true">✓ CORRECT</div>
-          <div v-else-if="revealed && !isCorrect && a.key === guess" class="rk-tag rk-tag-wrong">✕ YOUR PICK</div>
-        </button>
+        <!-- Horizontal PROBABILITY axis, arrow pointing right, sits below the grid -->
+        <div class="rk-axis rk-axis-prob">
+          <span class="rk-axis-name">PROBABILITY</span>
+          <span class="rk-axis-arrow">→</span>
+        </div>
       </div>
 
       <!-- Lesson + continue -->
@@ -174,38 +145,11 @@ const impactVal = computed(() => impactValue(props.risk))
 const impactHigh = computed(() => impactVal.value >= IMPACT_SPLIT)
 const impactPct = computed(() => Math.min(100, (impactVal.value / IMPACT_AXIS_MAX) * 100))
 const impactSplitPct = (IMPACT_SPLIT / IMPACT_AXIS_MAX) * 100
-const impactShort = computed(() => {
-  const v = impactVal.value
-  return v >= 1000 ? '$' + Math.round(v / 1000) + 'K' : '$' + v
-})
 const severity = computed(() => {
   const lv = props.risk.level
   if (lv === 'high')   return { label: 'CRITICAL', color: '#f06850' }
   if (lv === 'medium') return { label: 'MODERATE', color: '#e0a838' }
   return { label: 'MINOR', color: '#6fb85a' }
-})
-
-// ── Graph geometry (viewBox 0 0 360 320) ──
-const geo = computed(() => {
-  const x0 = 46, x1 = 346, y0 = 14, y1 = 286
-  const w = x1 - x0, h = y1 - y0
-  const prob = props.risk.prob || 0
-  const iv = impactVal.value
-  const sx = x0 + (PROB_SPLIT / 100) * w
-  const sy = y1 - Math.min(1, IMPACT_SPLIT / IMPACT_AXIS_MAX) * h
-  const dotX = x0 + Math.min(1, prob / 100) * w
-  const dotY = y1 - Math.min(1, iv / IMPACT_AXIS_MAX) * h
-  return { x0, x1, y0, y1, w, h, sx, sy, dotX, dotY }
-})
-
-const quads = computed(() => {
-  const g = geo.value
-  return [
-    { key: 'alligator', x: g.x0, y: g.y0, w: g.sx - g.x0, h: g.sy - g.y0 }, // tl
-    { key: 'tiger',     x: g.sx, y: g.y0, w: g.x1 - g.sx, h: g.sy - g.y0 }, // tr
-    { key: 'kitten',    x: g.x0, y: g.sy, w: g.sx - g.x0, h: g.y1 - g.sy }, // bl
-    { key: 'puppy',     x: g.sx, y: g.sy, w: g.x1 - g.sx, h: g.y1 - g.sy }, // br
-  ].map(q => ({ ...q, a: TUSLER_ANIMALS[q.key], cx: q.x + q.w / 2, cy: q.y + q.h / 2 }))
 })
 
 // Chosen animal's ideal response is graded against the true animal's rubric.
@@ -272,15 +216,32 @@ function pick(key) {
 }
 .rk-prompt strong { color: #ffe4a0; }
 
-/* ── Graph ── */
-.rk-graph-wrap { padding: 14px 18px 4px; }
-.rk-graph { width: 100%; height: auto; display: block; background: #0c0a06; border: 2px solid #2a1c0c; }
-.rk-dot-pulse { animation: dotPulse 1.4s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
-@keyframes dotPulse { 0%,100% { opacity: 0.18; r: 11px; } 50% { opacity: 0.4; r: 16px; } }
-
-/* ── Choice grid ── */
+/* ── Choice matrix (Probability × Impact axes wrap the grid) ── */
 .rk-choose-hint { text-align: center; font-size: 13px; color: #c8a050; letter-spacing: 1px; padding: 10px 0 2px; }
-.rk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 8px 18px 14px; }
+.rk-matrix {
+  display: grid;
+  grid-template-columns: auto 1fr;   /* impact axis | grid */
+  grid-template-rows: auto auto;     /* grid row | prob axis */
+  gap: 8px; padding: 8px 18px 14px;
+}
+.rk-grid { grid-column: 2; grid-row: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+.rk-axis { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.rk-axis-name { color: #ffe066; letter-spacing: 2px; font-size: 12px; font-family: 'Press Start 2P', monospace; white-space: nowrap; }
+.rk-axis-arrow { color: #ffe066; font-size: 20px; line-height: 1; }
+
+/* IMPACT — vertical, left of grid, arrow points up */
+.rk-axis-impact {
+  grid-column: 1; grid-row: 1;
+  flex-direction: column; padding: 4px 10px 4px 4px; border-right: 2px solid #ffe066;
+}
+.rk-axis-impact .rk-axis-name { writing-mode: vertical-rl; transform: rotate(180deg); }
+
+/* PROBABILITY — horizontal, under grid, arrow points right */
+.rk-axis-prob {
+  grid-column: 2; grid-row: 2;
+  flex-direction: row; padding: 8px 4px 2px; border-top: 2px solid #ffe066;
+}
 .rk-cell {
   position: relative; min-height: 92px; padding: 12px; border: 3px solid;
   background: rgba(255,255,255,0.03); cursor: pointer;
