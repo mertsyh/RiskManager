@@ -164,6 +164,28 @@
 
 
 
+    <!-- ═══ RISK RADAR (predictive threat bars) ═══ -->
+      <div class="radar-panel">
+        <div class="radar-head">
+          <span>🛡️ RISK RADAR</span>
+          <span class="radar-sub">click a bar → mitigate</span>
+        </div>
+        <div class="radar-grid">
+          <button v-for="(r, i) in radar" :key="r.key" class="radar-bar"
+            :class="{ 'radar-hot': r.value >= 60 }"
+            :title="`${r.label} threat ${r.value}/100 — click to hire/upgrade`"
+            @click="$emit('openManage', r.key)">
+            <div class="radar-row1">
+              <span class="radar-ico">{{ r.icon }}</span>
+              <span class="radar-name">{{ r.label }}</span>
+              <span v-if="i === 0 && r.value > 0" class="radar-next">▲ next?</span>
+              <span class="radar-val" :style="{ color: r.tone }">{{ r.value }}</span>
+            </div>
+            <div class="radar-track"><span class="radar-fill" :style="{ width: r.value + '%', background: r.tone }"></span></div>
+          </button>
+        </div>
+      </div>
+
     <!-- ═══ ADVANCE DAY BUTTON ═══ -->
       <button @click="$emit('nextDay',$event)" :disabled="processing"
         class="day-btn"
@@ -184,9 +206,27 @@ import { computed, ref, onMounted, onUnmounted } from 'vue'
 
 const props = defineProps([
   'project','morale','day','milestones','dailyProgress','dailyCost',
-  'processing','employees','theme','synergyBonus','lastCritSuccess','lastBugEvent','reductionByType'
+  'processing','employees','theme','synergyBonus','lastCritSuccess','lastBugEvent','reductionByType','threatByType'
 ])
 defineEmits(['nextDay','openManage'])
+
+// ── RISK RADAR: kategori başına güncel tehdit çubukları (öngörü) ──
+const RADAR_CATS = [
+  { key:'bug',      icon:'🐛', label:'Bug',         color:'#e0a838' },
+  { key:'server',   icon:'🔥', label:'Server',      color:'#e8702a' },
+  { key:'security', icon:'🔒', label:'Security',    color:'#d05060' },
+  { key:'scope',    icon:'📈', label:'Scope',       color:'#4fa050' },
+  { key:'api',      icon:'🔌', label:'Integ.',      color:'#5890e0' },
+  { key:'conflict', icon:'⚡', label:'Team',        color:'#b080e0' },
+]
+const radar = computed(() => {
+  const t = props.threatByType || {}
+  return RADAR_CATS.map(c => {
+    const value = Math.round(t[c.key] || 0)
+    const tone = value >= 60 ? '#e05858' : value >= 33 ? '#e0b030' : '#58c848'
+    return { ...c, value, tone }
+  }).sort((a, b) => b.value - a.value)
+})
 
 const mapContainer = ref(null)
 const fxCanvas     = ref(null)
@@ -548,4 +588,21 @@ onUnmounted(() => {
 .day-btn{font-family:'Press Start 2P',monospace;font-size:16px;padding:22px;border:4px solid;width:100%;letter-spacing:3px;flex-shrink:0;transition:transform 0.1s,box-shadow 0.1s}
 .day-btn:hover:not(:disabled){filter:brightness(1.15)}
 .day-btn:active:not(:disabled){transform:translateY(7px);box-shadow:none!important}
+
+/* ─── RISK RADAR ─── */
+.radar-panel{background:#1a0e06;border:4px solid #0a0602;box-shadow:inset 2px 2px 0 #2a1808,3px 3px 0 #060402;flex-shrink:0;padding:0}
+.radar-head{background:#2a1408;border-bottom:3px solid #1a0804;padding:5px 10px;display:flex;justify-content:space-between;align-items:center;font-family:'Press Start 2P',monospace;font-size:9px;color:#ffe4a0;letter-spacing:1px}
+.radar-sub{font-family:'Share Tech Mono',monospace;font-size:10px;color:#a07840;letter-spacing:0}
+.radar-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:7px}
+.radar-bar{background:#100a04;border:2px solid #301808;padding:5px 7px;cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:4px;font-family:'Share Tech Mono',monospace;transition:filter 0.1s,transform 0.1s,border-color 0.2s}
+.radar-bar:hover{filter:brightness(1.25);border-color:#5a3818}
+.radar-bar:active{transform:translateY(2px)}
+.radar-hot{border-color:#7a2020;box-shadow:0 0 8px rgba(224,80,80,0.35)}
+.radar-row1{display:flex;align-items:center;gap:5px}
+.radar-ico{font-size:13px;line-height:1}
+.radar-name{font-size:11px;color:#c8a878;flex:1;letter-spacing:0.5px}
+.radar-next{font-size:8px;color:#f08060;font-family:'Press Start 2P',monospace;white-space:nowrap}
+.radar-val{font-size:12px;font-weight:bold}
+.radar-track{height:7px;background:#080402;border:1px solid #000;overflow:hidden}
+.radar-fill{display:block;height:100%;transition:width 0.5s steps(10),background 0.3s}
 </style>

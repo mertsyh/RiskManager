@@ -112,40 +112,59 @@ export function evaluateResponse(animalKey, actionType) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  RESPONSE EXECUTION MINIGAME  (resource allocation)
+//  RESPONSE EXECUTION MINIGAME  (resource allocation, paid in MONEY)
 // ───────────────────────────────────────────────────────────────────────────
-//  After classifying, the player *executes* the response by spending Effort
-//  Points (EP) to cut the risk's residual Probability and/or Impact. A correct
-//  classification grants more EP — so reading the risk well gives you more
-//  power to deal with it. EMV (Probability × Impact) is shown live so the
-//  player optimises the expected cost. The unspent EP is the "Accept" move:
-//  spend nothing, keep your money, but the risk stays at full strength.
+//  After classifying, the player *executes* the response by allocating tokens
+//  to cut the risk's residual Probability and/or Impact. A correct
+//  classification grants more tokens — so reading the risk well lets you act
+//  more. BUT mitigation is never free and never total:
+//   • Each token spent costs MONEY scaled to the risk's size, so high-impact
+//     risks are expensive to handle (mitigation = a budget decision).
+//   • Cuts are percentage-based and capped (`CUT_CAP`), so even spending every
+//     token on one axis leaves real residual — a big Tiger stays dangerous.
+//  EMV (Probability × Impact) is shown live so the player optimises expected
+//  cost. Unspent tokens cost $0 = the "Accept" move (keep budget, full risk).
 //
 //  Scoring rewards the DECISION (low residual EMV + correct classification),
 //  not the dice roll — so an unlucky trigger never punishes good play.
 // ═══════════════════════════════════════════════════════════════════════════
 
-// How many Effort Points a classification verdict earns. Compassion model:
-// even a wrong read still gets 1 EP to act with.
+// How many mitigation tokens a classification verdict earns. Compassion model:
+// even a wrong read still gets 1 token to act with.
 export const EFFORT_FOR_VERDICT = { ideal: 3, ok: 2, suboptimal: 1 }
 
-// Per-point effects and the $ cost of spending one Effort Point.
-export const PROB_CUT_PER_PT = 18      // each Probability point: −18 percentage points
-export const IMPACT_CUT_PER_PT = 0.34  // each Impact point: −34% of impact (3 pts ≈ full)
-export const EP_COST = 1500            // $ spent per Effort Point used (execution cost)
+// Percentage reduction per token (multiplicative, so it never zeroes a risk).
+export const PROB_CUT_PER_PT = 0.18    // each Probability token: −18% of current probability
+export const IMPACT_CUT_PER_PT = 0.18  // each Impact token: −18% of impact
+// Hard cap on total reduction per axis → residual always ≥ (1 − CUT_CAP) of base.
+// With max 3 tokens (3×0.18 = 0.54) you can never fully neutralise a risk.
+export const CUT_CAP = 0.6
+
+// Mitigation is paid in MONEY, scaled to the risk's dollar-equivalent impact,
+// so bigger risks cost more to contain. Floor keeps tiny risks non-trivial.
+export const MITIGATE_COST_RATE = 0.14
+export const MITIGATE_COST_MIN = 800
 
 export function effortPointsFor(verdict) {
   return EFFORT_FOR_VERDICT[verdict] ?? 1
 }
 
-// Computes the residual risk profile after the player allocates EP.
+// $ cost of spending one mitigation token on this risk (scales with impact).
+export function mitigationCostPerPoint(risk) {
+  return Math.max(MITIGATE_COST_MIN, Math.round(impactValue(risk) * MITIGATE_COST_RATE))
+}
+
+// Computes the residual risk profile after the player allocates tokens.
 // probPoints reduce trigger probability; impactPoints reduce all impacts
-// (financial, morale and schedule alike). Returns residual values plus the
-// residual EMV (expected dollar cost) used by the live readout and scoring.
+// (financial, morale and schedule alike) — both as capped % cuts so a residual
+// always remains. Returns residual values plus the residual EMV used by the
+// live readout and scoring.
 export function applyMitigation(risk, probPoints = 0, impactPoints = 0) {
   const baseProb = risk?.prob || 0
-  const residualProb = Math.max(0, Math.round(baseProb - probPoints * PROB_CUT_PER_PT))
-  const residualImpactFactor = Math.max(0, 1 - impactPoints * IMPACT_CUT_PER_PT)
+  const probCut = Math.min(CUT_CAP, probPoints * PROB_CUT_PER_PT)
+  const impactCut = Math.min(CUT_CAP, impactPoints * IMPACT_CUT_PER_PT)
+  const residualProb = Math.max(0, Math.round(baseProb * (1 - probCut)))
+  const residualImpactFactor = 1 - impactCut
   const residualMoney  = Math.round((risk?.cost || 0) * residualImpactFactor)
   const residualMorale = Math.round((risk?.moralDamage || 0) * residualImpactFactor)
   const residualDelay  = Math.round((risk?.delay || 0) * residualImpactFactor)

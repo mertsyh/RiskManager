@@ -119,9 +119,9 @@
       <Transition name="fade">
         <div v-if="revealed" class="rk-exec">
           <div class="rk-exec-head">
-            <span>⚙️ EXECUTE RESPONSE — spend your effort</span>
-            <span class="rk-ep" title="Correct classification earns more Effort Points">
-              EP
+            <span>⚙️ EXECUTE RESPONSE — mitigate (paid in $)</span>
+            <span class="rk-ep" title="Correct classification earns more mitigation tokens">
+              TOKENS
               <span v-for="n in ep" :key="n" class="rk-dot" :class="{ 'rk-dot-on': n <= usedEp }"></span>
               <span class="rk-ep-num">{{ remainingEp }} left</span>
             </span>
@@ -165,10 +165,13 @@
                 ${{ baseEmv.toLocaleString() }} → <strong :style="{ color: residual.residualEmv < baseEmv ? '#6fe05a' : '#d0dcb0' }">${{ residual.residualEmv.toLocaleString() }}</strong>
               </span>
             </div>
-            <div class="rk-residual-cost">Execution cost: <strong style="color:#e8a050">-${{ execCost.toLocaleString() }}</strong></div>
+            <div class="rk-residual-cost">
+              Cost: <strong style="color:#e8a050">-${{ execCost.toLocaleString() }}</strong>
+              <span style="color:#9a8a6a">(${{ costPerPoint.toLocaleString() }}/token)</span>
+            </div>
           </div>
           <div class="rk-exec-hint">
-            💡 Unspent EP is the <strong>Accept</strong> move — saves money, but the residual probability is rolled. Match the spend to the animal!
+            💡 Tokens are paid in <strong>money scaled to the risk</strong> — big risks cost more and can <strong>never be fully neutralised</strong>. Spending 0 = <strong>Accept</strong> (free, full risk rolled). Match the spend to the animal!
           </div>
         </div>
       </Transition>
@@ -185,7 +188,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { classifyRisk, evaluateResponse, applyMitigation, riskEmv, effortPointsFor, impactValue, TUSLER_ANIMALS, TUSLER_GRID, RESPONSE_LABELS, PROB_SPLIT, IMPACT_SPLIT, EP_COST } from '../tusler.js'
+import { classifyRisk, evaluateResponse, applyMitigation, riskEmv, effortPointsFor, mitigationCostPerPoint, impactValue, TUSLER_ANIMALS, TUSLER_GRID, RESPONSE_LABELS, PROB_SPLIT, IMPACT_SPLIT } from '../tusler.js'
 
 const props = defineProps({ risk: Object, theme: Object })
 const emit = defineEmits(['resolve'])
@@ -229,7 +232,8 @@ const impactPoints = ref(0)
 const usedEp = computed(() => probPoints.value + impactPoints.value)
 const remainingEp = computed(() => Math.max(0, ep.value - usedEp.value))
 const residual = computed(() => applyMitigation(props.risk, probPoints.value, impactPoints.value))
-const execCost = computed(() => usedEp.value * EP_COST)
+const costPerPoint = computed(() => mitigationCostPerPoint(props.risk))
+const execCost = computed(() => usedEp.value * costPerPoint.value)
 
 function pick(key) {
   if (revealed.value) return

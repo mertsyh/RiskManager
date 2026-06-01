@@ -116,7 +116,7 @@
         </div>
 
         <div style="display:flex;align-items:center;gap:8px">
-          <button @click="showManagement = true" class="pixel-btn" style="font-size:11px;padding:8px 10px">🏢 MANAGE</button>
+          <button @click="openManage()" class="pixel-btn" style="font-size:11px;padding:8px 10px">🏢 MANAGE</button>
           <button @click="showRiskCenter = true" class="pixel-btn" style="font-size:11px;padding:8px 10px">📋 LOG</button>
           <button @click="showKnowledgeBase = true" class="pixel-btn" style="font-size:11px;padding:8px 10px">📖 GUIDE</button>
           <button @click="toggleTheme" class="pixel-btn" style="font-size:11px;padding:8px 10px">🎨</button>
@@ -135,7 +135,8 @@
             :milestones="milestones" :dailyProgress="lastDailyProgress"
             :dailyCost="lastDailyCost" :processing="isProcessing"
             :employees="employees" :theme="theme" :reductionByType="reductionByType"
-            @nextDay="handleNextDay" @openManage="showManagement=true" />
+            :threatByType="threatByType"
+            @nextDay="handleNextDay" @openManage="openManage" />
         </div>
       </main>
 
@@ -161,7 +162,7 @@
     </Transition>
     <Transition name="fade">
       <ManagementModal v-if="showManagement" :theme="theme" :money="gs.money"
-        :employees="employees" :upgrades="upgrades"
+        :employees="employees" :upgrades="upgrades" :focusCategory="manageFocus"
         @hire="hireEmployee" @buyUpgrade="buyUpgrade" @close="showManagement=false" />
     </Transition>
     <Transition name="fade">
@@ -185,7 +186,7 @@ import ManagementModal from './components/ManagementModal.vue'
 import RiskCenterModal from './components/RiskCenterModal.vue'
 import DaySummaryModal from './components/DaySummaryModal.vue'
 import { newTheme } from './design.js'
-import { classifyRisk, evaluateResponse, applyMitigation, riskEmv, effortPointsFor, TUSLER_ANIMALS, RESPONSE_LABELS, EP_COST } from './tusler.js'
+import { classifyRisk, evaluateResponse, applyMitigation, riskEmv, effortPointsFor, mitigationCostPerPoint, TUSLER_ANIMALS, RESPONSE_LABELS } from './tusler.js'
 
 const originalTheme = {
   bgGrass:'#2d5a1b', hudBg:'#4a3018', chipGreen:'#2a6020', chipGreenText:'#a0e080',
@@ -214,7 +215,7 @@ function toggleTheme() {
 }
 
 // ─── TUNING ───
-// (Mini-oyun ayarları — EP/cut/EP_COST — src/tusler.js'te toplandı.)
+// (Mini-oyun ayarları — token sayısı, % kesim, kesim tavanı, mitigasyon $ maliyeti — src/tusler.js'te toplandı.)
 const DAILY_COST = 1200          // sabit günlük ofis gideri (çalışan maaşları AYRICA eklenir)
 const RISK_CHANCE = 0.4          // 3. günden sonra her gün risk çıkma olasılığı
 const REDUCTION_CAP = 0.6        // bir risk tipindeki toplam olasılık azaltma tavanı (%60)
@@ -225,6 +226,7 @@ const isProcessing = ref(false), lastDailyProgress = ref(0), lastDailyCost = ref
 const gameOverReason = ref(''), bgCanvas = ref(null), particleCanvas = ref(null)
 const showKnowledgeBase = ref(false)
 const showManagement = ref(false)
+const manageFocus = ref(null)        // radar çubuğundan açılınca odaklanılan risk kategorisi
 const showRiskCenter = ref(false)
 const daySummary = ref(null)
 const eventLog = ref([])
@@ -318,6 +320,23 @@ const reductionByType = computed(() => {
   })
   const out = {}
   RISK_TYPES.forEach(t => { out[t] = Math.min(REDUCTION_CAP, ((sum[t] || 0) + allPct) / 100) })
+  return out
+})
+
+// Her kategorinin TEMEL tehdidi = havuzdaki o tip risklerin ortalama olasılığı (sabit, 0..100).
+const baseThreatByType = (() => {
+  const sum = {}, cnt = {}
+  allRisksPool.forEach(r => { sum[r.type] = (sum[r.type] || 0) + r.prob; cnt[r.type] = (cnt[r.type] || 0) + 1 })
+  const out = {}
+  RISK_TYPES.forEach(t => { out[t] = cnt[t] ? Math.round(sum[t] / cnt[t]) : 0 })
+  return out
+})()
+
+// GÜNCEL tehdit = temel × (1 − mitigasyon). Radar çubuklarının gösterdiği değer
+// ve aynı zamanda bir sonraki riskin hangi kategoriden çıkacağının ağırlığı (öngörü çubukları).
+const threatByType = computed(() => {
+  const out = {}
+  RISK_TYPES.forEach(t => { out[t] = Math.round(baseThreatByType[t] * (1 - (reductionByType.value[t] || 0))) })
   return out
 })
 
@@ -476,7 +495,7 @@ function handleResolve({ guessKey, probPoints = 0, impactPoints = 0 }) {
 
   const baseEmv = riskEmv(risk)
   const m = applyMitigation(risk, pp, ip)
-  const execCost = (pp + ip) * EP_COST
+  const execCost = (pp + ip) * mitigationCostPerPoint(risk)   // mitigasyon parayla ödenir, riske göre ölçeklenir
   if (execCost) updateMoney(-execCost)
   if (scoreDelta) updateScore(scoreDelta)
 
@@ -519,6 +538,12 @@ function closeClassify() {
 }
 
 // ─── SHOP: hire specialists / buy upgrades (FR3 + FR7) ───
+// Radar çubuğuna tıklayınca shop o kategoriye odaklanarak açılır; HUD butonu odaksız açar.
+function openManage(category = null) {
+  manageFocus.value = category
+  showManagement.value = true
+}
+
 function hireEmployee(id) {
   const e = employees.value.find(x => x.id === id)
   if (!e || e.hired) return
@@ -576,7 +601,12 @@ async function processNextDay() {
   if (gs.day >= 3 && Math.random() < RISK_CHANCE) {
     const avail = allRisksPool.filter(r => !usedRiskIds.value.includes(r.id))
     if (avail.length) {
-      const r = JSON.parse(JSON.stringify(avail[Math.floor(Math.random() * avail.length)]))
+      // Tehdidi yüksek kategoriden risk gelme olasılığı daha yüksek (öngörü çubukları).
+      const weights = avail.map(r => Math.max(1, threatByType.value[r.type] || 1))
+      const total = weights.reduce((a, b) => a + b, 0)
+      let roll = Math.random() * total, pick = 0
+      while (pick < avail.length - 1 && (roll -= weights[pick]) > 0) pick++
+      const r = JSON.parse(JSON.stringify(avail[pick]))
       usedRiskIds.value.push(r.id)
       // Aktif mitigasyonları uygula → etkin olasılık (sınıflandırmayı kaydırabilir)
       r.baseProb = r.prob
@@ -622,6 +652,7 @@ function resetGame() {
   triggeredRisk.value = null
   daySummary.value = null
   showManagement.value = false
+  manageFocus.value = null
   showRiskCenter.value = false
   showKnowledgeBase.value = false
 }

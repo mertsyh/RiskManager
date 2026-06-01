@@ -31,13 +31,19 @@
         (PMBOK proactive Mitigate). Enough mitigation can shift a 🐯 Tiger down to a 🐶 Puppy.
       </div>
 
+      <!-- Risk-radar focus banner -->
+      <div v-if="focusCategory" class="mm-banner">
+        <template v-if="hasFocusMatch">🎯 Options that reduce <strong>{{ cat(focusCategory).icon }} {{ cat(focusCategory).label }}</strong> risk are highlighted &amp; listed first.</template>
+        <template v-else>🎯 No specialist or upgrade directly lowers <strong>{{ cat(focusCategory).icon }} {{ cat(focusCategory).label }}</strong> risk — manage it through morale &amp; correct classification.</template>
+      </div>
+
       <!-- Content -->
       <div class="p-5 overflow-y-auto pixel-scrollbar flex-1 text-sm" :style="{ color: theme.riskDescText }">
 
         <!-- TEAM TAB -->
         <div v-if="activeTab === 'team'" class="flex flex-col gap-3">
-          <div v-for="e in employees" :key="e.id"
-               class="mm-row" :class="{ 'mm-row-on': e.hired }">
+          <div v-for="e in sortedEmployees" :key="e.id"
+               class="mm-row" :class="{ 'mm-row-on': e.hired, 'mm-row-focus': empMatch(e) }">
             <div class="text-3xl flex-shrink-0">{{ e.icon }}</div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 flex-wrap">
@@ -61,8 +67,8 @@
 
         <!-- UPGRADES TAB -->
         <div v-else class="flex flex-col gap-3">
-          <div v-for="u in upgrades" :key="u.id"
-               class="mm-row" :class="{ 'mm-row-on': u.purchased }">
+          <div v-for="u in sortedUpgrades" :key="u.id"
+               class="mm-row" :class="{ 'mm-row-on': u.purchased, 'mm-row-focus': upgMatch(u) }">
             <div class="text-3xl flex-shrink-0">{{ u.icon }}</div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 flex-wrap">
@@ -88,9 +94,9 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
-defineProps({ theme: Object, money: Number, employees: Array, upgrades: Array })
+const props = defineProps({ theme: Object, money: Number, employees: Array, upgrades: Array, focusCategory: String })
 defineEmits(['hire', 'buyUpgrade', 'close'])
 
 const tabs = [
@@ -98,6 +104,16 @@ const tabs = [
   { id: 'upgrades', name: '⚙️ UPGRADE SHOP' },
 ]
 const activeTab = ref('team')
+
+// ── Risk-radar odağı: bir kategoriden açıldıysa eşleşenleri vurgula + öne al ──
+const empMatch = (e) => props.focusCategory && e.category === props.focusCategory
+const upgMatch = (u) => props.focusCategory && (u.category === props.focusCategory || u.category === 'all')
+const sortedEmployees = computed(() =>
+  [...(props.employees || [])].sort((a, b) => (empMatch(b) ? 1 : 0) - (empMatch(a) ? 1 : 0)))
+const sortedUpgrades = computed(() =>
+  [...(props.upgrades || [])].sort((a, b) => (upgMatch(b) ? 1 : 0) - (upgMatch(a) ? 1 : 0)))
+const hasFocusMatch = computed(() =>
+  (props.employees || []).some(empMatch) || (props.upgrades || []).some(upgMatch))
 
 const CATS = {
   server:   { icon: '🔥', label: 'Server',     color: '#e8702a' },
@@ -129,4 +145,7 @@ function cat(key) { return CATS[key] || { icon: '•', label: key, color: '#999'
 .mm-btn-buy:not(:disabled):hover { filter: brightness(1.2); }
 .mm-btn-buy:not(:disabled):active { transform: translateY(3px); box-shadow: 0 0 0; }
 .mm-btn-buy:disabled { opacity: 0.35; cursor: not-allowed; background: #3a3018; color: #8a7850; border-color: #1a1408; }
+.mm-banner { padding: 8px 18px; font-size: 13px; line-height: 1.5; color: #ffe0a0; background: #2a2008; border-bottom: 2px solid #5a4810; }
+.mm-banner strong { color: #ffd060; }
+.mm-row-focus { box-shadow: 0 0 0 2px #f0c040, 0 0 10px rgba(240,192,64,0.4); border-color: #f0c040 !important; }
 </style>
