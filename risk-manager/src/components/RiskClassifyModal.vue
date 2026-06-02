@@ -118,20 +118,8 @@
       <!-- ═══ PHASE 2: DECIDE — mitigate (pay) or take the chance (free) ═══ -->
       <Transition name="fade">
         <div v-if="revealed && !outcome" class="rk-decide">
-          <div class="rk-decide-head">⚖️ DECIDE — avoid it, soften it, or roll the dice?</div>
+          <div class="rk-decide-head">⚖️ DECIDE — soften it, or roll the dice?</div>
           <div class="rk-choices">
-            <!-- Avoid -->
-            <button class="rk-choice rk-choice-avoid" :class="{ 'rk-choice-disabled': !canAffordAvoid }"
-              :disabled="!canAffordAvoid" @click="avoid()">
-              <div class="rk-choice-title">🚫 AVOID</div>
-              <div class="rk-choice-price">pay -${{ avoidCostVal.toLocaleString() }}</div>
-              <div class="rk-choice-lines">
-                <div>🎲 {{ risk.prob }}% → <strong>0%</strong></div>
-                <div>💥 <strong>fully neutralized</strong></div>
-                <div>✓ no damage — guaranteed</div>
-              </div>
-              <div v-if="!canAffordAvoid" class="rk-choice-warn">✗ Can't afford</div>
-            </button>
             <!-- Mitigate -->
             <button class="rk-choice rk-choice-mit" :class="{ 'rk-choice-disabled': !canAfford }"
               :disabled="!canAfford" @click="decide(true)">
@@ -156,7 +144,7 @@
               </div>
             </button>
           </div>
-          <div class="rk-decide-hint">💡 <strong>AVOID</strong> guarantees safety for a premium; <strong>MITIGATE</strong> softens but can't erase the risk; <strong>TAKE THE CHANCE</strong> keeps your cash and rolls the full odds. Dodging a risk — and reading it right — earns project progress. <strong>It's your call.</strong></div>
+          <div class="rk-decide-hint">💡 <strong>MITIGATE</strong> softens the risk but can't erase it; <strong>TAKE THE CHANCE</strong> keeps your cash and rolls the full odds. Dodging a risk — and reading it right — earns project progress. <strong>It's your call.</strong></div>
         </div>
       </Transition>
 
@@ -169,8 +157,7 @@
               <div class="rk-die">🎲</div>
               <div class="rk-rolling-text">RESOLVING…</div>
               <div class="rk-rolling-sub">
-                <template v-if="outcome.action === 'avoid'">🚫 avoiding the risk entirely…</template>
-                <template v-else>{{ outcome.mitigated ? '🛡️ mitigated' : '🎲 took the chance' }} · rolling against {{ outcome.rollProb }}%</template>
+                {{ outcome.mitigated ? '🛡️ mitigated' : '🎲 took the chance' }} · rolling against {{ outcome.rollProb }}%
               </div>
             </div>
             <!-- revealed -->
@@ -181,8 +168,8 @@
               <div v-if="outcome.triggered" class="rk-result-lines">
                 <div v-if="outcome.dmgMoney">💰 <strong>-${{ outcome.dmgMoney.toLocaleString() }}</strong></div>
                 <div v-if="outcome.dmgMorale">📉 <strong>-{{ outcome.dmgMorale }}</strong> morale</div>
-                <div v-if="outcome.dmgDelay">⏱ <strong>-{{ outcome.dmgDelay }}</strong> days</div>
-                <div v-if="!outcome.dmgMoney && !outcome.dmgMorale && !outcome.dmgDelay">minor impact — no real damage</div>
+                <div v-if="outcome.dmgProgress">🏗️ <strong>-{{ outcome.dmgProgress }}</strong> progress (setback)</div>
+                <div v-if="!outcome.dmgMoney && !outcome.dmgMorale && !outcome.dmgProgress">minor impact — no real damage</div>
                 <div v-if="outcome.progressGain" class="rk-prog">🏗️ <strong>+{{ outcome.progressGain }}</strong> progress</div>
               </div>
               <div v-else class="rk-result-lines">
@@ -191,8 +178,7 @@
               </div>
 
               <div class="rk-result-note">
-                <template v-if="outcome.action === 'avoid'">🚫 You paid ${{ outcome.execCost.toLocaleString() }} to avoid the risk entirely — it never had a chance to strike.</template>
-                <template v-else-if="outcome.mitigated">🛡️ You spent ${{ outcome.execCost.toLocaleString() }} to mitigate{{ outcome.triggered ? ' — and it softened the blow.' : ' — and stayed protected.' }}</template>
+                <template v-if="outcome.mitigated">🛡️ You spent ${{ outcome.execCost.toLocaleString() }} to mitigate{{ outcome.triggered ? ' — and it softened the blow.' : ' — and stayed protected.' }}</template>
                 <template v-else>🎲 You spent nothing — {{ outcome.triggered ? 'and the dice went against you.' : 'and the gamble paid off!' }}</template>
               </div>
             </div>
@@ -212,7 +198,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { classifyRisk, evaluateResponse, applyMitigation, riskEmv, effortPointsFor, mitigationCostPerPoint, autoMitigationSplit, avoidCost, impactValue, TUSLER_ANIMALS, TUSLER_GRID, RESPONSE_LABELS, PROB_SPLIT, IMPACT_SPLIT } from '../tusler.js'
+import { classifyRisk, evaluateResponse, applyMitigation, riskEmv, effortPointsFor, mitigationCostPerPoint, autoMitigationSplit, impactValue, TUSLER_ANIMALS, TUSLER_GRID, RESPONSE_LABELS, PROB_SPLIT, IMPACT_SPLIT } from '../tusler.js'
 
 const props = defineProps({
   risk: Object,
@@ -268,18 +254,14 @@ const costPerPoint = computed(() => mitigationCostPerPoint(props.risk))
 const mitigateCost = computed(() => (split.value.probPoints + split.value.impactPoints) * costPerPoint.value)
 const canAfford = computed(() => props.money >= mitigateCost.value)
 
-// AVOID: riski tamamen yok eder (garanti güvenlik), mitigasyondan pahalıdır.
-const avoidCostVal = computed(() => avoidCost(props.risk))
-const canAffordAvoid = computed(() => props.money >= avoidCostVal.value)
-
-// ── Phase 3: outcome reveal (what the gamble dodged, when avoided) ──
+// ── Phase 3: outcome reveal (what the gamble dodged) ──
 const savedText = computed(() => {
   const o = props.outcome
   if (!o) return ''
   const parts = []
-  if (o.dmgMoney)  parts.push(`$${o.dmgMoney.toLocaleString()}`)
-  if (o.dmgMorale) parts.push(`${o.dmgMorale} morale`)
-  if (o.dmgDelay)  parts.push(`${o.dmgDelay} days`)
+  if (o.dmgMoney)    parts.push(`$${o.dmgMoney.toLocaleString()}`)
+  if (o.dmgMorale)   parts.push(`${o.dmgMorale} morale`)
+  if (o.dmgProgress) parts.push(`${o.dmgProgress} progress`)
   return parts.length ? parts.join(' + ') : 'a minor setback'
 })
 
@@ -294,11 +276,6 @@ function decide(mitigate) {
   emit('resolve', mitigate
     ? { guessKey: guess.value, action: 'mitigate', probPoints: split.value.probPoints, impactPoints: split.value.impactPoints }
     : { guessKey: guess.value, action: 'gamble', probPoints: 0, impactPoints: 0 })
-}
-
-function avoid() {
-  if (props.outcome || !canAffordAvoid.value) return
-  emit('resolve', { guessKey: guess.value, action: 'avoid' })
 }
 </script>
 
@@ -411,7 +388,7 @@ function avoid() {
   font-size: 12px; color: #8fb0d0; letter-spacing: 1px; margin-bottom: 12px;
   font-family: 'Press Start 2P', monospace; line-height: 1.5; text-align: center;
 }
-.rk-choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.rk-choices { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 @media (max-width: 560px) { .rk-choices { grid-template-columns: 1fr; } }
 .rk-choice {
   position: relative; padding: 14px 12px; border: 3px solid; cursor: pointer;
@@ -420,12 +397,10 @@ function avoid() {
 }
 .rk-choice:not(:disabled):hover { filter: brightness(1.25); transform: translateY(-2px); }
 .rk-choice:not(:disabled):active { transform: translateY(1px); }
-.rk-choice-avoid { background: rgba(190,60,120,0.10); border-color: #a83a78; }
 .rk-choice-mit { background: rgba(40,120,200,0.10); border-color: #2c6aa0; }
 .rk-choice-gamble { background: rgba(200,140,40,0.10); border-color: #b07820; }
 .rk-choice-disabled { opacity: 0.45; cursor: default; }
 .rk-choice-title { font-size: 12px; font-family: 'Press Start 2P', monospace; line-height: 1.4; min-height: 2.2em; }
-.rk-choice-avoid .rk-choice-title { color: #f08ac0; }
 .rk-choice-mit .rk-choice-title { color: #7ec0ff; }
 .rk-choice-gamble .rk-choice-title { color: #f0b860; }
 .rk-choice-price { font-size: 15px; font-weight: bold; color: #ffe4a0; }

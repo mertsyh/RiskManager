@@ -36,7 +36,7 @@
               <div style="font-family:'Press Start 2P',monospace;font-size:10px;color:#a3b18a;margin-top:4px;letter-spacing:3px">TUSLER PROTOCOL // 2026</div>
             </div>
             <div class="pixel-inset p-4 text-center text-sm" :style="{ backgroundColor: theme.panelBg, color: theme.riskDescText }">
-              Complete PROJECT: NEON in 30 days.<br>As risks appear, classify each one to the right animal by its probability × impact!
+Ship PROJECT: NEON — there's no deadline, but every day counts: finish in as few days as you can to top the leaderboard.<br>As risks appear, classify each one to the right animal by its probability × impact!
             </div>
             <div class="grid grid-cols-2 gap-4">
               <div class="pixel-inset p-3 text-center" :style="{ backgroundColor: theme.panelBg, color: '#e8702a' }"><div class="text-2xl">🐯</div>TIGER → AVOID</div>
@@ -102,16 +102,10 @@
               <span class="hud-stat-value" :style="{color:theme.chipYellowText}">{{ gs.morale }}%</span>
             </div>
           </div>
-          <!-- Day -->
-          <div class="hud-stat" :style="{background:theme.chipBlue,borderColor:theme.chipBlue}" title="Current day">
+          <!-- Day (no deadline — fewer days to finish = higher on the leaderboard) -->
+          <div class="hud-stat" :style="{background:theme.chipBlue,borderColor:theme.chipBlue}" title="Days elapsed — finish in as few as you can">
             <div class="hud-stat-label" :style="{color:theme.chipBlueText}">📅 DAY</div>
-            <div class="hud-stat-value" :style="{color:theme.chipBlueText}">{{ gs.day }}/30</div>
-          </div>
-          <!-- Deadline -->
-          <div class="hud-stat" :class="project.deadline<=5?'blinkanim':''"
-            :style="project.deadline<=5?{background:theme.chipRed,borderColor:theme.chipRed}:{background:theme.chipBrown,borderColor:theme.chipBrown}" title="Days left until deadline">
-            <div class="hud-stat-label" :style="{color:project.deadline<=5?'#f0a0a0':'#c8a070'}">⏱ DAYS LEFT</div>
-            <div class="hud-stat-value" :style="{color:project.deadline<=5?'#f08080':'#e0c0a0'}">{{ project.deadline }}</div>
+            <div class="hud-stat-value" :style="{color:theme.chipBlueText}">{{ gs.day }}</div>
           </div>
         </div>
 
@@ -164,7 +158,9 @@
     <Transition name="fade">
       <ManagementModal v-if="showManagement" :theme="theme" :money="gs.money"
         :employees="employees" :upgrades="upgrades" :focusCategory="manageFocus"
-        @hire="hireEmployee" @buyUpgrade="buyUpgrade" @close="showManagement=false" />
+        :score="gs.score" :loans="gs.loans" :loanPenalty="gs.loanPenalty"
+        :loanAmount="LOAN_AMOUNT" :loanCost="loanCost"
+        @hire="hireEmployee" @buyUpgrade="buyUpgrade" @takeLoan="takeLoan" @close="showManagement=false" />
     </Transition>
     <Transition name="fade">
       <RiskCenterModal v-if="showRiskCenter" :theme="theme" :eventLog="eventLog"
@@ -187,7 +183,7 @@ import ManagementModal from './components/ManagementModal.vue'
 import RiskCenterModal from './components/RiskCenterModal.vue'
 import DaySummaryModal from './components/DaySummaryModal.vue'
 import { newTheme } from './design.js'
-import { classifyRisk, evaluateResponse, applyMitigation, riskEmv, effortPointsFor, mitigationCostPerPoint, avoidCost, avoidProgressBonus, CLASSIFY_PROGRESS_BONUS, TUSLER_ANIMALS } from './tusler.js'
+import { classifyRisk, evaluateResponse, applyMitigation, riskEmv, effortPointsFor, mitigationCostPerPoint, avoidProgressBonus, CLASSIFY_PROGRESS_BONUS, TUSLER_ANIMALS } from './tusler.js'
 
 const originalTheme = {
   bgGrass:'#2d5a1b', hudBg:'#4a3018', chipGreen:'#2a6020', chipGreenText:'#a0e080',
@@ -220,6 +216,14 @@ function toggleTheme() {
 const DAILY_COST = 1200          // sabit günlük ofis gideri (çalışan maaşları AYRICA eklenir)
 const RISK_CHANCE = 0.4          // 3. günden sonra her gün risk çıkma olasılığı
 const REDUCTION_CAP = 0.6        // bir risk tipindeki toplam olasılık azaltma tavanı (%60)
+// Takvim baskısı artık ilerleme baskısı: bir risk tetiklenip gecikme verirse, o gecikme
+// günü başına bu kadar PROGRESS geri alınır (totalEffort 3000; ~bir çekirdek ekip günü).
+const DELAY_PROGRESS_PER_DAY = 45
+// Acil kredi: anında nakit, peşin (geri ödemesiz) ama YÜKSEK skor bedeliyle. Para senindir.
+const LOAN_AMOUNT = 25000        // her kredinin verdiği nakit
+const LOAN_POINT_RATE = 0.08     // skor bedeli = tutar × oran → $25K ≈ 2,000 puan
+// Zafer bonusu: eski "deadline × 100" terimi kaldırıldı (artık son tarih yok); hız leaderboard'da ödüllenir.
+const COMPLETION_BONUS = 500
 
 // ─── REFS & STATE ───
 const triggeredRisk = ref(null)
@@ -237,8 +241,8 @@ const usedRiskIds = ref([])
 const stats = reactive({ critSuccesses: 0, bugsFixed: 0, dilemmasResolved: 0, risksProactivelyHandled: 0, tuslerCorrect: 0, tuslerTotal: 0 })
 
 const fx = reactive({ shake:false, moneyFlash:false, glitch:false, criticalSuccess:false, bugEvent:false })
-const gs = reactive({ status:'menu', money:100000, day:1, morale:75, score:0 })
-const project = reactive({ deadline:30, progress:0, totalEffort:3000 })
+const gs = reactive({ status:'menu', money:100000, day:1, morale:75, score:0, loans:0, loanPenalty:0 })
+const project = reactive({ progress:0, totalEffort:3000 })
 const milestones = reactive([
   { pct:25, label:'+$10K', bonus:10000, reached:false, icon:'💰' },
   { pct:50, label:'+$15K', bonus:15000, reached:false, icon:'🎯' },
@@ -346,8 +350,6 @@ const threatByType = computed(() => {
 // Danger level drives vignette + color grading
 const dangerLevel = computed(() => {
   let d = 0
-  if (project.deadline <= 3)      d = Math.max(d, 1.0)
-  else if (project.deadline <= 7) d = Math.max(d, 0.6)
   if (gs.money < 10000)           d = Math.max(d, 0.8)
   else if (gs.money < 25000)      d = Math.max(d, 0.4)
   if (gs.morale < 20)             d = Math.max(d, 0.7)
@@ -373,7 +375,7 @@ const tickerText = computed(() => {
     'Global AI market grew 340%...',
     'A rival company announced a new product...',
     'Cloud costs keep rising...',
-    `Project ${completedPct.value}% complete, ${project.deadline} days left...`,
+    `Day ${gs.day} · Project ${completedPct.value}% complete...`,
     `Team morale is ${gs.morale > 60 ? 'high! 🔥' : gs.morale > 35 ? 'normal 😊' : 'critically low! 😰'}`,
     `Budget: $${gs.money.toLocaleString()} — ${gs.money > 50000 ? 'Safe 💰' : 'Be careful!'}`,
   ]
@@ -440,7 +442,22 @@ function updateMoney(amount) {
 }
 
 function updateScore(amount) {
-  gs.score += amount
+  // Skor 0'ın altına inmez — kredi cezası kazanılan tüm puanı silebilir ama negatife geçmez.
+  gs.score = Math.max(0, gs.score + amount)
+}
+
+// Acil kredinin sabit skor bedeli (tutar × oran). Para anında eklenir, geri ödeme yok.
+const loanCost = Math.round(LOAN_AMOUNT * LOAN_POINT_RATE)
+
+function takeLoan(amount = LOAN_AMOUNT) {
+  if (gs.status !== 'playing') return
+  const cost = Math.round(amount * LOAN_POINT_RATE)
+  updateMoney(amount)
+  updateScore(-cost)
+  gs.loans++
+  gs.loanPenalty += cost
+  spawnParticles(window.innerWidth / 2, window.innerHeight / 2, 16, 'hire')
+  addLog(`🏦 Took a $${amount.toLocaleString()} loan — kept the cash, paid −${cost.toLocaleString()} score.`, 'warning')
 }
 
 function updateMorale(d) {
@@ -472,11 +489,11 @@ function checkMilestones() {
 
 function checkGameEnd() {
   if (gs.money <= 0)                          { gameOverReason.value='Out of budget!';   gs.status='gameover'; return true }
-  if (project.deadline <= 0)                  { gameOverReason.value="Time's up!";       gs.status='gameover'; return true }
   if (gs.morale <= 0)                         { gameOverReason.value='The team quit!';   gs.status='gameover'; return true }
   if (project.progress >= project.totalEffort) {
     gs.status = 'victory'
-    const finalBonus = Math.floor(gs.money / 100) + (project.deadline * 100) + (gs.morale * 10)
+    // Son tarih yok; zafer bonusu kalan bütçe + moralden gelir (hız leaderboard'da ölçülür).
+    const finalBonus = Math.floor(gs.money / 100) + (gs.morale * 10) + COMPLETION_BONUS
     updateScore(finalBonus)
     return true
   }
@@ -503,21 +520,13 @@ function handleResolve({ guessKey, action = 'gamble', probPoints = 0, impactPoin
   const ep = effortPointsFor(verdict)
   const baseEmv = riskEmv(risk)
 
-  // Üç karar: AVOID (riski tamamen yok et — pahalı, garanti), MITIGATE (parayla azalt), ŞANSI DENE (bedava).
-  let m, execCost, mitigated
-  if (action === 'avoid') {
-    // AVOID: riski tamamen ortadan kaldırır — sıfır residual, asla tetiklenmez.
-    m = { residualProb: 0, residualImpactFactor: 0, residualMoney: 0, residualMorale: 0, residualDelay: 0, residualEmv: 0 }
-    execCost = avoidCost(risk)
-    mitigated = true
-  } else {
-    // Doğru sınıflandırma daha çok mitigasyon gücü kazandırır; yine de tavanla sınırla (güvenlik).
-    const pp = Math.max(0, Math.min(probPoints, ep))
-    const ip = Math.max(0, Math.min(impactPoints, ep - pp))
-    m = applyMitigation(risk, pp, ip)
-    execCost = (pp + ip) * mitigationCostPerPoint(risk)   // mitigasyon parayla ödenir (peşin, riske göre ölçeklenir)
-    mitigated = (pp + ip) > 0
-  }
+  // İki karar: MITIGATE (parayla azalt) veya ŞANSI DENE (bedava). Doğru sınıflandırma daha çok
+  // mitigasyon gücü kazandırır; yine de tavanla sınırla (güvenlik).
+  const pp = Math.max(0, Math.min(probPoints, ep))
+  const ip = Math.max(0, Math.min(impactPoints, ep - pp))
+  const m = applyMitigation(risk, pp, ip)
+  const execCost = (pp + ip) * mitigationCostPerPoint(risk)   // mitigasyon parayla ödenir (peşin, riske göre ölçeklenir)
+  const mitigated = (pp + ip) > 0
 
   if (execCost) updateMoney(-execCost)
   if (scoreDelta) updateScore(scoreDelta)
@@ -525,11 +534,14 @@ function handleResolve({ guessKey, action = 'gamble', probPoints = 0, impactPoin
   const emvReduced = Math.max(0, baseEmv - m.residualEmv)
   if (emvReduced) updateScore(Math.round(emvReduced / 100))
 
-  // Residual olasılığa karşı zar at — AVOID'da residual 0 olduğu için asla tetiklenmez.
+  // Takvim hasarı artık ilerleme baskısı: gecikme tetiklenirse projeyi geri atar (gün/leaderboard'a mal olur).
+  const dmgProgress = m.residualDelay ? m.residualDelay * DELAY_PROGRESS_PER_DAY : 0
+
+  // Residual olasılığa karşı zar at.
   const triggered = Math.random() * 100 < m.residualProb
   riskOutcome.value = {
     phase: 'rolling', triggered, mitigated, action, execCost, rollProb: m.residualProb,
-    dmgMoney: m.residualMoney, dmgMorale: m.residualMorale, dmgDelay: m.residualDelay,
+    dmgMoney: m.residualMoney, dmgMorale: m.residualMorale, dmgProgress,
     riskName: risk.name, riskIcon: risk.icon,
   }
 
@@ -538,32 +550,32 @@ function handleResolve({ guessKey, action = 'gamble', probPoints = 0, impactPoin
   resolveTimer = setTimeout(() => {
     const cx = window.innerWidth / 2, cy = window.innerHeight / 2
     const bits = []
-    if (execCost) bits.push(`${action === 'avoid' ? 'avoid' : 'mitigate'} -$${execCost.toLocaleString()}`)
+    if (execCost) bits.push(`mitigate -$${execCost.toLocaleString()}`)
     // İyi risk yönetimi PROJEYİ İLERLETİR: doğru okuma momentum kazandırır; riski hasarsız
-    // atlatmak (zar/mitigasyon/AVOID) ekibe inşa için zaman açar.
+    // atlatmak (zar/mitigasyon) ekibe inşa için zaman açar.
     let gained = 0
     if (verdict === 'ideal') gained += CLASSIFY_PROGRESS_BONUS   // doğru sınıflandırma → küçük momentum (tetiklense bile)
     if (triggered) {
       if (m.residualMoney)  updateMoney(-m.residualMoney)
       if (m.residualMorale) updateMorale(-m.residualMorale)
-      if (m.residualDelay)  project.deadline -= m.residualDelay
+      if (dmgProgress)      project.progress = Math.max(0, project.progress - dmgProgress)
       triggerFx('shake', 400); triggerFx('glitch', 500)
       if (m.residualMoney) triggerFx('moneyFlash')
       spawnParticles(cx, cy, 14, 'bug')
       if (m.residualMoney)  bits.push(`damage -$${m.residualMoney.toLocaleString()}`)
       if (m.residualMorale) bits.push(`-${m.residualMorale} morale`)
-      if (m.residualDelay)  bits.push(`-${m.residualDelay} days`)
+      if (dmgProgress)      bits.push(`-${dmgProgress} progress`)
     } else {
       updateScore(100)   // avoided bonus
       gained += avoidProgressBonus(risk)   // hasarsız atlatıldı → EMV'ye göre ilerleme boost'u
       triggerFx('criticalSuccess', 1200)
       spawnParticles(cx, cy, 20, 'crit')
-      if (action !== 'avoid') bits.push('avoided ✓')
+      bits.push('avoided ✓')
     }
     const progressGain = addProgress(gained)
     if (progressGain) { bits.push(`+${progressGain} progress`); checkMilestones() }
     addLog(lesson, 'pmbok')
-    const actionLabel = action === 'avoid' ? 'AVOIDED' : mitigated ? 'MITIGATED' : 'TOOK THE CHANCE'
+    const actionLabel = mitigated ? 'MITIGATED' : 'TOOK THE CHANCE'
     addLog(`${risk.icon} "${risk.name}" → ${actionLabel} (${bits.join(', ')})`, triggered ? 'warning' : 'success')
     if (riskOutcome.value) riskOutcome.value = { ...riskOutcome.value, phase: 'revealed', progressGain }
     resolveTimer = null
@@ -613,7 +625,6 @@ async function processNextDay() {
   isProcessing.value = true
 
   gs.day++
-  project.deadline--
 
   // İşe alınan ekipten günlük ilerleme (moral çarpanıyla)
   const mm = gs.morale >= 70 ? 1.2 : gs.morale >= 40 ? 1.0 : 0.75
@@ -666,7 +677,6 @@ async function processNextDay() {
       progress: dp,
       cost: dailyCost,
       morale: gs.morale,
-      deadline: project.deadline,
       completedPct: completedPct.value,
       milestone: reachedMs.length ? reachedMs[reachedMs.length - 1] : null,
     }
@@ -680,8 +690,8 @@ function startGame() {
 }
 
 function resetGame() {
-  Object.assign(gs, { status:'menu', money:100000, day:1, morale:75, score:0 })
-  Object.assign(project, { progress:0, deadline:30, totalEffort:3000 })
+  Object.assign(gs, { status:'menu', money:100000, day:1, morale:75, score:0, loans:0, loanPenalty:0 })
+  Object.assign(project, { progress:0, totalEffort:3000 })
   employees.value = defaultEmployees()
   upgrades.value = defaultUpgrades()
   eventLog.value = []

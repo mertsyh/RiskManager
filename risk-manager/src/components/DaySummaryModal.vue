@@ -24,8 +24,8 @@
             </div>
           </div>
           <div class="ds-stat">
-            <div class="ds-label">DAYS LEFT</div>
-            <div class="ds-val" :style="{ color: summary.deadline <= 5 ? '#e05858' : '#5888e0' }">{{ summary.deadline }}d</div>
+            <div class="ds-label">DAY</div>
+            <div class="ds-val" style="color:#5888e0">{{ summary.day }}</div>
           </div>
         </div>
 

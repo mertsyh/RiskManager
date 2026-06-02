@@ -33,8 +33,8 @@
             <div class="text-sm" :style="{ color: gs.money > 0 ? '#80c0ff' : '#f08080' }">${{ gs.money.toLocaleString() }}</div>
           </div>
           <div>
-            <div class="text-[10px] text-gray-500 mb-1">Kalan Süre (Schedule Variance)</div>
-            <div class="text-sm" :style="{ color: project.deadline >= 0 ? '#f0d060' : '#f08080' }">{{ project.deadline }} Gün</div>
+            <div class="text-[10px] text-gray-500 mb-1">{{ isVictory ? 'Tamamlama Süresi' : 'Geçen Süre' }}</div>
+            <div class="text-sm" style="color:#f0d060">{{ gs.day }} Gün</div>
           </div>
           <div>
             <div class="text-[10px] text-gray-500 mb-1">Takım Morali</div>
@@ -82,6 +82,7 @@
               <div class="text-4xl font-bold text-white" style="text-shadow: 2px 2px 0 #d0a0f0">{{ gs.score.toLocaleString() }}</div>
             </div>
             <div class="text-[9px]" style="color:#a080c0">Kararlar, riskler ve bütçe performansınızın toplamı!</div>
+            <div v-if="gs.loans > 0" class="text-[9px] mt-1" style="color:#e87060">🏦 {{ gs.loans }} kredi · −{{ gs.loanPenalty.toLocaleString() }} puan</div>
           </div>
         </div>
 
@@ -98,20 +99,30 @@
 
         <!-- Action Button & Leaderboard -->
         <div class="mt-4 border-t pt-4" :style="{ borderColor: theme.panelBorder }">
-          <div v-if="!scoreSaved" class="flex flex-col gap-3 items-center">
-            <div class="text-xs text-white" style="color:#d0a0f0">Skorunu liderlik tablosuna kaydet!</div>
+          <!-- Save form: only finishers (victory) have a "days to finish" worth ranking -->
+          <div v-if="isVictory && !scoreSaved" class="flex flex-col gap-3 items-center">
+            <div class="text-xs text-white" style="color:#d0a0f0">Projeyi <strong>{{ gs.day }} günde</strong> bitirdin — liderlik tablosuna kaydet!</div>
             <div class="flex gap-2 w-full justify-center">
               <input v-model="playerName" type="text" placeholder="Adınız..." class="pixel-input px-3 py-2 text-sm bg-black border-2 text-white" style="border-color:#4a2060; outline:none; max-width:200px" maxlength="15">
               <button @click="saveScore" :disabled="!playerName.trim()" class="pixel-btn bg-[#4a2060] text-white py-2 px-4 text-sm border-2 disabled:opacity-50 disabled:cursor-not-allowed" style="border-color:#6a4080">KAYDET</button>
             </div>
             <button @click="$emit('restart')" class="pixel-btn py-2 px-6 text-xs mt-2 text-gray-400">KAYDETMEDEN ÇIK</button>
           </div>
+          <!-- Otherwise (loss, or already saved): read-only board + restart -->
           <div v-else class="flex flex-col gap-3">
             <div class="text-center text-sm font-bold" style="color:#d0a0f0">🏆 LİDERLİK TABLOSU 🏆</div>
+            <div class="text-center text-[10px] text-gray-500">En az günde bitirenler önde · eşitlikte yüksek skor</div>
             <div class="bg-black/50 border rounded p-2" :style="{ borderColor: '#4a2060' }">
+              <div class="flex justify-between items-center py-1 px-2 text-[9px] text-gray-500 border-b border-gray-700">
+                <span class="flex-1">#  OYUNCU</span>
+                <span class="w-16 text-right">GÜN</span>
+                <span class="w-24 text-right">SKOR</span>
+              </div>
+              <div v-if="!leaderboard.length" class="py-3 text-center text-xs text-gray-500">Henüz kayıt yok — ilk sırayı sen al!</div>
               <div v-for="(entry, idx) in leaderboard" :key="idx" class="flex justify-between items-center py-2 px-2 border-b border-gray-800 last:border-0" :class="entry.isCurrent ? 'bg-[#2a1438] font-bold rounded' : ''">
-                <span class="text-xs text-gray-300">{{ idx + 1 }}. {{ entry.name }}</span>
-                <span class="text-xs text-[#d0a0f0]">{{ entry.score.toLocaleString() }}</span>
+                <span class="flex-1 text-xs text-gray-300">{{ idx + 1 }}. {{ entry.name }}</span>
+                <span class="w-16 text-right text-xs text-[#f0d060]">{{ entry.days != null ? entry.days : '—' }}</span>
+                <span class="w-24 text-right text-xs text-[#d0a0f0]">{{ entry.score.toLocaleString() }}</span>
               </div>
             </div>
             <div class="text-center mt-2">
@@ -134,22 +145,36 @@ const playerName = ref('')
 const scoreSaved = ref(false)
 const leaderboard = ref([])
 
+const LEADERBOARD_KEY = 'rm_leaderboard_v2'
+
+// Sırala: önce en az gün (hız), eşitlikte yüksek skor. Günü olmayan eski kayıtlar en sona.
+function sortBoard(list) {
+  return [...list].sort((a, b) =>
+    ((a.days ?? Infinity) - (b.days ?? Infinity)) || ((b.score || 0) - (a.score || 0)))
+}
+
 function saveScore() {
   if (!playerName.value.trim()) return
-  const currentScores = JSON.parse(localStorage.getItem('rm_leaderboard') || '[]')
-  currentScores.push({ name: playerName.value.trim().toUpperCase(), score: props.gs.score, date: new Date().toISOString() })
-  currentScores.sort((a, b) => b.score - a.score)
-  // Keep top 5
-  const topScores = currentScores.slice(0, 5)
-  localStorage.setItem('rm_leaderboard', JSON.stringify(topScores))
-  
-  // Update view
-  leaderboard.value = topScores.map(x => ({ ...x, isCurrent: x.name === playerName.value.trim().toUpperCase() && x.score === props.gs.score }))
+  const name = playerName.value.trim().toUpperCase()
+  const days = props.gs.day
+  const score = props.gs.score
+  const board = JSON.parse(localStorage.getItem(LEADERBOARD_KEY) || '[]')
+  board.push({ name, days, score, date: new Date().toISOString() })
+  const top = sortBoard(board).slice(0, 10)   // keep top 10
+  localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(top))
+
+  // Update view, flag this run (matched once)
+  let flagged = false
+  leaderboard.value = top.map(x => {
+    const isCurrent = !flagged && x.name === name && x.days === days && x.score === score
+    if (isCurrent) flagged = true
+    return { ...x, isCurrent }
+  })
   scoreSaved.value = true
 }
 
 onMounted(() => {
-  leaderboard.value = JSON.parse(localStorage.getItem('rm_leaderboard') || '[]')
+  leaderboard.value = sortBoard(JSON.parse(localStorage.getItem(LEADERBOARD_KEY) || '[]'))
 })
 
 const props = defineProps({

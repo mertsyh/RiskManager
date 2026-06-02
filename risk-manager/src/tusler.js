@@ -165,16 +165,6 @@ export function mitigationCostPerPoint(risk) {
   return Math.max(MITIGATE_COST_MIN, Math.round(impactValue(risk) * MITIGATE_COST_RATE))
 }
 
-// ── AVOID (PMBOK Avoid): eliminate the threat entirely ──
-// Guarantees zero residual — the risk cannot trigger and deals no damage — for a premium
-// over MITIGATE. Priced from the risk's dollar-equiv impact so caging a Tiger costs a lot
-// while avoiding a Kitten is needlessly expensive (teaches when NOT to over-spend).
-export const AVOID_COST_RATE = 0.55
-export const AVOID_COST_MIN  = 2500
-export function avoidCost(risk) {
-  return Math.max(AVOID_COST_MIN, Math.round(impactValue(risk) * AVOID_COST_RATE))
-}
-
 // Computes the residual risk profile after the player allocates tokens.
 // probPoints reduce trigger probability; impactPoints reduce all impacts
 // (financial, morale and schedule alike) — both as capped % cuts so a residual

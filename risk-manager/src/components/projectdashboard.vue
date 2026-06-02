@@ -138,10 +138,9 @@
             </div>
           </div>
           <div class="stat-box">
-            <div class="stat-label">DAYS<br>LEFT</div>
-            <div class="stat-value"
-              :style="{color:project.deadline<=5?'#e05858':project.deadline<=10?'#c09820':'#5888e0'}">
-              {{ project.deadline }}d
+            <div class="stat-label">DAY</div>
+            <div class="stat-value" style="color:#5888e0">
+              {{ day }}
             </div>
           </div>
         </div>
@@ -242,8 +241,7 @@ const critChance = computed(() =>
   props.morale >= 70 ? 15 : props.morale >= 55 ? 5 : 0)
 const dangerLevel = computed(() => {
   let d = 0
-  if (props.project.deadline <= 5) d = Math.max(d, 0.8)
-  if (props.morale < 30)            d = Math.max(d, 0.7)
+  if (props.morale < 30) d = Math.max(d, 0.7)
   return d
 })
 

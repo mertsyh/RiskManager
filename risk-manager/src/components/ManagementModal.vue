@@ -66,7 +66,7 @@
         </div>
 
         <!-- UPGRADES TAB -->
-        <div v-else class="flex flex-col gap-3">
+        <div v-else-if="activeTab === 'upgrades'" class="flex flex-col gap-3">
           <div v-for="u in sortedUpgrades" :key="u.id"
                class="mm-row" :class="{ 'mm-row-on': u.purchased, 'mm-row-focus': upgMatch(u) }">
             <div class="text-3xl flex-shrink-0">{{ u.icon }}</div>
@@ -88,6 +88,40 @@
           </div>
         </div>
 
+        <!-- BANK TAB -->
+        <div v-else class="flex flex-col gap-4">
+          <div class="mm-bank-note">
+            🏦 Cash tight? Take an <strong>emergency loan</strong> — you keep every dollar, no repayment.
+            But it's expensive: each loan costs <strong>{{ loanCost.toLocaleString() }} score</strong>, so it drags your leaderboard standing.
+          </div>
+
+          <div class="mm-row">
+            <div class="text-3xl flex-shrink-0">💵</div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="mm-name">Emergency Loan</span>
+                <span class="text-xs px-2 py-0.5 rounded" style="color:#f0b860; background:#604018">−{{ loanCost.toLocaleString() }} score</span>
+              </div>
+              <div class="text-xs mt-1" style="color:#a89060">Instantly adds <strong style="color:#80e050">+${{ loanAmount.toLocaleString() }}</strong> to your budget. Repeatable.</div>
+            </div>
+            <div class="flex-shrink-0 text-right">
+              <button class="mm-btn-buy" :disabled="score < loanCost" @click="$emit('takeLoan', loanAmount)">
+                BORROW
+              </button>
+            </div>
+          </div>
+
+          <div v-if="score < loanCost" class="text-xs" style="color:#e88060">
+            ⚠ Not enough score left to pay the loan's penalty.
+          </div>
+
+          <div class="mm-bank-stats">
+            <div><span style="color:#b08850">🏆 Score</span> <strong style="color:#e0b8ff">{{ score.toLocaleString() }}</strong></div>
+            <div><span style="color:#b08850">🏦 Loans taken</span> <strong style="color:#f0b860">{{ loans }}</strong></div>
+            <div><span style="color:#b08850">📉 Score lost</span> <strong style="color:#e87060">−{{ loanPenalty.toLocaleString() }}</strong></div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -96,12 +130,20 @@
 <script setup>
 import { ref, computed } from 'vue'
 
-const props = defineProps({ theme: Object, money: Number, employees: Array, upgrades: Array, focusCategory: String })
-defineEmits(['hire', 'buyUpgrade', 'close'])
+const props = defineProps({
+  theme: Object, money: Number, employees: Array, upgrades: Array, focusCategory: String,
+  score: { type: Number, default: 0 },
+  loans: { type: Number, default: 0 },
+  loanPenalty: { type: Number, default: 0 },
+  loanAmount: { type: Number, default: 25000 },
+  loanCost: { type: Number, default: 2000 },
+})
+defineEmits(['hire', 'buyUpgrade', 'takeLoan', 'close'])
 
 const tabs = [
   { id: 'team',     name: '🧑‍💻 HIRE TEAM' },
   { id: 'upgrades', name: '⚙️ UPGRADE SHOP' },
+  { id: 'bank',     name: '🏦 BANK' },
 ]
 const activeTab = ref('team')
 
@@ -148,4 +190,8 @@ function cat(key) { return CATS[key] || { icon: '•', label: key, color: '#999'
 .mm-banner { padding: 8px 18px; font-size: 13px; line-height: 1.5; color: #ffe0a0; background: #2a2008; border-bottom: 2px solid #5a4810; }
 .mm-banner strong { color: #ffd060; }
 .mm-row-focus { box-shadow: 0 0 0 2px #f0c040, 0 0 10px rgba(240,192,64,0.4); border-color: #f0c040 !important; }
+.mm-bank-note { padding: 12px 14px; font-size: 13px; line-height: 1.55; color: #ffe0a0; background: rgba(96,64,24,0.25); border: 2px solid #5a4810; }
+.mm-bank-note strong { color: #ffd060; }
+.mm-bank-stats { display: flex; gap: 18px; flex-wrap: wrap; padding: 10px 14px; font-size: 13px; background: rgba(0,0,0,0.3); border: 2px solid rgba(255,255,255,0.08); }
+.mm-bank-stats strong { font-family: 'Press Start 2P', monospace; font-size: 12px; }
 </style>
