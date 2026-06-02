@@ -149,9 +149,30 @@ export function effortPointsFor(verdict) {
   return EFFORT_FOR_VERDICT[verdict] ?? 1
 }
 
+// Binary decision model: when the player chooses "Mitigate", they spend ALL the
+// effort the classification earned, auto-split across the two axes — probability
+// first (so the dice roll visibly improves), the remainder onto impact. A sharper
+// read (more effort points) therefore buys a stronger — and pricier — mitigation,
+// while a misread leaves you weakly protected and tempted to gamble.
+export function autoMitigationSplit(effort) {
+  const ep = Math.max(0, effort | 0)
+  const probPoints = Math.ceil(ep / 2)
+  return { probPoints, impactPoints: ep - probPoints }
+}
+
 // $ cost of spending one mitigation token on this risk (scales with impact).
 export function mitigationCostPerPoint(risk) {
   return Math.max(MITIGATE_COST_MIN, Math.round(impactValue(risk) * MITIGATE_COST_RATE))
+}
+
+// ── AVOID (PMBOK Avoid): eliminate the threat entirely ──
+// Guarantees zero residual — the risk cannot trigger and deals no damage — for a premium
+// over MITIGATE. Priced from the risk's dollar-equiv impact so caging a Tiger costs a lot
+// while avoiding a Kitten is needlessly expensive (teaches when NOT to over-spend).
+export const AVOID_COST_RATE = 0.55
+export const AVOID_COST_MIN  = 2500
+export function avoidCost(risk) {
+  return Math.max(AVOID_COST_MIN, Math.round(impactValue(risk) * AVOID_COST_RATE))
 }
 
 // Computes the residual risk profile after the player allocates tokens.
@@ -177,4 +198,20 @@ export function applyMitigation(risk, probPoints = 0, impactPoints = 0) {
 // Base EMV of a risk before any mitigation (Probability × dollar-equiv Impact).
 export function riskEmv(risk) {
   return Math.round(((risk?.prob || 0) / 100) * impactValue(risk))
+}
+
+// ═══ PROGRESS REWARDS — good risk handling advances the project ═══
+// The win condition is PROGRESS, not cash. Steering past a risk frees the team to build, and
+// reading a risk correctly earns a little momentum — so skill helps you SHIP, not just survive.
+
+// Flat momentum for a correct (ideal) classification. Small on purpose.
+export const CLASSIFY_PROGRESS_BONUS = 35
+
+// Progress when a risk does no damage (dodged by the roll, mitigated to nothing, or AVOIDed).
+// Scales with the base EMV (prob × impact) steered past, clamped so it helps without trivialising.
+export const AVOID_PROGRESS_RATE = 0.012   // progress per $ of base EMV
+export const AVOID_PROGRESS_MIN  = 20
+export const AVOID_PROGRESS_MAX  = 120
+export function avoidProgressBonus(risk) {
+  return Math.min(AVOID_PROGRESS_MAX, Math.max(AVOID_PROGRESS_MIN, Math.round(riskEmv(risk) * AVOID_PROGRESS_RATE)))
 }

@@ -154,7 +154,8 @@
     <!-- ═══ MODALS ═══ -->
     <Transition name="fade">
       <RiskClassifyModal v-if="triggeredRisk" :risk="triggeredRisk" :theme="theme"
-        @resolve="handleResolve" />
+        :money="gs.money" :outcome="riskOutcome"
+        @resolve="handleResolve" @close="closeClassify" />
     </Transition>
     <Transition name="fade">
       <DaySummaryModal v-if="daySummary && !triggeredRisk" :summary="daySummary" :theme="theme"
@@ -186,7 +187,7 @@ import ManagementModal from './components/ManagementModal.vue'
 import RiskCenterModal from './components/RiskCenterModal.vue'
 import DaySummaryModal from './components/DaySummaryModal.vue'
 import { newTheme } from './design.js'
-import { classifyRisk, evaluateResponse, applyMitigation, riskEmv, effortPointsFor, mitigationCostPerPoint, TUSLER_ANIMALS, RESPONSE_LABELS } from './tusler.js'
+import { classifyRisk, evaluateResponse, applyMitigation, riskEmv, effortPointsFor, mitigationCostPerPoint, avoidCost, avoidProgressBonus, CLASSIFY_PROGRESS_BONUS, TUSLER_ANIMALS } from './tusler.js'
 
 const originalTheme = {
   bgGrass:'#2d5a1b', hudBg:'#4a3018', chipGreen:'#2a6020', chipGreenText:'#a0e080',
@@ -222,6 +223,8 @@ const REDUCTION_CAP = 0.6        // bir risk tipindeki toplam olasılık azaltma
 
 // ─── REFS & STATE ───
 const triggeredRisk = ref(null)
+const riskOutcome = ref(null)   // Faz 3: risk gerçeğe dönüştü mü? — sonuç açıklaması (rolling → revealed)
+let resolveTimer = null
 const isProcessing = ref(false), lastDailyProgress = ref(0), lastDailyCost = ref(0)
 const gameOverReason = ref(''), bgCanvas = ref(null), particleCanvas = ref(null)
 const showKnowledgeBase = ref(false)
@@ -444,6 +447,14 @@ function updateMorale(d) {
   gs.morale = Math.max(0, Math.min(100, gs.morale + d))
 }
 
+// İlerlemeyi (progress) ekler, totalEffort ile sınırlar; gerçekten eklenen miktarı döndürür.
+function addProgress(n) {
+  if (n <= 0) return 0
+  const before = project.progress
+  project.progress = Math.min(project.totalEffort, project.progress + n)
+  return project.progress - before
+}
+
 function checkMilestones() {
   const p = completedPct.value
   const reached = []
@@ -472,14 +483,15 @@ function checkGameEnd() {
   return false
 }
 
-// ─── RESOLVE A RISK (classify + execution minigame) ───
-// Oyuncu hayvanı seçer (sınıflandırma) → kazandığı efor puanlarını (EP) Olasılık/Etki
-// kesmek arasında dağıtır (mini-oyun) → kalan residual olasılığa karşı zar atılır.
-// Skor KARAR kalitesini ödüllendirir (doğru sınıflandırma + düşük residual EMV), zarı değil
-// → şefkat modeli: şanssız bir tetiklenme iyi oyunu cezalandırmaz.
-function handleResolve({ guessKey, probPoints = 0, impactPoints = 0 }) {
+// ─── RESOLVE A RISK (classify → decide → reveal) ───
+// Oyuncu hayvanı seçer (sınıflandırma) → "MİTİGE ET (parayla)" mı yoksa "ŞANSI DENE (bedava)" mı
+// olduğuna karar verir → residual olasılığa karşı zar atılır ve sonuç DRAMATİK olarak açıklanır:
+// risk gerçeğe dönüştü mü (bütçeyi/mo+rali/takvimi vurur) yoksa atlatıldı mı. Hasar, gerilim için
+// "RESOLVING" anından sonra uygulanır. Skor KARAR kalitesini ödüllendirir (doğru sınıflandırma +
+// düşürülen EMV), zarı değil → şanssız bir tetiklenme iyi oyunu cezalandırmaz.
+function handleResolve({ guessKey, action = 'gamble', probPoints = 0, impactPoints = 0 }) {
   const risk = triggeredRisk.value
-  if (!risk) return
+  if (!risk || riskOutcome.value) return
   const trueAnimal = classifyRisk(risk)
   const response = TUSLER_ANIMALS[guessKey].idealResponse
   const { verdict, scoreDelta, lesson } = evaluateResponse(trueAnimal.key, response)
@@ -488,52 +500,80 @@ function handleResolve({ guessKey, probPoints = 0, impactPoints = 0 }) {
   stats.risksProactivelyHandled++
   if (verdict === 'ideal') stats.tuslerCorrect++
 
-  // EP'yi verdict'in izin verdiği tavanla sınırla (güvenlik).
   const ep = effortPointsFor(verdict)
-  const pp = Math.max(0, Math.min(probPoints, ep))
-  const ip = Math.max(0, Math.min(impactPoints, ep - pp))
-
   const baseEmv = riskEmv(risk)
-  const m = applyMitigation(risk, pp, ip)
-  const execCost = (pp + ip) * mitigationCostPerPoint(risk)   // mitigasyon parayla ödenir, riske göre ölçeklenir
-  if (execCost) updateMoney(-execCost)
-  if (scoreDelta) updateScore(scoreDelta)
 
-  // Residual olasılığa karşı zar at (FR5: olasılığa karşı tetikleme).
-  const triggered = Math.random() * 100 < m.residualProb
-  const cx = window.innerWidth / 2, cy = window.innerHeight / 2
-  const bits = []
-  if (execCost) bits.push(`exec -$${execCost.toLocaleString()}`)
-
-  if (triggered) {
-    if (m.residualMoney)  updateMoney(-m.residualMoney)
-    if (m.residualMorale) updateMorale(-m.residualMorale)
-    if (m.residualDelay)  project.deadline -= m.residualDelay
-    triggerFx('shake', 400); triggerFx('glitch', 500)
-    if (m.residualMoney) triggerFx('moneyFlash')
-    spawnParticles(cx, cy, 14, 'bug')
-    if (m.residualMoney)  bits.push(`damage -$${m.residualMoney.toLocaleString()}`)
-    if (m.residualMorale) bits.push(`-${m.residualMorale} morale`)
-    if (m.residualDelay)  bits.push(`-${m.residualDelay} days`)
+  // Üç karar: AVOID (riski tamamen yok et — pahalı, garanti), MITIGATE (parayla azalt), ŞANSI DENE (bedava).
+  let m, execCost, mitigated
+  if (action === 'avoid') {
+    // AVOID: riski tamamen ortadan kaldırır — sıfır residual, asla tetiklenmez.
+    m = { residualProb: 0, residualImpactFactor: 0, residualMoney: 0, residualMorale: 0, residualDelay: 0, residualEmv: 0 }
+    execCost = avoidCost(risk)
+    mitigated = true
   } else {
-    triggerFx('criticalSuccess', 1200)
-    spawnParticles(cx, cy, 20, 'crit')
-    updateScore(100)   // contained bonus
-    bits.push('contained ✓')
+    // Doğru sınıflandırma daha çok mitigasyon gücü kazandırır; yine de tavanla sınırla (güvenlik).
+    const pp = Math.max(0, Math.min(probPoints, ep))
+    const ip = Math.max(0, Math.min(impactPoints, ep - pp))
+    m = applyMitigation(risk, pp, ip)
+    execCost = (pp + ip) * mitigationCostPerPoint(risk)   // mitigasyon parayla ödenir (peşin, riske göre ölçeklenir)
+    mitigated = (pp + ip) > 0
   }
 
+  if (execCost) updateMoney(-execCost)
+  if (scoreDelta) updateScore(scoreDelta)
   // Karar kalitesi bonusu: düşürülen EMV (şansa bağlı değil).
   const emvReduced = Math.max(0, baseEmv - m.residualEmv)
   if (emvReduced) updateScore(Math.round(emvReduced / 100))
 
-  addLog(lesson, 'pmbok')
-  addLog(`${risk.icon} "${risk.name}" → ${RESPONSE_LABELS[response]} (${bits.join(', ')})`, triggered ? 'warning' : 'success')
+  // Residual olasılığa karşı zar at — AVOID'da residual 0 olduğu için asla tetiklenmez.
+  const triggered = Math.random() * 100 < m.residualProb
+  riskOutcome.value = {
+    phase: 'rolling', triggered, mitigated, action, execCost, rollProb: m.residualProb,
+    dmgMoney: m.residualMoney, dmgMorale: m.residualMorale, dmgDelay: m.residualDelay,
+    riskName: risk.name, riskIcon: risk.icon,
+  }
 
-  closeClassify()
+  // Dramatik an: kısa bir bekleyişten sonra sonucu açıkla ve bütçe/moral/takvim etkisini uygula.
+  if (resolveTimer) clearTimeout(resolveTimer)
+  resolveTimer = setTimeout(() => {
+    const cx = window.innerWidth / 2, cy = window.innerHeight / 2
+    const bits = []
+    if (execCost) bits.push(`${action === 'avoid' ? 'avoid' : 'mitigate'} -$${execCost.toLocaleString()}`)
+    // İyi risk yönetimi PROJEYİ İLERLETİR: doğru okuma momentum kazandırır; riski hasarsız
+    // atlatmak (zar/mitigasyon/AVOID) ekibe inşa için zaman açar.
+    let gained = 0
+    if (verdict === 'ideal') gained += CLASSIFY_PROGRESS_BONUS   // doğru sınıflandırma → küçük momentum (tetiklense bile)
+    if (triggered) {
+      if (m.residualMoney)  updateMoney(-m.residualMoney)
+      if (m.residualMorale) updateMorale(-m.residualMorale)
+      if (m.residualDelay)  project.deadline -= m.residualDelay
+      triggerFx('shake', 400); triggerFx('glitch', 500)
+      if (m.residualMoney) triggerFx('moneyFlash')
+      spawnParticles(cx, cy, 14, 'bug')
+      if (m.residualMoney)  bits.push(`damage -$${m.residualMoney.toLocaleString()}`)
+      if (m.residualMorale) bits.push(`-${m.residualMorale} morale`)
+      if (m.residualDelay)  bits.push(`-${m.residualDelay} days`)
+    } else {
+      updateScore(100)   // avoided bonus
+      gained += avoidProgressBonus(risk)   // hasarsız atlatıldı → EMV'ye göre ilerleme boost'u
+      triggerFx('criticalSuccess', 1200)
+      spawnParticles(cx, cy, 20, 'crit')
+      if (action !== 'avoid') bits.push('avoided ✓')
+    }
+    const progressGain = addProgress(gained)
+    if (progressGain) { bits.push(`+${progressGain} progress`); checkMilestones() }
+    addLog(lesson, 'pmbok')
+    const actionLabel = action === 'avoid' ? 'AVOIDED' : mitigated ? 'MITIGATED' : 'TOOK THE CHANCE'
+    addLog(`${risk.icon} "${risk.name}" → ${actionLabel} (${bits.join(', ')})`, triggered ? 'warning' : 'success')
+    if (riskOutcome.value) riskOutcome.value = { ...riskOutcome.value, phase: 'revealed', progressGain }
+    resolveTimer = null
+  }, 1050)
 }
 
 function closeClassify() {
+  if (resolveTimer) { clearTimeout(resolveTimer); resolveTimer = null }
   triggeredRisk.value = null
+  riskOutcome.value = null
   checkGameEnd()
 }
 
@@ -589,7 +629,7 @@ async function processNextDay() {
   // Espresso Machine yükseltmesi: pasif moral telafisi
   const espresso = upgrades.value.find(u => u.id === 'espresso' && u.purchased)
   if (espresso) updateMorale(espresso.morale || 0)
-  project.progress = Math.min(project.totalEffort, project.progress + dp)
+  addProgress(dp)
   const reachedMs = checkMilestones()
   triggerFx('glitch', 300)
 
@@ -650,6 +690,8 @@ function resetGame() {
   lastDailyProgress.value = 0; lastDailyCost.value = 0
   Object.assign(stats, { critSuccesses:0, bugsFixed:0, dilemmasResolved:0, risksProactivelyHandled:0, tuslerCorrect:0, tuslerTotal:0 })
   triggeredRisk.value = null
+  if (resolveTimer) { clearTimeout(resolveTimer); resolveTimer = null }
+  riskOutcome.value = null
   daySummary.value = null
   showManagement.value = false
   manageFocus.value = null
