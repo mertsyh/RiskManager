@@ -182,7 +182,6 @@
             <div class="radar-row1">
               <span class="radar-ico">{{ r.icon }}</span>
               <span class="radar-name">{{ r.label }}</span>
-              <span v-if="r.known" class="radar-known" title="You identified this risk category">👁</span>
               <span v-if="i === 0 && r.value > 0" class="radar-next">▲ next?</span>
               <span class="radar-val" :style="{ color: r.tone }">{{ r.value }}</span>
             </div>
@@ -211,7 +210,7 @@ import { computed, ref, onMounted, onUnmounted } from 'vue'
 
 const props = defineProps([
   'project','morale','day','milestones','dailyProgress','dailyCost',
-  'processing','employees','theme','synergyBonus','lastCritSuccess','lastBugEvent','reductionByType','threatByType','knownTypes'
+  'processing','employees','theme','synergyBonus','lastCritSuccess','lastBugEvent','reductionByType','threatByType'
 ])
 defineEmits(['nextDay','openManage','employeeClick'])
 
@@ -226,11 +225,10 @@ const RADAR_CATS = [
 ]
 const radar = computed(() => {
   const t = props.threatByType || {}
-  const known = props.knownTypes || []
   return RADAR_CATS.map(c => {
     const value = Math.round(t[c.key] || 0)
     const tone = value >= 60 ? '#e05858' : value >= 33 ? '#e0b030' : '#58c848'
-    return { ...c, value, tone, known: known.includes(c.key) }
+    return { ...c, value, tone }
   }).sort((a, b) => b.value - a.value)
 })
 
@@ -628,7 +626,6 @@ onUnmounted(() => {
 .radar-row1{display:flex;align-items:center;gap:5px}
 .radar-ico{font-size:13px;line-height:1}
 .radar-name{font-size:11px;color:#c8a878;flex:1;letter-spacing:0.5px}
-.radar-known{font-size:10px;line-height:1;flex-shrink:0;filter:drop-shadow(0 0 3px rgba(120,200,255,0.7))}
 .radar-next{font-size:8px;color:#f08060;font-family:'Press Start 2P',monospace;white-space:nowrap}
 .radar-val{font-size:12px;font-weight:bold}
 .radar-track{height:7px;background:#080402;border:1px solid #000;overflow:hidden}

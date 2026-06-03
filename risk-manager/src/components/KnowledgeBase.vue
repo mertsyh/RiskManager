@@ -70,36 +70,6 @@
           </div>
         </div>
 
-        <!-- CYCLE TAB -->
-        <div v-if="activeTab === 'cycle'" class="flex flex-col gap-4">
-          <div class="p-4 bg-black/30 rounded border border-white/10">
-            <h3 class="text-base mb-2" :style="{ color: theme.chipYellowText }">The Project Risk Management Cycle</h3>
-            <p>Risk management is not a one-off task — it is a <strong>continuous loop</strong>. You plan how to face risk, identify what could go wrong, assess and prioritise each risk, choose a strategy, monitor constantly, respond when risks fire, then evaluate and feed the lessons back into planning.</p>
-            <div class="mt-2 p-3 bg-green-900/20 border border-green-800/30 rounded text-xs">
-              🎮 <strong>In the game:</strong> the cycle bar under the HUD shows where you are. The kickoff runs Planning + Identification, each day runs Monitoring &amp; Control, and risk cards walk Assessment → Strategies → Response.
-            </div>
-          </div>
-
-          <div v-for="(s, i) in cycleStages" :key="s.key"
-               class="flex gap-3 items-start p-4 bg-black/30 rounded border border-white/10">
-            <div class="text-3xl flex-shrink-0">{{ s.icon }}</div>
-            <div class="flex-1">
-              <div class="flex items-center gap-2 mb-1 flex-wrap">
-                <span class="text-xs px-2 py-0.5 rounded" :style="{ backgroundColor: theme.chipBlue, color: theme.chipBlueText }">{{ i + 1 }} / 7</span>
-                <h4 class="text-base" :style="{ color: theme.chipYellowText }">{{ s.label }}</h4>
-              </div>
-              <p class="text-sm mb-2">{{ s.blurb }}</p>
-              <div class="p-2 bg-black/30 rounded text-sm" :style="{ borderLeft: '3px solid ' + (theme.chipBlueText || '#5890e0') }">
-                🎮 {{ cycleGame[s.key] }}
-              </div>
-            </div>
-          </div>
-
-          <div class="p-4 bg-black/30 rounded border border-yellow-800/30 text-sm">
-            🔄 <strong>The loop closes:</strong> Evaluation feeds back into Planning — every project (and every playthrough) should make you sharper at spotting the next one's risks.
-          </div>
-        </div>
-
         <!-- TUSLER TAB -->
         <div v-if="activeTab === 'tusler'" class="flex flex-col gap-4">
           <!-- Intro -->
@@ -305,26 +275,12 @@
 <script setup>
 import { ref } from 'vue'
 import { TUSLER_ANIMALS, TUSLER_GRID, RESPONSE_LABELS } from '../tusler.js'
-import { CYCLE_STAGES } from '../cycle.js'
 
 const props = defineProps({ theme: Object })
 const emit = defineEmits(['close'])
 
-// 7-stage risk management cycle (riskloop.png) → how each stage shows up in the game.
-const cycleGame = {
-  planning:       'The kickoff Risk Planning popup — pick a risk appetite (Cautious / Balanced / Aggressive).',
-  identification: 'The kickoff Identification test — flag the risks you foresee. Right picks become known & cheaper.',
-  assessment:     'Every risk card reads Probability × Impact and shows the EMV.',
-  strategies:     'On the card you map the risk to a Tusler animal → Avoid / Transfer / Mitigate / Accept.',
-  monitoring:     'The end-of-day Monitoring popup + Risk Radar — pre-empt a rising threat or keep building.',
-  response:       'You execute the response: mitigate with budget, or take the chance.',
-  evaluation:     'A short review at each milestone (and the Post-Mortem) — feeds lessons back into planning.',
-}
-const cycleStages = CYCLE_STAGES
-
 const tabs = [
   { id: 'basics',     name: '📘 BASICS' },
-  { id: 'cycle',      name: '🔄 CYCLE' },
   { id: 'tusler',     name: '🦁 TUSLER' },
   { id: 'strategies', name: '🛡️ STRATEGIES' },
   { id: 'metrics',    name: '📊 METRICS' },

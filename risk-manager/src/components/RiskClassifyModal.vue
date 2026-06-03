@@ -9,17 +9,6 @@
         <span class="rk-titlebar-sub">Tusler · Probability × Impact</span>
       </div>
 
-      <!-- Cycle stage strip + identification flag -->
-      <div class="rk-stages">
-        <span class="rk-stage" :class="{ on: cyclePhase==='assessment' }">📊 ASSESS</span>
-        <span class="rk-sarrow">›</span>
-        <span class="rk-stage" :class="{ on: cyclePhase==='strategies' }">♟️ STRATEGY</span>
-        <span class="rk-sarrow">›</span>
-        <span class="rk-stage" :class="{ on: cyclePhase==='response' }">🛡️ RESPOND</span>
-        <span v-if="risk.known" class="rk-flag rk-flag-known">✓ FORESEEN −{{ knownPct }}%</span>
-        <span v-else-if="risk.surprise" class="rk-flag rk-flag-surprise">⚠ SURPRISE — not identified</span>
-      </div>
-
       <!-- Risk facts -->
       <div class="rk-risk">
         <span class="rk-risk-icon">{{ risk.icon || '🚨' }}</span>
@@ -210,10 +199,6 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { classifyRisk, evaluateResponse, applyMitigation, riskEmv, effortPointsFor, mitigationCostPerPoint, autoMitigationSplit, impactValue, TUSLER_ANIMALS, TUSLER_GRID, RESPONSE_LABELS, PROB_SPLIT, IMPACT_SPLIT } from '../tusler.js'
-import { KNOWN_MITIGATE_DISCOUNT } from '../cycle.js'
-
-// known (öngörülmüş) risk indirimi rozette gösterilir.
-const knownPct = Math.round((1 - KNOWN_MITIGATE_DISCOUNT) * 100)
 
 const props = defineProps({
   risk: Object,
@@ -266,17 +251,8 @@ const ep = computed(() => (result.value ? effortPointsFor(result.value.verdict) 
 const split = computed(() => autoMitigationSplit(ep.value))
 const mitigated = computed(() => applyMitigation(props.risk, split.value.probPoints, split.value.impactPoints))
 const costPerPoint = computed(() => mitigationCostPerPoint(props.risk))
-// known riskler daha ucuz mitige edilir — App.handleResolve aynı indirimi uygular.
-const knownDiscount = computed(() => props.risk?.known ? KNOWN_MITIGATE_DISCOUNT : 1)
-const mitigateCost = computed(() => Math.round((split.value.probPoints + split.value.impactPoints) * costPerPoint.value * knownDiscount.value))
+const mitigateCost = computed(() => (split.value.probPoints + split.value.impactPoints) * costPerPoint.value)
 const canAfford = computed(() => props.money >= mitigateCost.value)
-
-// Çark aşaması: sınıflandırma=Assessment, hayvan seçildi=Strategies, sonuç=Response.
-const cyclePhase = computed(() => {
-  if (props.outcome) return 'response'
-  if (revealed.value) return 'strategies'
-  return 'assessment'
-})
 
 // ── Phase 3: outcome reveal (what the gamble dodged) ──
 const savedText = computed(() => {
@@ -322,16 +298,6 @@ function decide(mitigate) {
   font-family: 'Press Start 2P', monospace;
 }
 .rk-titlebar-sub { font-size: 11px; color: #8a6c40; margin-left: auto; font-family: 'Share Tech Mono', monospace; }
-
-/* ── Cycle stage strip ── */
-.rk-stages { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 8px 18px; border-bottom: 2px solid #2a1808; background: #140d06; }
-.rk-stage { font-size: 11px; color: #7a6444; padding: 3px 8px; border: 1px solid #2e2010; background: #0e0a04; letter-spacing: 0.5px; }
-.rk-stage.on { color: #1a0c04; background: #ffd24a; border-color: #ffe4a0; font-family: 'Press Start 2P', monospace; font-size: 9px; box-shadow: 0 0 8px rgba(255,210,74,0.5); }
-.rk-sarrow { color: #5a3c1c; font-size: 13px; }
-.rk-flag { margin-left: auto; font-size: 10px; padding: 4px 8px; letter-spacing: 0.5px; font-family: 'Press Start 2P', monospace; }
-.rk-flag-known { color: #082; background: #6fe05a; }
-.rk-flag-surprise { color: #fff; background: #c03838; animation: rkSurprise 0.8s step-start infinite; }
-@keyframes rkSurprise { 50% { opacity: 0.5; } }
 
 /* ── Risk facts ── */
 .rk-risk { padding: 16px 18px; border-bottom: 2px solid #2a1808; display: flex; gap: 14px; align-items: center; }
