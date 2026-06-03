@@ -44,7 +44,7 @@ Ship PROJECT: NEON — there's no deadline, but every day counts: finish in as f
               <div class="pixel-inset p-3 text-center" :style="{ backgroundColor: theme.panelBg, color: '#e0a838' }"><div class="text-2xl">🐶</div>PUPPY → MITIGATE</div>
               <div class="pixel-inset p-3 text-center" :style="{ backgroundColor: theme.panelBg, color: '#8fa6bd' }"><div class="text-2xl">🐱</div>KITTEN → ACCEPT</div>
             </div>
-            <button @click="startGame()" class="pixel-btn-green py-4 text-lg tracking-widest">▶  START GAME</button>
+            <button @click="beginKickoff()" class="pixel-btn-green py-4 text-lg tracking-widest">▶  START GAME</button>
           </div>
           <div class="pixel-title-bar px-4 py-2 text-center text-xs" :style="{ backgroundColor: theme.titleBarBg, color: theme.titleText }">
             ANTHROPIC VENTURES © 2026
@@ -66,7 +66,7 @@ Ship PROJECT: NEON — there's no deadline, but every day counts: finish in as f
     </Transition>
 
     <!-- ══════════ PLAYING ══════════ -->
-    <template v-if="gs.status !== 'menu'">
+    <template v-if="showChrome">
 
       <!-- HUD BAR -->
       <header class="pixel-hud-bar flex items-center justify-between px-4 shrink-0" style="height:72px"
@@ -118,6 +118,10 @@ Ship PROJECT: NEON — there's no deadline, but every day counts: finish in as f
         </div>
       </header>
 
+      <!-- RISK MANAGEMENT CYCLE TRACKER -->
+      <CycleTracker :stageIndex="cycle.stageIndex" :cycleNumber="cycle.number" :theme="theme"
+        @open="showKnowledgeBase = true" />
+
       <!-- MAIN (SINGLE COLUMN) -->
       <main class="flex-1 min-h-0 overflow-hidden w-full px-2 pt-2"
             style="display:flex;flex-direction:column;gap:6px">
@@ -129,7 +133,7 @@ Ship PROJECT: NEON — there's no deadline, but every day counts: finish in as f
             :milestones="milestones" :dailyProgress="lastDailyProgress"
             :dailyCost="lastDailyCost" :processing="isProcessing"
             :employees="employees" :theme="theme" :reductionByType="reductionByType"
-            :threatByType="threatByType"
+            :threatByType="threatByType" :knownTypes="[...knownCategories]"
             @nextDay="handleNextDay" @openManage="openManage"
             @employeeClick="id => moraleEmployeeId = id" />
         </div>
@@ -153,8 +157,15 @@ Ship PROJECT: NEON — there's no deadline, but every day counts: finish in as f
         @resolve="handleResolve" @close="closeClassify" />
     </Transition>
     <Transition name="fade">
-      <DaySummaryModal v-if="daySummary && !triggeredRisk" :summary="daySummary" :theme="theme"
-        @close="daySummary=null" />
+      <MonitoringModal v-if="daySummary && !triggeredRisk" :summary="daySummary" :theme="theme"
+        :watchlist="monitorWatchlist" :money="gs.money" @resolve="resolveMonitoring" />
+    </Transition>
+    <Transition name="fade">
+      <PlanningModal v-if="gs.status==='planning'" @choose="choosePlan" />
+    </Transition>
+    <Transition name="fade">
+      <IdentificationModal v-if="gs.status==='identifying'"
+        :candidates="idCandidates" :correctIds="idCorrectIds" @identify="submitIdentification" />
     </Transition>
     <Transition name="fade">
       <ManagementModal v-if="showManagement" :theme="theme" :money="gs.money"
@@ -187,11 +198,15 @@ import PostMortemReport from './components/PostMortemReport.vue'
 import RiskClassifyModal from './components/RiskClassifyModal.vue'
 import ManagementModal from './components/ManagementModal.vue'
 import RiskCenterModal from './components/RiskCenterModal.vue'
-import DaySummaryModal from './components/DaySummaryModal.vue'
+import MonitoringModal from './components/MonitoringModal.vue'
 import MoraleModal from './components/MoraleModal.vue'
+import CycleTracker from './components/CycleTracker.vue'
+import PlanningModal from './components/PlanningModal.vue'
+import IdentificationModal from './components/IdentificationModal.vue'
 import { PERKS_BY_EMP, passiveMoraleFor } from './perks.js'
 import { newTheme } from './design.js'
 import { classifyRisk, evaluateResponse, applyMitigation, riskEmv, effortPointsFor, mitigationCostPerPoint, avoidProgressBonus, CLASSIFY_PROGRESS_BONUS, TUSLER_ANIMALS } from './tusler.js'
+import { STAGE_INDEX, planningStrategy, buildIdentificationRegister, scoreIdentification, KNOWN_MITIGATE_DISCOUNT, SURPRISE_IMPACT_MULT } from './cycle.js'
 
 const originalTheme = {
   bgGrass:'#2d5a1b', hudBg:'#4a3018', chipGreen:'#2a6020', chipGreenText:'#a0e080',
@@ -247,6 +262,32 @@ const daySummary = ref(null)
 const eventLog = ref([])
 const usedRiskIds = ref([])
 const stats = reactive({ critSuccesses: 0, bugsFixed: 0, dilemmasResolved: 0, risksProactivelyHandled: 0, tuslerCorrect: 0, tuslerTotal: 0 })
+
+// ─── RISK MANAGEMENT CYCLE (riskloop.png — 7 aşamalı döngü) ───
+// cycle.stageIndex: çarktaki aktif aşama; strategy: kickoff'ta seçilen risk iştahı çarpanları;
+// riskRegister: projenin canlı riskleri ([{id,known}]) — Identification testinin çıktısı.
+const cycle = reactive({ stageIndex: STAGE_INDEX.monitoring, number: 1, strategyKey: null })
+const strategy = reactive({ ...planningStrategy('balanced') })
+const riskRegister = ref([])           // [{ id, known }] — known: oyuncu tanımladı (öngörülmüş)
+const idCandidates = ref([])           // Identification modal adayları
+const idCorrectIds = ref([])           // testin doğru cevapları
+const identification = ref(null)       // skor sonucu {hits,misses,falsePicks,accuracy,scoreDelta}
+const preemptByType = reactive({})     // Monitoring ön-müdahalesi → kalıcı ekstra azaltma (0..)
+let evalTimer = null
+
+const registerMap = computed(() => {
+  const m = {}; riskRegister.value.forEach(r => { m[r.id] = r }); return m
+})
+// known (öngörülmüş) risklerin kategorileri — radar işareti ve watchlist 👁 rozeti için.
+const knownCategories = computed(() => {
+  const set = new Set()
+  riskRegister.value.forEach(r => {
+    if (!r.known) return
+    const risk = allRisksPool.find(x => x.id === r.id)
+    if (risk) set.add(risk.type)
+  })
+  return set
+})
 
 const fx = reactive({ shake:false, moneyFlash:false, glitch:false, criticalSuccess:false, bugEvent:false })
 const gs = reactive({ status:'menu', money:100000, day:1, morale:75, score:0, loans:0, loanPenalty:0 })
@@ -324,6 +365,8 @@ const allRisksPool = [
 // ─── COMPUTED ───
 const completedPct = computed(() => Math.floor(project.progress/project.totalEffort*100))
 const moraleIcon   = computed(() => gs.morale > 70 ? '🔥' : gs.morale > 50 ? '😊' : gs.morale > 30 ? '😐' : '😰')
+// Oyun kromu (HUD/dashboard/ticker): planning & identification kickoff aşamalarında gizli, modallar gösterilir.
+const showChrome   = computed(() => gs.status === 'playing' || gs.status === 'gameover' || gs.status === 'victory')
 
 // Aktif uzman + yükseltmelerin risk tipi başına toplam olasılık azaltması (0..REDUCTION_CAP).
 // 'all' tipi yükseltme her risk tipine eklenir. Bu, bir riskin etkin olasılığını düşürür
@@ -340,7 +383,7 @@ const reductionByType = computed(() => {
     else add(u.category, u.reduction || 0)
   })
   const out = {}
-  RISK_TYPES.forEach(t => { out[t] = Math.min(REDUCTION_CAP, ((sum[t] || 0) + allPct) / 100) })
+  RISK_TYPES.forEach(t => { out[t] = Math.min(REDUCTION_CAP, ((sum[t] || 0) + allPct) / 100 + (preemptByType[t] || 0)) })
   return out
 })
 
@@ -359,6 +402,24 @@ const threatByType = computed(() => {
   const out = {}
   RISK_TYPES.forEach(t => { out[t] = Math.round(baseThreatByType[t] * (1 - (reductionByType.value[t] || 0))) })
   return out
+})
+
+// ─── MONITORING & CONTROL: günlük izleme listesi ───
+// En yüksek tehditli 3 kategori; ön-müdahale ($ harca → kalıcı azaltma). Maliyet tehditle ölçeklenir.
+const PREEMPT_BASE_COST = 1500
+const MONITOR_CATS = [
+  { key:'bug', label:'Bug', icon:'🐛' }, { key:'server', label:'Server', icon:'🔥' },
+  { key:'security', label:'Security', icon:'🔒' }, { key:'scope', label:'Scope', icon:'📈' },
+  { key:'api', label:'Integ.', icon:'🔌' }, { key:'conflict', label:'Team', icon:'⚡' },
+]
+const monitorWatchlist = computed(() => {
+  const t = threatByType.value
+  return MONITOR_CATS.map(c => {
+    const value = Math.round(t[c.key] || 0)
+    const tone = value >= 60 ? '#e05858' : value >= 33 ? '#e0b030' : '#58c848'
+    const cost = PREEMPT_BASE_COST + Math.round(value * 30)
+    return { category: c.key, label: c.label, icon: c.icon, value, tone, cost, known: knownCategories.value.has(c.key) }
+  }).filter(c => c.value > 0).sort((a, b) => b.value - a.value).slice(0, 3)
 })
 
 // Danger level drives vignette + color grading
@@ -515,6 +576,22 @@ function addProgress(n) {
   return project.progress - before
 }
 
+// ─── RISK EVALUATION (cycle stage 6, milestone'da hafif değerlendirme) ───
+// Slice 1: çarkta Evaluation düğümünü yakar + Tusler isabet oranı / identification doğruluğunu loglar.
+// (Tam sprint→yeni Planning döngüsü slice 2'ye bırakıldı.)
+function flashEvaluation(pct) {
+  const hit = stats.tuslerTotal ? Math.round(stats.tuslerCorrect / stats.tuslerTotal * 100) : 0
+  const idAcc = identification.value ? Math.round(identification.value.accuracy * 100) : 0
+  addLog(`📈 Evaluation @ ${pct}%: Tusler ${hit}% hit · identification ${idAcc}% — review your strategy.`, 'pmbok')
+  if (triggeredRisk.value) return   // risk kartı açıkken çark çubuğunu oynatma
+  cycle.stageIndex = STAGE_INDEX.evaluation
+  if (evalTimer) clearTimeout(evalTimer)
+  evalTimer = setTimeout(() => {
+    if (gs.status === 'playing' && !triggeredRisk.value) cycle.stageIndex = STAGE_INDEX.monitoring
+    evalTimer = null
+  }, 1600)
+}
+
 function checkMilestones() {
   const p = completedPct.value
   const reached = []
@@ -524,6 +601,7 @@ function checkMilestones() {
       updateMoney(m.bonus)
       addLog(`🎯 ${m.pct}% milestone reached! ${m.label}`, 'milestone')
       spawnParticles(window.innerWidth/2, window.innerHeight/2, 20, 'crit')
+      flashEvaluation(m.pct)
       reached.push(m)
     }
   }
@@ -568,8 +646,15 @@ function handleResolve({ guessKey, action = 'gamble', probPoints = 0, impactPoin
   const pp = Math.max(0, Math.min(probPoints, ep))
   const ip = Math.max(0, Math.min(impactPoints, ep - pp))
   const m = applyMitigation(risk, pp, ip)
-  const execCost = (pp + ip) * mitigationCostPerPoint(risk)   // mitigasyon parayla ödenir (peşin, riske göre ölçeklenir)
+  // Risk iştahı: tetiklenen hasar damageMult ile ölçeklenir (cautious yumuşak, aggressive sert).
+  const dmgMult = strategy.damageMult || 1
+  m.residualMoney = Math.round(m.residualMoney * dmgMult)
+  m.residualMorale = Math.round(m.residualMorale * dmgMult)
+  // known (öngörülmüş) risklerde mitigasyon daha ucuz (KNOWN_MITIGATE_DISCOUNT — modal aynı indirimi gösterir).
+  let execCost = (pp + ip) * mitigationCostPerPoint(risk)
+  if (risk.known) execCost = Math.round(execCost * KNOWN_MITIGATE_DISCOUNT)
   const mitigated = (pp + ip) > 0
+  cycle.stageIndex = STAGE_INDEX.strategies   // çark: Assessment → Strategies
 
   if (execCost) updateMoney(-execCost)
   if (scoreDelta) updateScore(scoreDelta)
@@ -591,6 +676,7 @@ function handleResolve({ guessKey, action = 'gamble', probPoints = 0, impactPoin
   // Dramatik an: kısa bir bekleyişten sonra sonucu açıkla ve bütçe/moral/takvim etkisini uygula.
   if (resolveTimer) clearTimeout(resolveTimer)
   resolveTimer = setTimeout(() => {
+    cycle.stageIndex = STAGE_INDEX.response   // çark: Strategies → Response (sonuç)
     const cx = window.innerWidth / 2, cy = window.innerHeight / 2
     const bits = []
     if (execCost) bits.push(`mitigate -$${execCost.toLocaleString()}`)
@@ -629,6 +715,7 @@ function closeClassify() {
   if (resolveTimer) { clearTimeout(resolveTimer); resolveTimer = null }
   triggeredRisk.value = null
   riskOutcome.value = null
+  cycle.stageIndex = STAGE_INDEX.monitoring   // çark: risk kartı kapandı → izlemeye dön
   checkGameEnd()
 }
 
@@ -673,7 +760,7 @@ async function processNextDay() {
   // İşe alınan ekipten günlük ilerleme (moral çarpanıyla)
   const mm = gs.morale >= 70 ? 1.2 : gs.morale >= 40 ? 1.0 : 0.75
   const baseProd = employees.value.filter(e => e.hired).reduce((s, e) => s + e.productivity, 0)
-  const dp = Math.round(baseProd * mm)
+  const dp = Math.round(baseProd * mm * (strategy.progressMult || 1))   // risk iştahı ilerlemeyi de ölçekler
   // Günlük gider = sabit ofis gideri + işe alınanların maaşları (FR1/FR3)
   const salaries = employees.value.filter(e => e.hired).reduce((s, e) => s + (e.dailyCost || 0), 0)
   const dailyCost = DAILY_COST + salaries
@@ -698,25 +785,46 @@ async function processNextDay() {
   isProcessing.value = false
   if (checkGameEnd()) return
 
-  // Bir süre sonra risk ortaya çıkar → oyuncu sınıflandırır
+  // Bir süre sonra risk ortaya çıkar → oyuncu sınıflandırır. Risk iştahı spawn olasılığını kaydırır.
   let riskSpawned = false
-  if (gs.day >= 3 && Math.random() < RISK_CHANCE) {
-    const avail = allRisksPool.filter(r => !usedRiskIds.value.includes(r.id))
+  const riskChance = RISK_CHANCE * (strategy.riskChanceMult || 1)
+  if (gs.day >= 3 && Math.random() < riskChance) {
+    // Önce projenin CANLI risklerinden (register) kullanılmamışları seç; biterse genel havuza düş.
+    const registerIds = riskRegister.value.map(r => r.id)
+    let availIds = registerIds.filter(id => !usedRiskIds.value.includes(id))
+    let fromRegister = true
+    if (!availIds.length) {
+      availIds = allRisksPool.filter(r => !usedRiskIds.value.includes(r.id)).map(r => r.id)
+      fromRegister = false
+    }
+    const avail = availIds.map(id => allRisksPool.find(r => r.id === id)).filter(Boolean)
     if (avail.length) {
       // Tehdidi yüksek kategoriden risk gelme olasılığı daha yüksek (öngörü çubukları).
       const weights = avail.map(r => Math.max(1, threatByType.value[r.type] || 1))
       const total = weights.reduce((a, b) => a + b, 0)
       let roll = Math.random() * total, pick = 0
       while (pick < avail.length - 1 && (roll -= weights[pick]) > 0) pick++
-      const r = JSON.parse(JSON.stringify(avail[pick]))
+      const chosen = avail[pick]
+      const reg = registerMap.value[chosen.id]
+      const r = JSON.parse(JSON.stringify(chosen))
       usedRiskIds.value.push(r.id)
+      // known/surprise: register'da öngörülen mi, kaçırılan mı (surprise), yoksa genel havuz mu?
+      r.known = !!(reg && reg.known)
+      r.surprise = fromRegister && !r.known
+      // Kaçırılan risk (surprise) daha sert vurur → etki yükselir (sınıflandırmayı da kaydırabilir).
+      if (r.surprise) {
+        if (r.cost) r.cost = Math.round(r.cost * SURPRISE_IMPACT_MULT)
+        if (r.moralDamage) r.moralDamage = Math.round(r.moralDamage * SURPRISE_IMPACT_MULT)
+      }
       // Aktif mitigasyonları uygula → etkin olasılık (sınıflandırmayı kaydırabilir)
       r.baseProb = r.prob
       const red = reductionByType.value[r.type] || 0
       r.prob = Math.max(0, Math.round(r.prob * (1 - red)))
       triggeredRisk.value = r
+      cycle.stageIndex = STAGE_INDEX.assessment   // çark: risk belirdi → Assessment
       triggerFx('shake', 400)
-      addLog(`⚠️ A new risk appeared: "${r.name}" — classify it!`, 'warning')
+      const tag = r.surprise ? ' (SURPRISE — not identified!)' : r.known ? ' (foreseen)' : ''
+      addLog(`⚠️ A new risk appeared: "${r.name}"${tag} — classify it!`, 'warning')
       riskSpawned = true
     }
   }
@@ -735,10 +843,60 @@ async function processNextDay() {
 }
 
 // ─── GAME LIFECYCLE ───
-function startGame() {
+// Kickoff: menu → Risk Planning → Risk Identification (test) → playing. Çark omurgasının başı.
+function beginKickoff() {
+  gs.status = 'planning'
+  cycle.stageIndex = STAGE_INDEX.planning
+}
+
+// Stage 0 — Planning: risk iştahını uygula, sonra Identification testini hazırla.
+function choosePlan(key) {
+  const s = planningStrategy(key)
+  Object.assign(strategy, s)
+  cycle.strategyKey = key
+  gs.money = s.startMoney
+  const reg = buildIdentificationRegister(allRisksPool, {})
+  idCandidates.value = reg.candidates
+  idCorrectIds.value = reg.correctIds
+  cycle.stageIndex = STAGE_INDEX.identification
+  gs.status = 'identifying'
+}
+
+// Stage 1 — Identification: testi puanla, register'ı kur (known/surprise), oyuna gir.
+function submitIdentification({ pickedIds }) {
+  const picked = new Set(pickedIds)
+  const res = scoreIdentification(pickedIds, idCorrectIds.value)
+  identification.value = res
+  riskRegister.value = idCorrectIds.value.map(id => ({ id, known: picked.has(id) }))
+  if (res.scoreDelta) updateScore(res.scoreDelta)
+  enterPlaying()
+}
+
+function enterPlaying() {
   gs.status = 'playing'
+  cycle.stageIndex = STAGE_INDEX.monitoring
   syncTeamMorale()
+  addLog(`🗺️ Plan set: ${strategy.name} risk appetite.`, 'success')
+  if (identification.value) {
+    addLog(`🔍 Identified ${identification.value.hits.length}/${idCorrectIds.value.length} key risks — the rest may surprise you.`,
+      identification.value.misses.length ? 'warning' : 'success')
+  }
   addLog('🟢 PROJECT: NEON started. Advance the days; as risks appear, classify each to the right animal!', 'success')
+}
+
+// Monitoring & Control günlük seçimi: bir kategoriyi ön-müdahaleyle bastır ya da inşaya devam et.
+function resolveMonitoring({ action, category }) {
+  if (action === 'preempt' && category) {
+    const w = monitorWatchlist.value.find(x => x.category === category)
+    if (w && gs.money >= w.cost) {
+      updateMoney(-w.cost)
+      preemptByType[category] = Math.min(REDUCTION_CAP, (preemptByType[category] || 0) + 0.12)
+      spawnParticles(window.innerWidth / 2, window.innerHeight / 2, 12, 'hire')
+      addLog(`📡 Pre-empted ${w.label} risk — threat permanently lowered (-$${w.cost.toLocaleString()})`, 'success')
+      stats.risksProactivelyHandled++
+    }
+  }
+  daySummary.value = null
 }
 
 function resetGame() {
@@ -760,6 +918,13 @@ function resetGame() {
   manageFocus.value = null
   showRiskCenter.value = false
   showKnowledgeBase.value = false
+  // Risk yönetim döngüsü durumunu sıfırla
+  cycle.stageIndex = STAGE_INDEX.monitoring; cycle.number = 1; cycle.strategyKey = null
+  Object.assign(strategy, planningStrategy('balanced'))
+  riskRegister.value = []; idCandidates.value = []; idCorrectIds.value = []
+  identification.value = null
+  Object.keys(preemptByType).forEach(k => delete preemptByType[k])
+  if (evalTimer) { clearTimeout(evalTimer); evalTimer = null }
 }
 
 // ─── LIFECYCLE ───
