@@ -29,25 +29,30 @@
 
           <template v-if="employees[i]?.hired">
             <div v-if="hasSynergyAt(i)" class="synergy-glow"></div>
-            <img
-              :src="'/'+getSprite(i)"
-              class="char-sprite"
-              :class="{ 'sprite-tired': employees[i].energy < 25, 'sprite-overtime': employees[i].overtime }"
-              draggable="false"
-            />
-            <Transition name="bubble">
-              <div v-if="activeBubbles[i]" class="thought-bubble">{{ activeBubbles[i] }}</div>
-            </Transition>
-            <div class="char-hud">
-              <div class="char-name">{{ employees[i].name }}</div>
-              <div class="energy-track">
-                <div class="energy-fill"
-                  :style="{
-                    width: employees[i].energy+'%',
-                    background: employees[i].energy>60?'#40e040':employees[i].energy>25?'#e0b030':'#e03030',
-                  }"></div>
+            <div class="char-clickable" :class="{ 'char-low': employees[i].morale < 30 }"
+                 @click="$emit('employeeClick', employees[i].id)"
+                 :title="`${employees[i].name} · morale ${employees[i].morale}% — click to lift it`">
+              <div v-if="employees[i].morale < 30" class="morale-alert">❗</div>
+              <img
+                :src="'/'+getSprite(i)"
+                class="char-sprite"
+                :class="{ 'sprite-tired': employees[i].morale < 25, 'sprite-overtime': employees[i].overtime }"
+                draggable="false"
+              />
+              <Transition name="bubble">
+                <div v-if="activeBubbles[i]" class="thought-bubble">{{ activeBubbles[i] }}</div>
+              </Transition>
+              <div class="char-hud">
+                <div class="char-name">{{ employees[i].name }}</div>
+                <div class="morale-track">
+                  <div class="morale-fill"
+                    :style="{
+                      width: employees[i].morale+'%',
+                      background: employees[i].morale>60?'#40e040':employees[i].morale>25?'#e0b030':'#e03030',
+                    }"></div>
+                </div>
+                <div v-if="employees[i].overtime" class="overtime-badge">⏰</div>
               </div>
-              <div v-if="employees[i].overtime" class="overtime-badge">⏰</div>
             </div>
           </template>
 
@@ -207,7 +212,7 @@ const props = defineProps([
   'project','morale','day','milestones','dailyProgress','dailyCost',
   'processing','employees','theme','synergyBonus','lastCritSuccess','lastBugEvent','reductionByType','threatByType'
 ])
-defineEmits(['nextDay','openManage'])
+defineEmits(['nextDay','openManage','employeeClick'])
 
 // ── RISK RADAR: kategori başına güncel tehdit çubukları (öngörü) ──
 const RADAR_CATS = [
@@ -298,7 +303,7 @@ function tickBubbles() {
   const emp  = hired[Math.floor(Math.random()*hired.length)]
   const idx  = emps.indexOf(emp)
   let pool = BUBBLES.neutral
-  if (emp.energy < 25)         pool = BUBBLES.tired
+  if (emp.morale < 25)         pool = BUBBLES.tired
   else if (emp.overtime)        pool = BUBBLES.overtime
   else if (props.morale > 65)   pool = BUBBLES.happy
   activeBubbles.value = {
@@ -487,7 +492,29 @@ onUnmounted(() => {
 .bubble-enter-from{opacity:0;transform:translateY(5px) scale(0.8)}
 .bubble-leave-to{opacity:0;transform:translateY(-8px) scale(0.9)}
 
-/* ─── CHAR HUD (name + energy bar) ─── */
+/* ─── CLICKABLE CHARACTER (opens the morale popup) ─── */
+.char-clickable {
+  position:relative; width:100%;
+  display:flex; flex-direction:column; align-items:center;
+  cursor:pointer;
+}
+.char-clickable:hover .char-sprite {
+  filter:drop-shadow(0 6px 10px rgba(255,200,0,0.55)) brightness(1.12);
+}
+.char-low .char-sprite { animation:lowMoraleShake 1.4s ease-in-out infinite; }
+@keyframes lowMoraleShake {
+  0%,100%{transform:translateX(0)}
+  25%{transform:translateX(-1.5px)}
+  75%{transform:translateX(1.5px)}
+}
+.morale-alert {
+  position:absolute; top:-14px; right:8%; z-index:11;
+  font-size:14px;
+  animation:alertBounce 0.7s ease-in-out infinite;
+}
+@keyframes alertBounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
+
+/* ─── CHAR HUD (name + morale bar) ─── */
 .char-hud {
   position:relative;
   display:flex;flex-direction:column;align-items:center;gap:2px;
@@ -501,13 +528,13 @@ onUnmounted(() => {
   padding:3px 6px;white-space:nowrap;
   text-shadow:1px 1px 0 #000;
 }
-.energy-track {
+.morale-track {
   width:80%;height:6px;
   background:rgba(0,0,0,0.6);
   border:1px solid rgba(0,0,0,0.8);
   overflow:hidden;
 }
-.energy-fill {
+.morale-fill {
   height:100%;transition:width 0.5s steps(8);
 }
 .overtime-badge {

@@ -130,7 +130,8 @@ Ship PROJECT: NEON — there's no deadline, but every day counts: finish in as f
             :dailyCost="lastDailyCost" :processing="isProcessing"
             :employees="employees" :theme="theme" :reductionByType="reductionByType"
             :threatByType="threatByType"
-            @nextDay="handleNextDay" @openManage="openManage" />
+            @nextDay="handleNextDay" @openManage="openManage"
+            @employeeClick="id => moraleEmployeeId = id" />
         </div>
       </main>
 
@@ -169,6 +170,11 @@ Ship PROJECT: NEON — there's no deadline, but every day counts: finish in as f
     <Transition name="fade">
       <KnowledgeBase v-if="showKnowledgeBase" :theme="theme" @close="showKnowledgeBase=false" />
     </Transition>
+    <Transition name="fade">
+      <MoraleModal v-if="moraleEmployee" :theme="theme" :money="gs.money"
+        :employee="moraleEmployee" :perks="moralePerks"
+        @buy="buyPerk" @close="moraleEmployeeId=null" />
+    </Transition>
   </div>
 </template>
 
@@ -182,6 +188,8 @@ import RiskClassifyModal from './components/RiskClassifyModal.vue'
 import ManagementModal from './components/ManagementModal.vue'
 import RiskCenterModal from './components/RiskCenterModal.vue'
 import DaySummaryModal from './components/DaySummaryModal.vue'
+import MoraleModal from './components/MoraleModal.vue'
+import { PERKS_BY_EMP, passiveMoraleFor } from './perks.js'
 import { newTheme } from './design.js'
 import { classifyRisk, evaluateResponse, applyMitigation, riskEmv, effortPointsFor, mitigationCostPerPoint, avoidProgressBonus, CLASSIFY_PROGRESS_BONUS, TUSLER_ANIMALS } from './tusler.js'
 
@@ -253,16 +261,22 @@ const milestones = reactive([
 // Çekirdek takım (1,6,8) hired başlar; gerisi 🏢 MANAGE'den işe alınır.
 // `category` risk `type`'ıyla eşleşir; `reduction` o kategorinin olasılığını kalıcı düşürür (FR3).
 const defaultEmployees = () => [
-  { id:1, name:'Mert',    role:'Senior Dev', icon:'🧑‍💻', dailyCost:700, productivity:28, category:'bug',      reduction:15, hired:true,  energy:100, overtime:false },
-  { id:2, name:'Bob',     role:'DevOps',     icon:'🔧',   dailyCost:550, productivity:16, category:'server',   reduction:25, hired:false, energy:100, overtime:false },
-  { id:3, name:'Charlie', role:'QA',         icon:'🔍',   dailyCost:450, productivity:10, category:'bug',      reduction:25, hired:false, energy:100, overtime:false },
-  { id:4, name:'Diana',   role:'PM',         icon:'📊',   dailyCost:400, productivity:7,  category:'scope',    reduction:30, hired:false, energy:100, overtime:false },
-  { id:5, name:'Eve',     role:'Security',   icon:'🔒',   dailyCost:500, productivity:7,  category:'security', reduction:30, hired:false, energy:100, overtime:false },
-  { id:6, name:'Frank',   role:'Frontend',   icon:'🎨',   dailyCost:450, productivity:18, category:'bug',      reduction:10, hired:true,  energy:100, overtime:false },
-  { id:7, name:'Grace',   role:'AI Eng.',    icon:'🤖',   dailyCost:700, productivity:30, category:'api',      reduction:15, hired:false, energy:100, overtime:false },
-  { id:8, name:'Hank',    role:'Intern',     icon:'👶',   dailyCost:200, productivity:4,  category:null,       reduction:0,  hired:true,  energy:100, overtime:false },
+  { id:1, name:'Mert',    role:'Senior Dev', icon:'🧑‍💻', dailyCost:700, productivity:28, category:'bug',      reduction:15, hired:true,  morale:82, ownedPerks:[], overtime:false },
+  { id:2, name:'Bob',     role:'DevOps',     icon:'🔧',   dailyCost:550, productivity:16, category:'server',   reduction:25, hired:false, morale:75, ownedPerks:[], overtime:false },
+  { id:3, name:'Charlie', role:'QA',         icon:'🔍',   dailyCost:450, productivity:10, category:'bug',      reduction:25, hired:false, morale:75, ownedPerks:[], overtime:false },
+  { id:4, name:'Diana',   role:'PM',         icon:'📊',   dailyCost:400, productivity:7,  category:'scope',    reduction:30, hired:false, morale:75, ownedPerks:[], overtime:false },
+  { id:5, name:'Eve',     role:'Security',   icon:'🔒',   dailyCost:500, productivity:7,  category:'security', reduction:30, hired:false, morale:75, ownedPerks:[], overtime:false },
+  { id:6, name:'Frank',   role:'Frontend',   icon:'🎨',   dailyCost:450, productivity:18, category:'bug',      reduction:10, hired:true,  morale:68, ownedPerks:[], overtime:false },
+  { id:7, name:'Grace',   role:'AI Eng.',    icon:'🤖',   dailyCost:700, productivity:30, category:'api',      reduction:15, hired:false, morale:75, ownedPerks:[], overtime:false },
+  { id:8, name:'Hank',    role:'Intern',     icon:'👶',   dailyCost:200, productivity:4,  category:null,       reduction:0,  hired:true,  morale:75, ownedPerks:[], overtime:false },
 ]
 const employees = ref(defaultEmployees())
+
+// ─── PER-EMPLOYEE MORALE POPUP ───
+// Clicking a worker opens a popup where you spend budget on personalized perks to lift THEIR morale.
+const moraleEmployeeId = ref(null)
+const moraleEmployee = computed(() => employees.value.find(e => e.id === moraleEmployeeId.value) || null)
+const moralePerks = computed(() => PERKS_BY_EMP[moraleEmployeeId.value] || [])
 
 // ─── UPGRADES (tek seferlik satın alım, kalıcı olasılık azaltma — FR7) ───
 const defaultUpgrades = () => [
@@ -460,8 +474,37 @@ function takeLoan(amount = LOAN_AMOUNT) {
   addLog(`🏦 Took a $${amount.toLocaleString()} loan — kept the cash, paid −${cost.toLocaleString()} score.`, 'warning')
 }
 
+// Team morale (HUD + balance) is now the AVERAGE of the hired employees' individual morale.
+function syncTeamMorale() {
+  const hired = employees.value.filter(e => e.hired)
+  gs.morale = hired.length
+    ? Math.round(hired.reduce((s, e) => s + e.morale, 0) / hired.length)
+    : 0
+}
+
+// A team-wide morale change (daily drift, espresso, risk fallout) hits every hired employee.
 function updateMorale(d) {
-  gs.morale = Math.max(0, Math.min(100, gs.morale + d))
+  employees.value.forEach(e => {
+    if (e.hired) e.morale = Math.max(0, Math.min(100, e.morale + d))
+  })
+  syncTeamMorale()
+}
+
+// Buy a personalized perk for one employee → boost only THEIR morale.
+function buyPerk(perkId) {
+  const e = moraleEmployee.value
+  if (!e || !e.hired) return
+  const perk = (PERKS_BY_EMP[e.id] || []).find(p => p.id === perkId)
+  if (!perk || gs.money < perk.cost) return
+  if (perk.type === 'item' && e.ownedPerks.includes(perk.id)) return
+  if (perk.type === 'activity' && e.morale >= 100) return
+
+  updateMoney(-perk.cost)
+  e.morale = Math.max(0, Math.min(100, e.morale + perk.morale))
+  if (perk.type === 'item') e.ownedPerks.push(perk.id)
+  syncTeamMorale()
+  spawnParticles(window.innerWidth / 2, window.innerHeight / 2, 16, 'hire')
+  addLog(`${perk.icon} ${e.name} got "${perk.name}" — +${perk.morale} morale (-$${perk.cost.toLocaleString()})`, 'success')
 }
 
 // İlerlemeyi (progress) ekler, totalEffort ile sınırlar; gerçekten eklenen miktarı döndürür.
@@ -600,6 +643,7 @@ function hireEmployee(id) {
   const e = employees.value.find(x => x.id === id)
   if (!e || e.hired) return
   e.hired = true
+  syncTeamMorale()
   spawnParticles(window.innerWidth / 2, window.innerHeight / 2, 16, 'hire')
   const red = e.reduction ? ` (${e.category} risk −${e.reduction}%)` : ''
   addLog(`🧑‍💻 Hired ${e.name} — ${e.role}, $${e.dailyCost.toLocaleString()}/day${red}`, 'success')
@@ -640,6 +684,13 @@ async function processNextDay() {
   // Espresso Machine yükseltmesi: pasif moral telafisi
   const espresso = upgrades.value.find(u => u.id === 'espresso' && u.purchased)
   if (espresso) updateMorale(espresso.morale || 0)
+  // Owned personalized perks give each employee a small daily morale bump
+  employees.value.forEach(e => {
+    if (!e.hired) return
+    const passive = passiveMoraleFor(e)
+    if (passive) e.morale = Math.min(100, e.morale + passive)
+  })
+  syncTeamMorale()
   addProgress(dp)
   const reachedMs = checkMilestones()
   triggerFx('glitch', 300)
@@ -686,6 +737,7 @@ async function processNextDay() {
 // ─── GAME LIFECYCLE ───
 function startGame() {
   gs.status = 'playing'
+  syncTeamMorale()
   addLog('🟢 PROJECT: NEON started. Advance the days; as risks appear, classify each to the right animal!', 'success')
 }
 
@@ -694,6 +746,7 @@ function resetGame() {
   Object.assign(project, { progress:0, totalEffort:3000 })
   employees.value = defaultEmployees()
   upgrades.value = defaultUpgrades()
+  moraleEmployeeId.value = null
   eventLog.value = []
   usedRiskIds.value = []
   milestones.forEach(m => m.reached = false)

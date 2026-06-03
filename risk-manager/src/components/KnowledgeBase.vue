@@ -328,7 +328,7 @@ const glossary = [
   { icon: '🗺️', en: 'Risk Matrix', desc: 'A 2D grid categorizing risks as High/Medium/Low. A qualitative analysis tool.', game: 'The Critical/Moderate/Minor color codes on risk cards come from this matrix.' },
   { icon: '💰', en: 'Contingency Reserve', desc: 'A pre-approved budget buffer set aside for known risks. Sized against total EMV.', game: 'Your starting budget ($100k) hides a contingency reserve. Manage it well!' },
   { icon: '📈', en: 'Scope Creep', desc: 'The gradual, unapproved expansion of project scope. The #1 cause of IT project failure.', game: 'The "Scope Creep" risk pushes your deadline — classify and respond to protect the baseline.' },
-  { icon: '⏰', en: 'Crashing', desc: 'Compressing the schedule by adding extra cost (overtime, resources). Shortens time, raises cost.', game: 'Working overtime = crashing. Speed rises but morale and energy fall.' },
+  { icon: '⏰', en: 'Crashing', desc: 'Compressing the schedule by adding extra cost (overtime, resources). Shortens time, raises cost.', game: 'Working overtime = crashing. Speed rises but each teammate’s morale falls — lift it back up from their morale popup.' },
   { icon: '📉', en: 'Technical Debt', desc: 'Trading code quality for short-term speed. It returns later as maintenance cost and bug risk.', game: 'The "Technical Debt" risk card raises the bug probability.' },
   { icon: '🎯', en: 'Baseline', desc: 'The approved project plan (scope, schedule, budget). Changes are measured against it.', game: '30 days / $100k / 3000 effort is your baseline.' },
   { icon: '🔄', en: 'Lessons Learned', desc: 'The retrospective done at project Closing. Feeds future projects.', game: 'The Post-Mortem screen at the end of the game is your Lessons Learned.' },
