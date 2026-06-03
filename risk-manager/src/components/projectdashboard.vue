@@ -176,12 +176,13 @@
         </div>
         <div class="radar-grid">
           <button v-for="(r, i) in radar" :key="r.key" class="radar-bar"
-            :class="{ 'radar-hot': r.value >= 60 }"
-            :title="`${r.label} threat ${r.value}/100 — click to hire/upgrade`"
+            :class="{ 'radar-hot': r.value >= 60, 'radar-planned': plannedSet.has(r.key) }"
+            :title="`${r.label} threat ${r.value}/100${plannedSet.has(r.key) ? ' — flagged in your risk plan' : ''} — click to hire/upgrade`"
             @click="$emit('openManage', r.key)">
             <div class="radar-row1">
               <span class="radar-ico">{{ r.icon }}</span>
               <span class="radar-name">{{ r.label }}</span>
+              <span v-if="plannedSet.has(r.key)" class="radar-plan-flag" title="Flagged in your risk plan">📋</span>
               <span v-if="i === 0 && r.value > 0" class="radar-next">▲ next?</span>
               <span class="radar-val" :style="{ color: r.tone }">{{ r.value }}</span>
             </div>
@@ -210,7 +211,7 @@ import { computed, ref, onMounted, onUnmounted } from 'vue'
 
 const props = defineProps([
   'project','morale','day','milestones','dailyProgress','dailyCost',
-  'processing','employees','theme','synergyBonus','lastCritSuccess','lastBugEvent','reductionByType','threatByType'
+  'processing','employees','theme','synergyBonus','lastCritSuccess','lastBugEvent','reductionByType','threatByType','plannedCategories'
 ])
 defineEmits(['nextDay','openManage','employeeClick'])
 
@@ -223,6 +224,8 @@ const RADAR_CATS = [
   { key:'api',      icon:'🔌', label:'Integ.',      color:'#5890e0' },
   { key:'conflict', icon:'⚡', label:'Team',        color:'#b080e0' },
 ]
+// Oyun başı risk planlamasında işaretlenen kategoriler — radar çubuğunda 📋 ile gösterilir.
+const plannedSet = computed(() => new Set(props.plannedCategories || []))
 const radar = computed(() => {
   const t = props.threatByType || {}
   return RADAR_CATS.map(c => {
@@ -623,6 +626,9 @@ onUnmounted(() => {
 .radar-bar:hover{filter:brightness(1.25);border-color:#5a3818}
 .radar-bar:active{transform:translateY(2px)}
 .radar-hot{border-color:#7a2020;box-shadow:0 0 8px rgba(224,80,80,0.35)}
+.radar-planned{border-color:#b08840;box-shadow:inset 0 0 0 1px rgba(240,200,80,0.35)}
+.radar-planned.radar-hot{border-color:#b08840;box-shadow:inset 0 0 0 1px rgba(240,200,80,0.4),0 0 8px rgba(224,80,80,0.35)}
+.radar-plan-flag{font-size:10px;line-height:1}
 .radar-row1{display:flex;align-items:center;gap:5px}
 .radar-ico{font-size:13px;line-height:1}
 .radar-name{font-size:11px;color:#c8a878;flex:1;letter-spacing:0.5px}

@@ -36,7 +36,7 @@
               <div style="font-family:'Press Start 2P',monospace;font-size:10px;color:#a3b18a;margin-top:4px;letter-spacing:3px">TUSLER PROTOCOL // 2026</div>
             </div>
             <div class="pixel-inset p-4 text-center text-sm" :style="{ backgroundColor: theme.panelBg, color: theme.riskDescText }">
-Ship PROJECT: NEON — there's no deadline, but every day counts: finish in as few days as you can to top the leaderboard.<br>As risks appear, classify each one to the right animal by its probability × impact!
+Ship PROJECT: NEON — a cloud payments &amp; analytics platform. There's no deadline, but every day counts: finish in as few days as you can to top the leaderboard.<br>As risks appear, classify each one to the right animal by its probability × impact!
             </div>
             <div class="grid grid-cols-2 gap-4">
               <div class="pixel-inset p-3 text-center" :style="{ backgroundColor: theme.panelBg, color: '#e8702a' }"><div class="text-2xl">🐯</div>TIGER → AVOID</div>
@@ -53,6 +53,14 @@ Ship PROJECT: NEON — there's no deadline, but every day counts: finish in as f
       </div>
     </Transition>
 
+    <!-- ══════════ RISK PLANNING (KICKOFF) ══════════ -->
+    <Transition name="fade">
+      <RiskPlanningModal v-if="gs.status==='planning'"
+        :theme="theme" :project="project"
+        :pointsPerRisk="PLANNING_POINTS_PER_RISK"
+        @begin="beginProject" />
+    </Transition>
+
     <!-- ══════════ POST MORTEM (GAME OVER / VICTORY) ══════════ -->
     <Transition name="fade">
       <PostMortemReport v-if="gs.status==='gameover' || gs.status==='victory'"
@@ -66,7 +74,7 @@ Ship PROJECT: NEON — there's no deadline, but every day counts: finish in as f
     </Transition>
 
     <!-- ══════════ PLAYING ══════════ -->
-    <template v-if="gs.status !== 'menu'">
+    <template v-if="gs.status !== 'menu' && gs.status !== 'planning'">
 
       <!-- HUD BAR -->
       <header class="pixel-hud-bar flex items-center justify-between px-4 shrink-0" style="height:72px"
@@ -129,7 +137,7 @@ Ship PROJECT: NEON — there's no deadline, but every day counts: finish in as f
             :milestones="milestones" :dailyProgress="lastDailyProgress"
             :dailyCost="lastDailyCost" :processing="isProcessing"
             :employees="employees" :theme="theme" :reductionByType="reductionByType"
-            :threatByType="threatByType"
+            :threatByType="threatByType" :plannedCategories="plannedCategories"
             @nextDay="handleNextDay" @openManage="openManage"
             @employeeClick="id => moraleEmployeeId = id" />
         </div>
@@ -165,7 +173,8 @@ Ship PROJECT: NEON — there's no deadline, but every day counts: finish in as f
     </Transition>
     <Transition name="fade">
       <RiskCenterModal v-if="showRiskCenter" :theme="theme" :eventLog="eventLog"
-        :reductionByType="reductionByType" :stats="stats" @close="showRiskCenter=false" />
+        :reductionByType="reductionByType" :stats="stats" :plannedCategories="plannedCategories"
+        @close="showRiskCenter=false" />
     </Transition>
     <Transition name="fade">
       <KnowledgeBase v-if="showKnowledgeBase" :theme="theme" @close="showKnowledgeBase=false" />
@@ -187,6 +196,7 @@ import PostMortemReport from './components/PostMortemReport.vue'
 import RiskClassifyModal from './components/RiskClassifyModal.vue'
 import ManagementModal from './components/ManagementModal.vue'
 import RiskCenterModal from './components/RiskCenterModal.vue'
+import RiskPlanningModal from './components/RiskPlanningModal.vue'
 import DaySummaryModal from './components/DaySummaryModal.vue'
 import MoraleModal from './components/MoraleModal.vue'
 import { PERKS_BY_EMP, passiveMoraleFor } from './perks.js'
@@ -232,6 +242,9 @@ const LOAN_AMOUNT = 25000        // her kredinin verdiği nakit
 const LOAN_POINT_RATE = 0.08     // skor bedeli = tutar × oran → $25K ≈ 2,000 puan
 // Zafer bonusu: eski "deadline × 100" terimi kaldırıldı (artık son tarih yok); hız leaderboard'da ödüllenir.
 const COMPLETION_BONUS = 500
+// Risk planlama (oyun başı): NEON'a gerçekten ait olan her riski doğru işaretlemek puan kazandırır.
+// "Sadece doğruyu ödüllendir" modeli — yanlış (alakasız) ya da eksik seçim cezalandırılmaz.
+const PLANNING_POINTS_PER_RISK = 100 // doğru tanımlanan gerçek risk başına puan (skor PO ekranında hesaplanır)
 
 // ─── REFS & STATE ───
 const triggeredRisk = ref(null)
@@ -246,6 +259,8 @@ const showRiskCenter = ref(false)
 const daySummary = ref(null)
 const eventLog = ref([])
 const usedRiskIds = ref([])
+// Oyun başı risk planlamasında işaretlenen kategoriler (risk register). Radar'da işaretlenir + Risk Center'da listelenir.
+const plannedCategories = ref([])
 const stats = reactive({ critSuccesses: 0, bugsFixed: 0, dilemmasResolved: 0, risksProactivelyHandled: 0, tuslerCorrect: 0, tuslerTotal: 0 })
 
 const fx = reactive({ shake:false, moneyFlash:false, glitch:false, criticalSuccess:false, bugEvent:false })
@@ -360,6 +375,10 @@ const threatByType = computed(() => {
   RISK_TYPES.forEach(t => { out[t] = Math.round(baseThreatByType[t] * (1 - (reductionByType.value[t] || 0))) })
   return out
 })
+
+// İnsan-okunur kategori etiketleri (log mesajı için).
+const CATEGORY_LABELS = { server:'Server', api:'Integration', security:'Security', scope:'Scope', bug:'Bug', conflict:'Team' }
+const categoryLabel = (key) => CATEGORY_LABELS[key] || key
 
 // Danger level drives vignette + color grading
 const dangerLevel = computed(() => {
@@ -736,8 +755,19 @@ async function processNextDay() {
 
 // ─── GAME LIFECYCLE ───
 function startGame() {
+  // Menüden risk PLANLAMA ekranına geç — oyuncu PO ile konuşur ve risk register'ını oluşturur.
+  gs.status = 'planning'
+}
+
+// PO planlama sohbeti bittiğinde çağrılır: doğru tanımlanan risklerin kategorilerini kaydet,
+// kazanılan planlama skorunu uygula (PO ekranında hesaplandı), oyunu başlat.
+function beginProject(payload) {
+  plannedCategories.value = payload?.categories || []
+  updateScore(payload?.score || 0)
   gs.status = 'playing'
   syncTeamMorale()
+  const watching = plannedCategories.value.map(categoryLabel).join(', ')
+  addLog(`📋 Risk plan set — identified: ${watching || 'no real risks flagged'}${payload?.score ? ` (+${payload.score} score)` : ''}.`, 'pmbok')
   addLog('🟢 PROJECT: NEON started. Advance the days; as risks appear, classify each to the right animal!', 'success')
 }
 
@@ -749,6 +779,7 @@ function resetGame() {
   moraleEmployeeId.value = null
   eventLog.value = []
   usedRiskIds.value = []
+  plannedCategories.value = []
   milestones.forEach(m => m.reached = false)
   lastDailyProgress.value = 0; lastDailyCost.value = 0
   Object.assign(stats, { critSuccesses:0, bugsFixed:0, dilemmasResolved:0, risksProactivelyHandled:0, tuslerCorrect:0, tuslerTotal:0 })

@@ -44,6 +44,19 @@
           </div>
         </div>
 
+        <!-- Risk register (kickoff planning) -->
+        <div class="rc-card">
+          <h3 class="rc-h">📋 Risk Register (Plan)</h3>
+          <div v-if="registerCats.length" class="flex flex-wrap gap-2 mt-2">
+            <span v-for="c in registerCats" :key="c.key" class="rc-tag" :style="{ borderColor: c.color }">
+              {{ c.icon }} {{ c.label }}
+            </span>
+          </div>
+          <div v-else class="text-xs mt-2" style="color:#8a7a5a">
+            No categories were flagged at kickoff. Threats still appear — you just read each one fresh.
+          </div>
+        </div>
+
         <!-- Event log -->
         <div class="rc-card flex-1">
           <h3 class="rc-h">🗒️ Event Log (Risk Register updates)</h3>
@@ -64,7 +77,7 @@
 <script setup>
 import { computed } from 'vue'
 
-const props = defineProps({ theme: Object, eventLog: Array, reductionByType: Object, stats: Object })
+const props = defineProps({ theme: Object, eventLog: Array, reductionByType: Object, stats: Object, plannedCategories: Array })
 defineEmits(['close'])
 
 const accuracy = computed(() =>
@@ -85,6 +98,10 @@ const CATS = {
   conflict: { icon: '⚡', label: 'Team',         color: '#b080e0' },
 }
 function cat(key) { return CATS[key] || { icon: '•', label: key, color: '#999' } }
+
+const registerCats = computed(() =>
+  (props.plannedCategories || []).filter(k => CATS[k]).map(k => ({ key: k, ...CATS[k] }))
+)
 
 const activeReductions = computed(() =>
   Object.entries(props.reductionByType || {})
@@ -110,4 +127,5 @@ function logColor(type) {
 .rc-log { max-height: 320px; overflow-y: auto; }
 .rc-log-row { display: flex; gap: 10px; align-items: baseline; padding: 5px 8px; background: rgba(0,0,0,0.25); border-left: 3px solid; font-size: 13px; line-height: 1.4; }
 .rc-day { font-size: 11px; color: #8a7a5a; flex-shrink: 0; width: 28px; }
+.rc-tag { font-size: 13px; color: #e8d4a8; background: rgba(0,0,0,0.3); border: 2px solid; padding: 4px 9px; }
 </style>
