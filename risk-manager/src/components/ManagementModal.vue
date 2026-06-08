@@ -52,6 +52,8 @@
               </div>
               <div class="flex items-center gap-3 flex-wrap mt-1 text-xs">
                 <span style="color:#70d050">⚡ +{{ e.productivity }} prod/day</span>
+                <span v-if="e.specialty" class="mm-spec">{{ spec(e.specialty).icon }} {{ spec(e.specialty).label }} Expert</span>
+                <span v-else class="mm-spec" style="color:#a89060">🧩 Generalist</span>
                 <span v-if="e.reduction" :style="{ color: cat(e.category).color }">
                   {{ cat(e.category).icon }} {{ cat(e.category).label }} −{{ e.reduction }}%
                 </span>
@@ -168,6 +170,14 @@ const CATS = {
   morale:   { icon: '☕', label: 'Morale',      color: '#f0d060' },
 }
 function cat(key) { return CATS[key] || { icon: '•', label: key, color: '#999' } }
+
+// Kapsam uzmanlığı (3 teslimat akışı) — App.vue'daki TRACKS ile aynı ikon/etiket.
+const SPECIALTY = {
+  infra:    { icon: '🏗️', label: 'Infra' },
+  security: { icon: '🔒', label: 'Security' },
+  product:  { icon: '💳', label: 'Product' },
+}
+function spec(key) { return SPECIALTY[key] || { icon: '🧩', label: key } }
 </script>
 
 <style scoped>
@@ -178,6 +188,7 @@ function cat(key) { return CATS[key] || { icon: '•', label: key, color: '#999'
 }
 .mm-row-on { background: rgba(40,90,40,0.18); border-color: rgba(96,200,96,0.4); }
 .mm-name { font-size: 14px; color: #ffe4a0; font-family: 'Press Start 2P', monospace; }
+.mm-spec { color: #ffd060; background: rgba(240,192,64,0.14); border: 1px solid rgba(240,192,64,0.35); padding: 1px 6px; border-radius: 3px; white-space: nowrap; }
 .mm-badge-on { font-size: 12px; color: #80e060; border: 2px solid #2a6020; padding: 6px 10px; white-space: nowrap; }
 .mm-btn-buy {
   font-family: 'Press Start 2P', monospace; font-size: 12px; cursor: pointer; white-space: nowrap;

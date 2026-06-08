@@ -26,7 +26,7 @@
         <div class="p-3 bg-black/40 border rounded grid grid-cols-2 gap-4" :style="{ borderColor: theme.panelBorder }">
           <div>
             <div class="text-[10px] text-gray-500 mb-1">Tamamlanma Oranı</div>
-            <div class="text-sm" :style="{ color: isVictory ? '#a8d060' : '#f08080' }">%{{ Math.floor((project.progress / project.totalEffort) * 100) }}</div>
+            <div class="text-sm" :style="{ color: isVictory ? '#a8d060' : '#f08080' }">%{{ overallPct }}</div>
           </div>
           <div>
             <div class="text-[10px] text-gray-500 mb-1">Kalan Bütçe (Cost Variance)</div>
@@ -39,6 +39,19 @@
           <div>
             <div class="text-[10px] text-gray-500 mb-1">Takım Morali</div>
             <div class="text-sm" :style="{ color: gs.morale > 50 ? '#a8d060' : '#f08080' }">%{{ gs.morale }}</div>
+          </div>
+        </div>
+
+        <!-- Teslimat Akışları (Kapsam / WBS) — her birinin tamamlanma oranı -->
+        <div v-if="tracks && tracks.length" class="p-3 bg-black/40 border rounded flex flex-col gap-2" :style="{ borderColor: theme.panelBorder }">
+          <div class="text-[10px] text-gray-500">Teslimat Akışları (Kapsam / WBS)</div>
+          <div v-for="t in tracks" :key="t.key" class="flex items-center gap-2">
+            <span class="text-sm">{{ t.icon }}</span>
+            <span class="text-[11px] w-32" style="color:#c8a878">{{ t.label }}</span>
+            <div class="flex-1 h-2 bg-black/60 border border-black overflow-hidden">
+              <span class="block h-full" :style="{ width: t.pct+'%', background: t.pct>=100 ? '#48b838' : t.pct>=50 ? '#c0980a' : '#2868c8' }"></span>
+            </div>
+            <span class="text-[11px] w-10 text-right" :style="{ color: t.pct>=100 ? '#60d060' : '#f0c040' }">{{ t.pct }}%</span>
           </div>
         </div>
 
@@ -81,8 +94,15 @@
             <div class="flex items-center gap-4 mb-3">
               <div class="text-4xl font-bold text-white" style="text-shadow: 2px 2px 0 #d0a0f0">{{ gs.score.toLocaleString() }}</div>
             </div>
-            <div class="text-[9px]" style="color:#a080c0">Kararlar, riskler ve bütçe performansınızın toplamı!</div>
-            <div v-if="gs.loans > 0" class="text-[9px] mt-1" style="color:#e87060">🏦 {{ gs.loans }} kredi · −{{ gs.loanPenalty.toLocaleString() }} puan</div>
+            <!-- Skor dökümü: hız + sınıflandırma isabeti ağırlıklı (leaderboard bu tek sayıyla sıralanır) -->
+            <div v-if="breakdown && breakdown.items" class="flex flex-col gap-1 mb-2 pt-2 border-t" style="border-color:#3a2050">
+              <div v-for="item in breakdown.items" :key="item.key" class="flex justify-between items-center text-[10px]">
+                <span style="color:#b89ad0">{{ item.label }}</span>
+                <span :style="{ color: item.value >= 0 ? '#c0f0a0' : '#f0a080' }">{{ item.value >= 0 ? '+' : '' }}{{ item.value.toLocaleString() }}</span>
+              </div>
+            </div>
+            <div v-else class="text-[9px]" style="color:#a080c0">Kararlar, riskler ve bütçe performansınızın toplamı!</div>
+            <div v-if="gs.loans > 0" class="text-[9px] mt-1" style="color:#e87060">🏦 {{ gs.loans }} kredi · −{{ gs.loanPenalty.toLocaleString() }} puan (kararlara dahil)</div>
           </div>
         </div>
 
@@ -99,9 +119,10 @@
 
         <!-- Action Button & Leaderboard -->
         <div class="mt-4 border-t pt-4" :style="{ borderColor: theme.panelBorder }">
-          <!-- Save form: only finishers (victory) have a "days to finish" worth ranking -->
-          <div v-if="isVictory && !scoreSaved" class="flex flex-col gap-3 items-center">
-            <div class="text-xs text-white" style="color:#d0a0f0">Projeyi <strong>{{ gs.day }} günde</strong> bitirdin — liderlik tablosuna kaydet!</div>
+          <!-- Save form: hem zafer hem kayıp (DNF) skoru kaydedebilir — sıralama tek sayıyla (skor) -->
+          <div v-if="!scoreSaved" class="flex flex-col gap-3 items-center">
+            <div v-if="isVictory" class="text-xs text-white" style="color:#d0a0f0">Projeyi <strong>{{ gs.day }} günde</strong> bitirdin — liderlik tablosuna kaydet!</div>
+            <div v-else class="text-xs text-white" style="color:#d0a0f0"><strong>{{ gs.day }} gün</strong> dayandın (DNF) — yine de skorunu kaydet!</div>
             <div class="flex gap-2 w-full justify-center">
               <input v-model="playerName" type="text" placeholder="Adınız..." class="pixel-input px-3 py-2 text-sm bg-black border-2 text-white" style="border-color:#4a2060; outline:none; max-width:200px" maxlength="15">
               <button @click="saveScore" :disabled="!playerName.trim()" class="pixel-btn bg-[#4a2060] text-white py-2 px-4 text-sm border-2 disabled:opacity-50 disabled:cursor-not-allowed" style="border-color:#6a4080">KAYDET</button>
@@ -111,18 +132,18 @@
           <!-- Otherwise (loss, or already saved): read-only board + restart -->
           <div v-else class="flex flex-col gap-3">
             <div class="text-center text-sm font-bold" style="color:#d0a0f0">🏆 LİDERLİK TABLOSU 🏆</div>
-            <div class="text-center text-[10px] text-gray-500">En az günde bitirenler önde · eşitlikte yüksek skor</div>
+            <div class="text-center text-[10px] text-gray-500">En yüksek skor önde · eşitlikte az gün</div>
             <div class="bg-black/50 border rounded p-2" :style="{ borderColor: '#4a2060' }">
               <div class="flex justify-between items-center py-1 px-2 text-[9px] text-gray-500 border-b border-gray-700">
                 <span class="flex-1">#  OYUNCU</span>
-                <span class="w-16 text-right">GÜN</span>
                 <span class="w-24 text-right">SKOR</span>
+                <span class="w-16 text-right">GÜN</span>
               </div>
               <div v-if="!leaderboard.length" class="py-3 text-center text-xs text-gray-500">Henüz kayıt yok — ilk sırayı sen al!</div>
               <div v-for="(entry, idx) in leaderboard" :key="idx" class="flex justify-between items-center py-2 px-2 border-b border-gray-800 last:border-0" :class="entry.isCurrent ? 'bg-[#2a1438] font-bold rounded' : ''">
                 <span class="flex-1 text-xs text-gray-300">{{ idx + 1 }}. {{ entry.name }}</span>
-                <span class="w-16 text-right text-xs text-[#f0d060]">{{ entry.days != null ? entry.days : '—' }}</span>
                 <span class="w-24 text-right text-xs text-[#d0a0f0]">{{ entry.score.toLocaleString() }}</span>
+                <span class="w-16 text-right text-xs" :class="entry.days != null ? 'text-[#f0d060]' : 'text-[#e87060]'">{{ entry.days != null ? entry.days : 'DNF' }}</span>
               </div>
             </div>
             <div class="text-center mt-2">
@@ -140,27 +161,24 @@
 
 <script setup>
 import { computed, ref, onMounted } from 'vue'
+import { sortLeaderboard } from '../scoring.js'
 
 const playerName = ref('')
 const scoreSaved = ref(false)
 const leaderboard = ref([])
 
-const LEADERBOARD_KEY = 'rm_leaderboard_v2'
-
-// Sırala: önce en az gün (hız), eşitlikte yüksek skor. Günü olmayan eski kayıtlar en sona.
-function sortBoard(list) {
-  return [...list].sort((a, b) =>
-    ((a.days ?? Infinity) - (b.days ?? Infinity)) || ((b.score || 0) - (a.score || 0)))
-}
+// v3: skor-öncelikli sıralama + kayıplar (DNF) da kaydedilir → eski gün-öncelikli v2'yle karışmasın.
+const LEADERBOARD_KEY = 'rm_leaderboard_v3'
 
 function saveScore() {
   if (!playerName.value.trim()) return
   const name = playerName.value.trim().toUpperCase()
-  const days = props.gs.day
+  const won = isVictory.value
+  const days = won ? props.gs.day : null   // DNF kayıtlarının gün sıralaması yok
   const score = props.gs.score
   const board = JSON.parse(localStorage.getItem(LEADERBOARD_KEY) || '[]')
-  board.push({ name, days, score, date: new Date().toISOString() })
-  const top = sortBoard(board).slice(0, 10)   // keep top 10
+  board.push({ name, days, score, won, date: new Date().toISOString() })
+  const top = sortLeaderboard(board).slice(0, 10)   // keep top 10
   localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(top))
 
   // Update view, flag this run (matched once)
@@ -174,15 +192,17 @@ function saveScore() {
 }
 
 onMounted(() => {
-  leaderboard.value = sortBoard(JSON.parse(localStorage.getItem(LEADERBOARD_KEY) || '[]'))
+  leaderboard.value = sortLeaderboard(JSON.parse(localStorage.getItem(LEADERBOARD_KEY) || '[]'))
 })
 
 const props = defineProps({
   status: String,
   reason: String,
-  project: Object,
+  tracks: Array,
+  overallPct: Number,
   stats: Object,
   gs: Object,
+  breakdown: Object,   // { won, accuracy, total, items:[{key,label,value}] } — yarışma skoru dökümü
   theme: Object
 })
 

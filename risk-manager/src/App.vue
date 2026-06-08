@@ -66,9 +66,11 @@ Ship PROJECT: NEON — a cloud payments &amp; analytics platform. There's no dea
       <PostMortemReport v-if="gs.status==='gameover' || gs.status==='victory'"
         :status="gs.status"
         :reason="gameOverReason"
-        :project="project"
+        :tracks="tracks"
+        :overallPct="completedPct"
         :stats="stats"
         :gs="gs"
+        :breakdown="scoreBreakdown"
         :theme="theme"
         @restart="resetGame" />
     </Transition>
@@ -133,7 +135,7 @@ Ship PROJECT: NEON — a cloud payments &amp; analytics platform. There's no dea
         <!-- DASHBOARD (office view) -->
         <div class="w-full flex-1 overflow-hidden" style="display:flex;flex-direction:column;gap:6px">
           <ProjectDashboard
-            :project="project" :morale="gs.morale" :day="gs.day"
+            :tracks="tracks" :overallPct="completedPct" :morale="gs.morale" :day="gs.day"
             :milestones="milestones" :dailyProgress="lastDailyProgress"
             :dailyCost="lastDailyCost" :processing="isProcessing"
             :employees="employees" :theme="theme" :reductionByType="reductionByType"
@@ -202,6 +204,7 @@ import MoraleModal from './components/MoraleModal.vue'
 import { PERKS_BY_EMP, passiveMoraleFor } from './perks.js'
 import { newTheme } from './design.js'
 import { classifyRisk, evaluateResponse, applyMitigation, riskEmv, effortPointsFor, mitigationCostPerPoint, avoidProgressBonus, CLASSIFY_PROGRESS_BONUS, TUSLER_ANIMALS } from './tusler.js'
+import { computeEndScore } from './scoring.js'
 
 const originalTheme = {
   bgGrass:'#2d5a1b', hudBg:'#4a3018', chipGreen:'#2a6020', chipGreenText:'#a0e080',
@@ -237,11 +240,17 @@ const REDUCTION_CAP = 0.6        // bir risk tipindeki toplam olasılık azaltma
 // Takvim baskısı artık ilerleme baskısı: bir risk tetiklenip gecikme verirse, o gecikme
 // günü başına bu kadar PROGRESS geri alınır (totalEffort 3000; ~bir çekirdek ekip günü).
 const DELAY_PROGRESS_PER_DAY = 45
+// ── ZAMANLA SCOPE DEĞİŞİMİ (scope creep): müşteri/PO ara ara gereksinimleri yeniden şekillendirir →
+// bir teslimat track'i biraz GERİYE gider (mevcut ilerlemeden düşülür). Tek noktadan dengelenir.
+const SCOPE_CHANGE_MIN_DAY = 5     // bu günden önce scope değişmez (risklerden biraz sonra başlar)
+const SCOPE_CHANGE_CHANCE  = 0.18  // uygun her gün tetiklenme olasılığı (~%15–20)
+const SCOPE_CHANGE_MAX     = 3     // oyun başına azami scope değişimi (oyun oynanamaz olmasın)
+const SCOPE_CHANGE_MIN_PCT = 0.06  // hafif: track target'ının %6'sı …
+const SCOPE_CHANGE_MAX_PCT = 0.10  // … ile %10'u arası ilerleme geri alınır
 // Acil kredi: anında nakit, peşin (geri ödemesiz) ama YÜKSEK skor bedeliyle. Para senindir.
 const LOAN_AMOUNT = 25000        // her kredinin verdiği nakit
 const LOAN_POINT_RATE = 0.08     // skor bedeli = tutar × oran → $25K ≈ 2,000 puan
-// Zafer bonusu: eski "deadline × 100" terimi kaldırıldı (artık son tarih yok); hız leaderboard'da ödüllenir.
-const COMPLETION_BONUS = 500
+// Zafer bonusu artık tek noktada: src/scoring.js → computeEndScore (hız + isabet ağırlıklı).
 // Risk planlama (oyun başı): NEON'a gerçekten ait olan her riski doğru işaretlemek puan kazandırır.
 // "Sadece doğruyu ödüllendir" modeli — yanlış (alakasız) ya da eksik seçim cezalandırılmaz.
 const PLANNING_POINTS_PER_RISK = 100 // doğru tanımlanan gerçek risk başına puan (skor PO ekranında hesaplanır)
@@ -257,15 +266,45 @@ const showManagement = ref(false)
 const manageFocus = ref(null)        // radar çubuğundan açılınca odaklanılan risk kategorisi
 const showRiskCenter = ref(false)
 const daySummary = ref(null)
+const scoreBreakdown = ref(null)   // oyun sonu yarışma skorunun kalem dökümü (post-mortem'de gösterilir)
 const eventLog = ref([])
 const usedRiskIds = ref([])
+const scopeChanges = ref(0)     // bu oyunda kaç kez scope değişti (SCOPE_CHANGE_MAX ile sınırlı)
 // Oyun başı risk planlamasında işaretlenen kategoriler (risk register). Radar'da işaretlenir + Risk Center'da listelenir.
 const plannedCategories = ref([])
 const stats = reactive({ critSuccesses: 0, bugsFixed: 0, dilemmasResolved: 0, risksProactivelyHandled: 0, tuslerCorrect: 0, tuslerTotal: 0 })
 
 const fx = reactive({ shake:false, moneyFlash:false, glitch:false, criticalSuccess:false, bugEvent:false })
 const gs = reactive({ status:'menu', money:100000, day:1, morale:75, score:0, loans:0, loanPenalty:0 })
-const project = reactive({ progress:0, totalEffort:3000 })
+
+// ─── PROJECT SCOPE (Work Breakdown Structure — 3 deliverable tracks) ───
+// İlerleme artık tek bir çubuk değil; proje KAPSAMI üç teslimat akışına bölündü. Oyun ancak
+// ÜÇÜ DE kendi hedefine (track.target) ulaşınca kazanılır. Her risk tipi kendi akışını besler/
+// geri atar, her çalışanın günlük üretimi `category`'sine göre ilgili akışa akar (kategorisiz
+// stajyer eşit böler). HEDEFLER akış başına UZMAN İNŞA KAPASİTESİYLE orantılı seçildi (tam kadro
+// kapasiteleri ~Infra 46 / Security 14 / Product 56) — böylece her akış yatırım yapılınca BENZER
+// sürede biter; aksi halde düşük üretimli güvenlik/scope uzmanları o akışı darboğaza çevirirdi.
+// Toplam 3000 (eski tek-çubuk temposu korunur). Dengeyi tek noktadan ayarla: bu `target`lar.
+const TRACKS = [
+  { key:'infra',    label:'INFRASTRUCTURE',        icon:'🏗️', target:2050, cats:['server','api'] },
+  { key:'security', label:'SECURITY & COMPLIANCE', icon:'🔒', target:950,  cats:['security','scope'] },
+  { key:'product',  label:'PRODUCT',               icon:'💳', target:2300, cats:['bug','conflict'] },
+]
+const TRACK_KEYS = TRACKS.map(t => t.key)
+const TRACK_TARGET = Object.fromEntries(TRACKS.map(t => [t.key, t.target]))
+const TOTAL_TARGET = TRACKS.reduce((s, t) => s + t.target, 0)
+const CATEGORY_TRACK = { server:'infra', api:'infra', security:'security', scope:'security', bug:'product', conflict:'product' }
+// null = stajyer / genel iş → günlük üretimi üç akışa eşit dağıtılır; risk hasarı 'product'a yazılır.
+const trackForCategory = (cat) => CATEGORY_TRACK[cat] || null
+// ─── UZMANLIK (her çalışan bir teslimat akışında uzman) ───
+// Uzman kendi akışında EXPERT_BONUS, diğer iki akışa EXPERT_TRICKLE oranında katkı verir.
+// Bonus throughput'u ~1.8×'e çıkardığı için yukarıdaki `target`lar buna göre yeniden ölçeklendi.
+const EXPERT_BONUS   = 1.5   // uzman, kendi teslimat akışında %50 daha verimli
+const EXPERT_TRICKLE = 0.15  // uzmanlık dışı iki akışa küçük katkı
+
+const project = reactive({ infra:0, security:0, product:0 })
+// Bir önceki günün akış başına ilerleme deltası (dashboard'da "+N" rozetleri için).
+const lastTrackProgress = reactive({ infra:0, security:0, product:0 })
 const milestones = reactive([
   { pct:25, label:'+$10K', bonus:10000, reached:false, icon:'💰' },
   { pct:50, label:'+$15K', bonus:15000, reached:false, icon:'🎯' },
@@ -273,17 +312,17 @@ const milestones = reactive([
 ])
 
 // ─── EMPLOYEES (roster — ids 1-8 masalarda) ───
-// Çekirdek takım (1,6,8) hired başlar; gerisi 🏢 MANAGE'den işe alınır.
+// Başlangıç takımı her türden birer kişi: (1) product, (2) infra, (5) security, (8) generalist hired başlar; gerisi 🏢 MANAGE'den işe alınır.
 // `category` risk `type`'ıyla eşleşir; `reduction` o kategorinin olasılığını kalıcı düşürür (FR3).
 const defaultEmployees = () => [
-  { id:1, name:'Mert',    role:'Senior Dev', icon:'🧑‍💻', dailyCost:700, productivity:28, category:'bug',      reduction:15, hired:true,  morale:82, ownedPerks:[], overtime:false },
-  { id:2, name:'Bob',     role:'DevOps',     icon:'🔧',   dailyCost:550, productivity:16, category:'server',   reduction:25, hired:false, morale:75, ownedPerks:[], overtime:false },
-  { id:3, name:'Charlie', role:'QA',         icon:'🔍',   dailyCost:450, productivity:10, category:'bug',      reduction:25, hired:false, morale:75, ownedPerks:[], overtime:false },
-  { id:4, name:'Diana',   role:'PM',         icon:'📊',   dailyCost:400, productivity:7,  category:'scope',    reduction:30, hired:false, morale:75, ownedPerks:[], overtime:false },
-  { id:5, name:'Eve',     role:'Security',   icon:'🔒',   dailyCost:500, productivity:7,  category:'security', reduction:30, hired:false, morale:75, ownedPerks:[], overtime:false },
-  { id:6, name:'Frank',   role:'Frontend',   icon:'🎨',   dailyCost:450, productivity:18, category:'bug',      reduction:10, hired:true,  morale:68, ownedPerks:[], overtime:false },
-  { id:7, name:'Grace',   role:'AI Eng.',    icon:'🤖',   dailyCost:700, productivity:30, category:'api',      reduction:15, hired:false, morale:75, ownedPerks:[], overtime:false },
-  { id:8, name:'Hank',    role:'Intern',     icon:'👶',   dailyCost:200, productivity:4,  category:null,       reduction:0,  hired:true,  morale:75, ownedPerks:[], overtime:false },
+  { id:1, name:'Mert',    role:'Senior Dev', icon:'🧑‍💻', dailyCost:700, productivity:28, category:'bug',      reduction:15, specialty:'product',  hired:true,  morale:82, ownedPerks:[], overtime:false },
+  { id:2, name:'Bob',     role:'DevOps',     icon:'🔧',   dailyCost:550, productivity:16, category:'server',   reduction:25, specialty:'infra',    hired:true,  morale:75, ownedPerks:[], overtime:false },
+  { id:3, name:'Charlie', role:'QA',         icon:'🔍',   dailyCost:450, productivity:10, category:'bug',      reduction:25, specialty:'product',  hired:false, morale:75, ownedPerks:[], overtime:false },
+  { id:4, name:'Diana',   role:'PM',         icon:'📊',   dailyCost:400, productivity:7,  category:'scope',    reduction:30, specialty:'security', hired:false, morale:75, ownedPerks:[], overtime:false },
+  { id:5, name:'Eve',     role:'Security',   icon:'🔒',   dailyCost:500, productivity:7,  category:'security', reduction:30, specialty:'security', hired:true,  morale:75, ownedPerks:[], overtime:false },
+  { id:6, name:'Frank',   role:'Frontend',   icon:'🎨',   dailyCost:450, productivity:18, category:'bug',      reduction:10, specialty:'product',  hired:false, morale:68, ownedPerks:[], overtime:false },
+  { id:7, name:'Grace',   role:'AI Eng.',    icon:'🤖',   dailyCost:700, productivity:30, category:'api',      reduction:15, specialty:'infra',    hired:false, morale:75, ownedPerks:[], overtime:false },
+  { id:8, name:'Hank',    role:'Intern',     icon:'👶',   dailyCost:200, productivity:4,  category:null,       reduction:0,  specialty:null,       hired:true,  morale:75, ownedPerks:[], overtime:false },
 ]
 const employees = ref(defaultEmployees())
 
@@ -306,38 +345,47 @@ const upgrades = ref(defaultUpgrades())
 
 // ─── RISKS (dört Tusler hayvanı da temsil edilecek şekilde) ───
 const allRisksPool = [
-  { id:1, name:'Server Crash',         desc:'The database is overloading and going down.', prob:45, cost:15000, delay:3, level:'high',   type:'server',   icon:'🔥' },
+  { id:1, name:'Server Crash',         desc:'The database is overloading and going down.', prob:60, cost:15000, delay:3, level:'high',   type:'server',   icon:'🔥' },
   { id:2, name:'API Rate Limit',       desc:'External services are blocking us.',          prob:60, cost:3000,  delay:1, level:'medium', type:'api',      icon:'⛔' },
   { id:3, name:'Security Hole',        desc:'A critical zero-day vulnerability!',          prob:30, cost:20000, delay:2, level:'high',   type:'security', icon:'🔓' },
   { id:4, name:'Scope Creep',          desc:'The client keeps asking for new things.',     prob:55, cost:5000,  delay:4, level:'medium', type:'scope',    icon:'📈' },
-  { id:5, name:'Team Conflict',        desc:'The devs are fighting!',                      prob:40, cost:0,     delay:0, level:'low',    type:'conflict', icon:'⚡', moralDamage:25 },
+  { id:5, name:'Team Conflict',        desc:'The devs are fighting!',                      prob:50, cost:0,     delay:0, level:'low',    type:'conflict', icon:'⚡', moralDamage:18 },
   { id:6, name:'Critical Bug',         desc:'A critical error in production!',             prob:50, cost:8000,  delay:2, level:'high',   type:'bug',      icon:'🐛' },
-  { id:7, name:'Third Party Down',     desc:'A dependent service is offline.',             prob:35, cost:4000,  delay:1, level:'medium', type:'api',      icon:'🔌' },
+  { id:7, name:'Third Party Down',     desc:'A dependent service is offline.',             prob:22, cost:4000,  delay:1, level:'low',    type:'api',      icon:'🔌' },
   { id:8, name:'Data Loss',            desc:'The backup failed!',                          prob:25, cost:25000, delay:3, level:'high',   type:'server',   icon:'💾' },
   { id:9, name:'Performance',          desc:'The system is very slow.',                    prob:45, cost:6000,  delay:2, level:'medium', type:'bug',      icon:'🐢' },
   { id:10,name:'Technical Debt',       desc:'Old code is causing problems.',               prob:60, cost:7000,  delay:3, level:'medium', type:'bug',      icon:'📚' },
   { id:11,name:'DDoS Attack',          desc:'Malicious traffic is incoming!',              prob:20, cost:18000, delay:2, level:'high',   type:'security', icon:'💀' },
-  { id:12,name:'Regulation',           desc:'GDPR compliance is required.',                prob:25, cost:10000, delay:2, level:'medium', type:'scope',    icon:'⚖️' },
+  { id:12,name:'Regulation',           desc:'GDPR compliance is required.',                prob:22, cost:6000,  delay:2, level:'low',    type:'scope',    icon:'⚖️' },
   { id:13,name:'Intern Mistake',       desc:'Hank pushed to prod!',                        prob:70, cost:3000,  delay:1, level:'low',    type:'bug',      icon:'😱' },
-  { id:14,name:'License Issue',        desc:"A vendor's license is expiring.",             prob:30, cost:5000,  delay:1, level:'medium', type:'api',      icon:'📋' },
+  { id:14,name:'License Issue',        desc:"A vendor's license is expiring.",             prob:20, cost:5000,  delay:1, level:'low',    type:'api',      icon:'📋' },
   { id:15,name:'HR Risk',              desc:'A senior dev might leave!',                   prob:35, cost:0,     delay:0, level:'high',   type:'conflict', icon:'🚪', moralDamage:30 },
-  { id:16,name:'Cloud Cost Blowup',    desc:'Needless instances running everywhere!',      prob:40, cost:12000, delay:0, level:'high',   type:'server',   icon:'💸' },
+  { id:16,name:'Cloud Cost Blowup',    desc:'Needless instances running everywhere!',      prob:62, cost:12000, delay:0, level:'high',   type:'server',   icon:'💸' },
   { id:17,name:'Microservice Cascade', desc:'One service is locking up the others.',       prob:30, cost:16000, delay:3, level:'high',   type:'server',   icon:'⛓️' },
-  { id:18,name:'Legacy Integration',   desc:'We cannot integrate with old code.',          prob:50, cost:9000,  delay:2, level:'medium', type:'bug',      icon:'🏛️' },
+  { id:18,name:'Legacy Integration',   desc:'We cannot integrate with old code.',          prob:58, cost:11000, delay:2, level:'high',   type:'bug',      icon:'🏛️' },
   { id:19,name:'Mobile Compat Crisis', desc:'The new UI broke on mobile.',                 prob:45, cost:6000,  delay:1, level:'medium', type:'bug',      icon:'📱' },
-  { id:20,name:'SaaS Price Hike',      desc:'A vendor raised prices by 30%.',              prob:35, cost:8000,  delay:0, level:'medium', type:'api',      icon:'🧾' },
+  { id:20,name:'SaaS Price Hike',      desc:'A vendor raised prices by 30%.',              prob:24, cost:8000,  delay:0, level:'low',    type:'api',      icon:'🧾' },
   { id:21,name:'Open Source Security', desc:'A library we use has a vulnerability!',        prob:20, cost:22000, delay:3, level:'high',   type:'security', icon:'🕷️' },
-  { id:22,name:'CDN Outage',           desc:'Static files are not loading.',               prob:30, cost:5000,  delay:1, level:'medium', type:'api',      icon:'🌍' },
-  { id:23,name:'Stakeholder Conflict', desc:'The investor is unhappy with the project.',   prob:40, cost:0,     delay:1, level:'medium', type:'conflict', icon:'👔', moralDamage:20 },
+  { id:22,name:'CDN Outage',           desc:'Static files are not loading.',               prob:22, cost:5000,  delay:1, level:'low',    type:'api',      icon:'🌍' },
+  { id:23,name:'Stakeholder Conflict', desc:'The investor is unhappy with the project.',   prob:26, cost:0,     delay:1, level:'low',    type:'conflict', icon:'👔', moralDamage:20 },
   { id:24,name:'Management Change',    desc:'The sponsor left the company.',               prob:20, cost:10000, delay:2, level:'high',   type:'conflict', icon:'🌪️', moralDamage:15 },
   { id:25,name:'Audit / Review',       desc:'Unlicensed code was found!',                  prob:25, cost:15000, delay:2, level:'high',   type:'scope',    icon:'🕵️' },
-  { id:26,name:'Team Burn-out',        desc:'The team is exhausted, morale at zero.',      prob:55, cost:0,     delay:2, level:'medium', type:'conflict', icon:'🧟', moralDamage:35 },
-  { id:27,name:'Social Engineering',   desc:'A password was stolen via phishing.',         prob:30, cost:12000, delay:1, level:'high',   type:'security', icon:'🎣' },
+  { id:26,name:'Team Burn-out',        desc:'The team is exhausted, morale at zero.',      prob:58, cost:0,     delay:2, level:'high',   type:'conflict', icon:'🧟', moralDamage:35 },
+  { id:27,name:'Social Engineering',   desc:'A password was stolen via phishing.',         prob:66, cost:12000, delay:1, level:'high',   type:'security', icon:'🎣' },
   { id:28,name:'Data Breach (GDPR)',   desc:'Customer data leaked, huge fine!',            prob:15, cost:30000, delay:4, level:'high',   type:'security', icon:'🚨' },
 ]
 
 // ─── COMPUTED ───
-const completedPct = computed(() => Math.floor(project.progress/project.totalEffort*100))
+// Genel tamamlanma = üç akışın toplamı / toplam hedef (ticker, milestone'lar ve gün özeti bunu okur).
+const completedPct = computed(() =>
+  Math.floor(TRACK_KEYS.reduce((s, k) => s + project[k], 0) / TOTAL_TARGET * 100))
+// Dashboard/gün özeti/post-mortem'in render ettiği akış dizisi (etiket + ikon + değer/hedef + %).
+const tracks = computed(() => TRACKS.map(t => ({
+  key: t.key, label: t.label, icon: t.icon,
+  value: project[t.key], target: t.target,
+  pct: Math.min(100, Math.floor(project[t.key] / t.target * 100)),
+  delta: lastTrackProgress[t.key],
+})))
 const moraleIcon   = computed(() => gs.morale > 70 ? '🔥' : gs.morale > 50 ? '😊' : gs.morale > 30 ? '😐' : '😰')
 
 // Aktif uzman + yükseltmelerin risk tipi başına toplam olasılık azaltması (0..REDUCTION_CAP).
@@ -526,12 +574,12 @@ function buyPerk(perkId) {
   addLog(`${perk.icon} ${e.name} got "${perk.name}" — +${perk.morale} morale (-$${perk.cost.toLocaleString()})`, 'success')
 }
 
-// İlerlemeyi (progress) ekler, totalEffort ile sınırlar; gerçekten eklenen miktarı döndürür.
-function addProgress(n) {
+// Bir akışa (track) ilerleme ekler, o akışın hedefiyle sınırlar; gerçekten eklenen miktarı döndürür.
+function addTrackProgress(key, n) {
   if (n <= 0) return 0
-  const before = project.progress
-  project.progress = Math.min(project.totalEffort, project.progress + n)
-  return project.progress - before
+  const before = project[key]
+  project[key] = Math.min(TRACK_TARGET[key], project[key] + n)
+  return project[key] - before
 }
 
 function checkMilestones() {
@@ -549,17 +597,27 @@ function checkMilestones() {
   return reached
 }
 
+// Oyun bitti mi? Status'a göre korunur ki skor SADECE BİR KEZ sonlandırılsın (tekrar çağrılırsa no-op).
 function checkGameEnd() {
-  if (gs.money <= 0)                          { gameOverReason.value='Out of budget!';   gs.status='gameover'; return true }
-  if (gs.morale <= 0)                         { gameOverReason.value='The team quit!';   gs.status='gameover'; return true }
-  if (project.progress >= project.totalEffort) {
-    gs.status = 'victory'
-    // Son tarih yok; zafer bonusu kalan bütçe + moralden gelir (hız leaderboard'da ölçülür).
-    const finalBonus = Math.floor(gs.money / 100) + (gs.morale * 10) + COMPLETION_BONUS
-    updateScore(finalBonus)
-    return true
-  }
-  return false
+  if (gs.status !== 'playing') return false   // zaten bitti — yeniden sonlandırma
+  let ended = false
+  if (gs.money <= 0)       { gameOverReason.value = 'Out of budget!'; gs.status = 'gameover'; ended = true }
+  else if (gs.morale <= 0) { gameOverReason.value = 'The team quit!'; gs.status = 'gameover'; ended = true }
+  // Zafer: ÜÇ teslimat akışı da kendi hedefine ulaştıysa (kapsamın tamamı teslim edildi).
+  else if (TRACK_KEYS.every(k => project[k] >= TRACK_TARGET[k])) { gs.status = 'victory'; ended = true }
+  if (ended) finalizeScore()
+  return ended
+}
+
+// Çalışan skoru (oyun içi kararlar) + oyun sonu bonuslarını TEK noktada yarışma skoruna çevirir
+// (hız + sınıflandırma isabeti ağırlıklı). Dökümü post-mortem için saklar. src/scoring.js.
+function finalizeScore() {
+  const r = computeEndScore({
+    runningScore: gs.score, day: gs.day, status: gs.status,
+    money: gs.money, morale: gs.morale, stats,
+  })
+  scoreBreakdown.value = r
+  gs.score = r.total
 }
 
 // ─── RESOLVE A RISK (classify → decide → reveal) ───
@@ -571,6 +629,8 @@ function checkGameEnd() {
 function handleResolve({ guessKey, action = 'gamble', probPoints = 0, impactPoints = 0 }) {
   const risk = triggeredRisk.value
   if (!risk || riskOutcome.value) return
+  const tk = trackForCategory(risk.type) || 'product'   // bu riskin beslediği / geri attığı teslimat akışı
+  const tkIcon = TRACKS.find(t => t.key === tk)?.icon || ''
   const trueAnimal = classifyRisk(risk)
   const response = TUSLER_ANIMALS[guessKey].idealResponse
   const { verdict, scoreDelta, lesson } = evaluateResponse(trueAnimal.key, response)
@@ -620,13 +680,13 @@ function handleResolve({ guessKey, action = 'gamble', probPoints = 0, impactPoin
     if (triggered) {
       if (m.residualMoney)  updateMoney(-m.residualMoney)
       if (m.residualMorale) updateMorale(-m.residualMorale)
-      if (dmgProgress)      project.progress = Math.max(0, project.progress - dmgProgress)
+      if (dmgProgress)      project[tk] = Math.max(0, project[tk] - dmgProgress)   // gecikme yalnızca kendi akışını geri atar
       triggerFx('shake', 400); triggerFx('glitch', 500)
       if (m.residualMoney) triggerFx('moneyFlash')
       spawnParticles(cx, cy, 14, 'bug')
       if (m.residualMoney)  bits.push(`damage -$${m.residualMoney.toLocaleString()}`)
       if (m.residualMorale) bits.push(`-${m.residualMorale} morale`)
-      if (dmgProgress)      bits.push(`-${dmgProgress} progress`)
+      if (dmgProgress)      bits.push(`${tkIcon} -${dmgProgress} progress`)
     } else {
       updateScore(100)   // avoided bonus
       gained += avoidProgressBonus(risk)   // hasarsız atlatıldı → EMV'ye göre ilerleme boost'u
@@ -634,8 +694,8 @@ function handleResolve({ guessKey, action = 'gamble', probPoints = 0, impactPoin
       spawnParticles(cx, cy, 20, 'crit')
       bits.push('avoided ✓')
     }
-    const progressGain = addProgress(gained)
-    if (progressGain) { bits.push(`+${progressGain} progress`); checkMilestones() }
+    const progressGain = addTrackProgress(tk, gained)
+    if (progressGain) { bits.push(`${tkIcon} +${progressGain} progress`); checkMilestones() }
     addLog(lesson, 'pmbok')
     const actionLabel = mitigated ? 'MITIGATED' : 'TOOK THE CHANCE'
     addLog(`${risk.icon} "${risk.name}" → ${actionLabel} (${bits.join(', ')})`, triggered ? 'warning' : 'success')
@@ -689,14 +749,25 @@ async function processNextDay() {
 
   gs.day++
 
-  // İşe alınan ekipten günlük ilerleme (moral çarpanıyla)
+  // İşe alınan ekipten günlük ilerleme (moral çarpanıyla) — her çalışan `specialty` akışında uzmandır:
+  // o akışa EXPERT_BONUS, diğer iki akışa EXPERT_TRICKLE oranında katkı verir. Uzmanlığı olmayan
+  // (stajyer/genel) üretim üç akışa eşit bölünür.
   const mm = gs.morale >= 70 ? 1.2 : gs.morale >= 40 ? 1.0 : 0.75
-  const baseProd = employees.value.filter(e => e.hired).reduce((s, e) => s + e.productivity, 0)
-  const dp = Math.round(baseProd * mm)
+  const gain = { infra:0, security:0, product:0 }
+  employees.value.forEach(e => {
+    if (!e.hired) return
+    if (e.specialty && gain[e.specialty] !== undefined) {
+      TRACK_KEYS.forEach(k => {
+        gain[k] += e.productivity * (k === e.specialty ? EXPERT_BONUS : EXPERT_TRICKLE)
+      })
+    } else {
+      const each = e.productivity / TRACK_KEYS.length
+      TRACK_KEYS.forEach(k => { gain[k] += each })
+    }
+  })
   // Günlük gider = sabit ofis gideri + işe alınanların maaşları (FR1/FR3)
   const salaries = employees.value.filter(e => e.hired).reduce((s, e) => s + (e.dailyCost || 0), 0)
   const dailyCost = DAILY_COST + salaries
-  lastDailyProgress.value = dp
   lastDailyCost.value = dailyCost
   updateMoney(-dailyCost)
   updateMorale(-1)
@@ -710,16 +781,44 @@ async function processNextDay() {
     if (passive) e.morale = Math.min(100, e.morale + passive)
   })
   syncTeamMorale()
-  addProgress(dp)
+  // Akış başına ilerlemeyi uygula (moral çarpanı); clamp sonrası gerçekte eklenen miktarı say.
+  let dp = 0
+  TRACKS.forEach(t => {
+    const added = addTrackProgress(t.key, Math.round(gain[t.key] * mm))
+    lastTrackProgress[t.key] = added
+    dp += added
+  })
+  lastDailyProgress.value = dp
   const reachedMs = checkMilestones()
   triggerFx('glitch', 300)
 
   isProcessing.value = false
   if (checkGameEnd()) return
 
-  // Bir süre sonra risk ortaya çıkar → oyuncu sınıflandırır
+  // ── ZAMANLA SCOPE DEĞİŞİMİ: müşteri gereksinimleri değişir → bir track geriye gider ──
+  // (mevcut "geri atma" mekaniğiyle aynı; o gün risk çıkmaz ki gün çift kötü olmasın)
+  let scopeChange = null
+  if (gs.day >= SCOPE_CHANGE_MIN_DAY && scopeChanges.value < SCOPE_CHANGE_MAX
+      && Math.random() < SCOPE_CHANGE_CHANCE) {
+    const candidates = TRACK_KEYS.filter(k => project[k] > 0)   // sadece başlamış track'ler geri atılabilir
+    if (candidates.length) {
+      const key = candidates[Math.floor(Math.random() * candidates.length)]
+      const t   = TRACKS.find(x => x.key === key)
+      const pct = SCOPE_CHANGE_MIN_PCT + Math.random() * (SCOPE_CHANGE_MAX_PCT - SCOPE_CHANGE_MIN_PCT)
+      const before = project[key]
+      project[key] = Math.max(0, project[key] - Math.round(TRACK_TARGET[key] * pct))
+      const lost = before - project[key]
+      scopeChanges.value++
+      scopeChange = { key, icon: t.icon, label: t.label, lost }
+      addLog(`📋 SCOPE CHANGED — "${t.label}" gereksinimleri değişti (${t.icon} -${lost} ilerleme)`, 'warning')
+      triggerFx('shake', 400); triggerFx('glitch', 500)
+      spawnParticles(window.innerWidth / 2, window.innerHeight / 2, 14, 'bug')
+    }
+  }
+
+  // Bir süre sonra risk ortaya çıkar → oyuncu sınıflandırır (scope değiştiği gün risk çıkmaz)
   let riskSpawned = false
-  if (gs.day >= 3 && Math.random() < RISK_CHANCE) {
+  if (!scopeChange && gs.day >= 3 && Math.random() < RISK_CHANCE) {
     const avail = allRisksPool.filter(r => !usedRiskIds.value.includes(r.id))
     if (avail.length) {
       // Tehdidi yüksek kategoriden risk gelme olasılığı daha yüksek (öngörü çubukları).
@@ -748,7 +847,9 @@ async function processNextDay() {
       cost: dailyCost,
       morale: gs.morale,
       completedPct: completedPct.value,
+      tracks: tracks.value,
       milestone: reachedMs.length ? reachedMs[reachedMs.length - 1] : null,
+      scopeChange,   // null veya { key, icon, label, lost } — Day Summary'de uyarı bloğu
     }
   }
 }
@@ -773,12 +874,14 @@ function beginProject(payload) {
 
 function resetGame() {
   Object.assign(gs, { status:'menu', money:100000, day:1, morale:75, score:0, loans:0, loanPenalty:0 })
-  Object.assign(project, { progress:0, totalEffort:3000 })
+  Object.assign(project, { infra:0, security:0, product:0 })
+  Object.assign(lastTrackProgress, { infra:0, security:0, product:0 })
   employees.value = defaultEmployees()
   upgrades.value = defaultUpgrades()
   moraleEmployeeId.value = null
   eventLog.value = []
   usedRiskIds.value = []
+  scopeChanges.value = 0
   plannedCategories.value = []
   milestones.forEach(m => m.reached = false)
   lastDailyProgress.value = 0; lastDailyCost.value = 0
@@ -787,6 +890,7 @@ function resetGame() {
   if (resolveTimer) { clearTimeout(resolveTimer); resolveTimer = null }
   riskOutcome.value = null
   daySummary.value = null
+  scoreBreakdown.value = null
   showManagement.value = false
   manageFocus.value = null
   showRiskCenter.value = false

@@ -29,10 +29,27 @@
           </div>
         </div>
 
+        <div v-if="summary.tracks" class="ds-tracks">
+          <div v-for="t in summary.tracks" :key="t.key" class="ds-track">
+            <span class="ds-track-ico">{{ t.icon }}</span>
+            <span class="ds-track-name">{{ t.label }}</span>
+            <span class="ds-track-delta">{{ t.delta > 0 ? '+' + t.delta : '·' }}</span>
+            <div class="ds-track-bar">
+              <span class="ds-track-fill"
+                :style="{ width: t.pct+'%', background: t.pct>=100 ? '#48b838' : t.pct>=50 ? '#c0980a' : '#2868c8' }"></span>
+            </div>
+            <span class="ds-track-pct" :style="{ color: t.pct>=100 ? '#60d060' : '#c8a060' }">{{ t.pct }}%</span>
+          </div>
+        </div>
+
+        <div v-if="summary.scopeChange" class="ds-scope">
+          📋 SCOPE CHANGED — {{ summary.scopeChange.icon }} {{ summary.scopeChange.label }} geri atıldı (−{{ summary.scopeChange.lost }})
+        </div>
+
         <div v-if="summary.milestone" class="ds-milestone">
           {{ summary.milestone.icon }} Milestone reached — {{ summary.milestone.label }}!
         </div>
-        <div class="ds-note">🟢 No new risks today — the team kept building. Keep an eye on the budget.</div>
+        <div class="ds-note">{{ summary.scopeChange ? '📋 Müşteri kapsamı değiştirdi — etkilenen track geriye gitti. Planını buna göre güncelle.' : '🟢 No new risks today — the team kept building. Keep an eye on the budget.' }}</div>
 
         <button class="ds-btn" @click="$emit('close')">CONTINUE ▶ <span class="ds-key">(Enter)</span></button>
       </div>
@@ -71,7 +88,16 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
 .ds-stat { background: #100a04; border: 3px solid #301808; padding: 10px; text-align: center; }
 .ds-label { font-size: 11px; color: #8a6438; letter-spacing: 1px; margin-bottom: 6px; }
 .ds-val { font-size: 22px; font-family: 'Press Start 2P', monospace; }
+.ds-tracks { display: flex; flex-direction: column; gap: 6px; }
+.ds-track { display: flex; align-items: center; gap: 7px; }
+.ds-track-ico { font-size: 14px; line-height: 1; }
+.ds-track-name { font-size: 11px; color: #c8a878; width: 118px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ds-track-delta { font-size: 11px; color: #58c840; font-weight: bold; min-width: 30px; }
+.ds-track-bar { flex: 1; height: 10px; background: #0a0604; border: 2px solid #000; overflow: hidden; }
+.ds-track-fill { display: block; height: 100%; transition: width 0.5s steps(8); }
+.ds-track-pct { font-size: 11px; min-width: 34px; text-align: right; }
 .ds-milestone { padding: 8px 10px; background: #281f00; border: 2px solid #5a4810; color: #f0d060; font-size: 13px; text-align: center; }
+.ds-scope { padding: 8px 10px; background: #2a1208; border: 2px solid #6a3410; color: #e8a060; font-size: 13px; text-align: center; }
 .ds-note { font-size: 12px; color: #8a9a72; text-align: center; line-height: 1.4; }
 .ds-btn {
   margin-top: 4px; font-family: 'Press Start 2P', monospace; font-size: 13px; cursor: pointer;

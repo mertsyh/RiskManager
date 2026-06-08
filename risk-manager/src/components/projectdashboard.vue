@@ -31,7 +31,7 @@
             <div v-if="hasSynergyAt(i)" class="synergy-glow"></div>
             <div class="char-clickable" :class="{ 'char-low': employees[i].morale < 30 }"
                  @click="$emit('employeeClick', employees[i].id)"
-                 :title="`${employees[i].name} · morale ${employees[i].morale}% — click to lift it`">
+                 :title="`${employees[i].name} · ${specName(employees[i])} · morale ${employees[i].morale}% — click to lift it`">
               <div v-if="employees[i].morale < 30" class="morale-alert">❗</div>
               <img
                 :src="'/'+getSprite(i)"
@@ -94,25 +94,33 @@
         </div>
 
         <div style="display:flex; flex-direction:column; gap:8px;">
-        <!-- Progress bar -->
+        <!-- ═══ SCOPE — 3 deliverable tracks (ship when ALL reach 100%) ═══ -->
         <div>
-          <div style="display:flex;justify-content:space-between;font-size:13px;color:#b08050;margin-bottom:5px">
-            <span>PROGRESS</span>
-            <span style="color:#c8a060">{{ Math.floor(project.progress) }} / {{ project.totalEffort }}</span>
+          <div style="display:flex;justify-content:space-between;font-size:13px;color:#b08050;margin-bottom:6px">
+            <span>SCOPE — DELIVERABLES</span>
+            <span style="color:#c8a060">{{ doneCount }}/{{ tracks.length }} SHIPPED</span>
           </div>
-          <div class="progress-track">
-            <div class="progress-fill"
-              :style="{width:progressPercent+'%',
-                background:progressPercent>=75?(T.progressHigh||'#48b838'):progressPercent>=50?(T.progressMid||'#c0980a'):(T.progressLow||'#2868c8')}">
-              <div class="progress-shine"></div>
-              <div v-if="lastCritSuccess" class="progress-shimmer"></div>
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <div v-for="t in tracks" :key="t.key" class="track-row">
+              <div class="track-head">
+                <span class="track-ico">{{ t.icon }}</span>
+                <span class="track-name">{{ t.label }}</span>
+                <span v-if="t.delta > 0" class="track-delta">+{{ t.delta }}</span>
+                <span class="track-pct"
+                  :style="{ color: t.pct>=100 ? '#60d060' : t.pct>=50 ? '#f0b040' : '#80b0f0' }">{{ t.pct }}%</span>
+              </div>
+              <div class="progress-track track-bar">
+                <div class="progress-fill"
+                  :style="{ width: t.pct+'%',
+                    background: t.pct>=100 ? (T.progressHigh||'#48b838') : t.pct>=50 ? (T.progressMid||'#c0980a') : (T.progressLow||'#2868c8') }">
+                  <div class="progress-shine"></div>
+                </div>
+                <div v-if="t.pct >= 100" class="track-done">✓ SHIPPED</div>
+              </div>
             </div>
-            <div v-for="ms in milestones" :key="ms.pct" class="ms-tick"
-              :style="{left:ms.pct+'%',background:ms.reached?(T.milestoneActive||'#f0d060'):'#2a1a08'}">
-            </div>
-            <div class="progress-label">{{ progressPercent }}%</div>
           </div>
-          <div style="display:flex;gap:4px;margin-top:6px">
+          <!-- Overall milestone chips — money rewards as the WHOLE project crosses 25/50/75% -->
+          <div style="display:flex;gap:4px;margin-top:8px">
             <div v-for="ms in milestones" :key="ms.pct" class="ms-chip"
               :style="{borderColor:ms.reached?(T.milestoneActive||'#a08820'):'#2a1c08',
                        color:ms.reached?(T.milestoneText||'#f0d060'):'#4a3818',
@@ -210,7 +218,7 @@
 import { computed, ref, onMounted, onUnmounted } from 'vue'
 
 const props = defineProps([
-  'project','morale','day','milestones','dailyProgress','dailyCost',
+  'tracks','overallPct','morale','day','milestones','dailyProgress','dailyCost',
   'processing','employees','theme','synergyBonus','lastCritSuccess','lastBugEvent','reductionByType','threatByType','plannedCategories'
 ])
 defineEmits(['nextDay','openManage','employeeClick'])
@@ -239,8 +247,8 @@ const mapContainer = ref(null)
 const fxCanvas     = ref(null)
 const T = computed(() => props.theme || {})
 
-const progressPercent = computed(() =>
-  Math.min(100, Math.floor(props.project.progress / props.project.totalEffort * 100)))
+const progressPercent = computed(() => Math.min(100, props.overallPct || 0))
+const doneCount = computed(() => (props.tracks || []).filter(t => t.pct >= 100).length)
 const hiredCount = computed(() =>
   props.employees?.filter(e=>e.hired).length || 0)
 const mitigationCount = computed(() =>
@@ -256,6 +264,10 @@ const dangerLevel = computed(() => {
 // ── SPRITE ASSIGNMENT ──
 const SPRITES = ['employee1.png', 'employee2.png', 'employee3.png', 'employee4.png', 'employee5.png', 'a1.png', 'a2.png', 'a3.png']
 function getSprite(idx) { return SPRITES[idx % SPRITES.length] }
+
+// ── SCOPE SPECIALTY (tooltip label) ──
+const SPEC_LABEL = { infra: '🏗️ Infra expert', security: '🔒 Security expert', product: '💳 Product expert' }
+function specName(e) { return SPEC_LABEL[e?.specialty] || '🧩 Generalist' }
 
 // ── DESK SLOT POSITIONS (fixed) ──
 const DESKS = [
@@ -599,6 +611,16 @@ onUnmounted(() => {
 .ms-tick{position:absolute;top:0;bottom:0;width:3px;transform:translateX(-50%)}
 .progress-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;color:rgba(255,255,255,0.85);font-family:'Press Start 2P',monospace}
 .ms-chip{flex:1;text-align:center;padding:7px 4px;border:2px solid;font-size:11px;font-family:'Press Start 2P',monospace}
+
+/* ─── SCOPE TRACK BARS ─── */
+.track-row{display:flex;flex-direction:column;gap:3px}
+.track-head{display:flex;align-items:center;gap:6px;font-family:'Share Tech Mono',monospace}
+.track-ico{font-size:14px;line-height:1}
+.track-name{font-size:11px;color:#c8a878;letter-spacing:0.5px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.track-delta{font-size:11px;color:#58c840;font-weight:bold}
+.track-pct{font-size:12px;font-weight:bold;min-width:34px;text-align:right}
+.track-bar{height:16px}
+.track-done{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:#0a2008;font-family:'Press Start 2P',monospace;letter-spacing:1px;text-shadow:0 1px 0 rgba(255,255,255,0.25)}
 
 /* ─── STAT BOXES ─── */
 .stat-box{background:#180c04;border:3px solid #301808;box-shadow:inset 2px 2px 0 #100802;padding:10px;text-align:center}
