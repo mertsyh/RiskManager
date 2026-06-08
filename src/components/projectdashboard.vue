@@ -16,7 +16,7 @@
       <div ref="mapContainer" class="map-container">
 
         <!-- 1. Office background -->
-        <img src="/ofisgörsel2.png" class="bg-img" draggable="false" />
+        <img src="/ofisgorsel2.png" class="bg-img" draggable="false" />
 
         <!-- 2. Danger vignette -->
         <div v-if="dangerLevel>0.3" class="danger-vignette"
