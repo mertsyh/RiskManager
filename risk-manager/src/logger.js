@@ -17,6 +17,7 @@ import { supabase } from './supabase.js'
 
 export const GAME_ID = 'GM-464DE8878705'
 export const TEAM_ID = 'TM-699FC02031FA'   // DB metadata only — not a GPAF event field
+export const supabaseEnabled = !!supabase
 
 const PSEUDO_KEY = 'rm_player_pseudo_id'    // stable per-browser id
 const BUFFER_KEY = 'rm_gpaf_buffer'         // current session's events (crash-safe)
@@ -131,8 +132,55 @@ function downloadBlob(text, filename, type) {
   URL.revokeObjectURL(url)
 }
 
-export function toJSONL() {
-  return events.map(e => JSON.stringify(e)).join('\n')
+function normalizeEventRow(row) {
+  if (!row) return row
+  if (row.playerPseudoId || row.sessionId || row.gameId || row.eventType) return row
+  return {
+    ts: row.ts,
+    playerPseudoId: row.player_pseudo_id,
+    sessionId: row.session_id,
+    gameId: row.game_id,
+    eventType: row.event_type,
+    payload: row.payload || {},
+  }
+}
+
+export function toJSONL(sourceEvents = null) {
+  const list = Array.isArray(sourceEvents) ? sourceEvents : events
+  return list.map(e => JSON.stringify(normalizeEventRow(e))).join('\n')
+}
+
+export async function fetchAllEvents() {
+  if (!supabase) return []
+  try {
+    const { data, error } = await supabase
+      .from('gpaf_events')
+      .select('*')
+      .eq('game_id', GAME_ID)
+      .order('ts', { ascending: true })
+    if (error) {
+      console.warn('[gpaf] fetchAllEvents failed:', error.message)
+      return []
+    }
+    return Array.isArray(data) ? data.map(normalizeEventRow) : []
+  } catch (err) {
+    console.warn('[gpaf] fetchAllEvents error:', err?.message)
+    return []
+  }
+}
+
+export async function downloadAllSessions({ asJson = false } = {}) {
+  const allEvents = await fetchAllEvents()
+  if (!allEvents.length) {
+    console.warn('[gpaf] No events available to download.')
+    return false
+  }
+  if (asJson) {
+    downloadBlob(JSON.stringify(allEvents, null, 2), `gpaf-all-sessions-${GAME_ID}.json`, 'application/json;charset=utf-8')
+  } else {
+    downloadBlob(allEvents.map(e => JSON.stringify(e)).join('\n'), `gpaf-all-sessions-${GAME_ID}.jsonl`, 'application/jsonl;charset=utf-8')
+  }
+  return true
 }
 
 // Download the current session's events as a .jsonl file.

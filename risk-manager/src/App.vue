@@ -20,7 +20,28 @@
   <!-- ══ PARTICLE CANVAS ══ -->
   <canvas ref="particleCanvas" class="particle-canvas" style="position:fixed;inset:0;z-index:30;pointer-events:none"></canvas>
 
-<div class="h-screen flex flex-col overflow-hidden" style="font-family:'Press Start 2P',monospace;image-rendering:pixelated" :style="{filter: mainFilter}" :class="{shakeanim: fx.shake}">
+  <div v-if="adminMode" class="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100 px-4">
+    <div class="w-full max-w-xl rounded-xl border-4 border-slate-700 bg-slate-900/95 p-8 shadow-2xl">
+      <div class="text-center mb-6">
+        <div class="text-3xl font-bold tracking-widest">GPAF ADMIN</div>
+        <div class="mt-2 text-sm text-slate-400">/admin yolundan güvenliksiz erişim ile toplu log indirme</div>
+      </div>
+      <div class="grid gap-4">
+        <div class="rounded-lg border border-slate-700 bg-slate-800 p-4 text-sm text-slate-200">
+          Bu sayfa, uzaktan oynayan herkesin Supabase’e yazdığı GPAF oturum loglarını tek bir dosyada toplar.
+          İndirme düğmesine bastığınızda `gpaf-all-sessions-${GAME_ID}.jsonl` dosyası oluşturulur.
+        </div>
+        <button @click="downloadAllLogs" class="pixel-btn-green py-4 text-lg tracking-widest">⬇ Download all session logs</button>
+        <div class="rounded-lg border border-slate-700 bg-slate-800 p-4 text-sm text-slate-300">
+          <div><strong>Status:</strong> {{ adminStatus || 'Ready' }}</div>
+          <div v-if="adminError" class="text-red-300">Error: {{ adminError }}</div>
+          <div v-else class="text-slate-400">Not: Supabase etkin değilse veya veri yoksa dosya indirilemez.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<div v-else class="h-screen flex flex-col overflow-hidden" style="font-family:'Press Start 2P',monospace;image-rendering:pixelated" :style="{filter: mainFilter}" :class="{shakeanim: fx.shake}">
 
     <!-- ══════════ MENU ══════════ -->
     <Transition name="fade">
@@ -117,6 +138,7 @@ Ship PROJECT: NEON — a cloud payments &amp; analytics platform. There's no dea
           <button @click="openManage()" class="pixel-btn" style="font-size:11px;padding:8px 10px">🏢 MANAGE</button>
           <button @click="showRiskCenter = true" class="pixel-btn" style="font-size:11px;padding:8px 10px">📋 LOG</button>
           <button @click="logger.download()" class="pixel-btn" style="font-size:11px;padding:8px 10px" title="GPAF oyun kaydını JSONL indir">⬇ LOG</button>
+          <button @click="logger.downloadAllSessions()" class="pixel-btn" style="font-size:11px;padding:8px 10px" title="Supabase’den toplanan tüm oturum loglarını JSONL indir">⬇ ALL LOGS</button>
           <button @click="showKnowledgeBase = true" class="pixel-btn" style="font-size:11px;padding:8px 10px">📖 GUIDE</button>
           <button @click="toggleTheme" class="pixel-btn" style="font-size:11px;padding:8px 10px">🎨</button>
           <ThemePanel :theme="theme" @update="(k,v)=>theme[k]=v" />
@@ -201,6 +223,35 @@ import { newTheme } from './design.js'
 import { classifyRisk, evaluateResponse, applyMitigation, riskEmv, effortPointsFor, mitigationCostPerPoint, avoidProgressBonus, CLASSIFY_PROGRESS_BONUS, TUSLER_ANIMALS } from './tusler.js'
 import { computeEndScore } from './scoring.js'
 import * as logger from './logger.js'
+
+const adminMode = window.location.pathname === '/admin'
+const GAME_ID = logger.GAME_ID
+const adminStatus = ref('')
+const adminError = ref('')
+const supabaseEnabled = logger.supabaseEnabled
+
+async function downloadAllLogs() {
+  adminStatus.value = 'Fetching logs...'
+  adminError.value = ''
+  try {
+    if (!supabaseEnabled) {
+      adminError.value = 'Supabase is not configured. Admin download requires Supabase access.'
+      adminStatus.value = 'Supabase unavailable.'
+      return
+    }
+    const ok = await logger.downloadAllSessions()
+    if (!ok) {
+      adminError.value = 'No events were found on Supabase. Verify the gpaf_events table and access policy.'
+      adminStatus.value = 'No logs found.'
+      return
+    }
+    adminStatus.value = 'Download started.'
+  } catch (err) {
+    adminError.value = err?.message || String(err)
+    adminStatus.value = 'Download failed.'
+    console.warn('[gpaf] downloadAllLogs failed:', err)
+  }
+}
 
 const originalTheme = {
   bgGrass:'#2d5a1b', hudBg:'#4a3018', chipGreen:'#2a6020', chipGreenText:'#a0e080',
