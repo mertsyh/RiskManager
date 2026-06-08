@@ -48,7 +48,7 @@
       <div v-if="gs.status==='menu'" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-80">
         <div class="relative z-10 flex flex-col gap-4 pixel-panel p-0 overflow-hidden w-[480px] border-4 border-gray-800 shadow-lg">
           <div class="pixel-title-bar px-4 py-2 flex justify-between text-xs" :style="{ backgroundColor: theme.titleBarBg, color: theme.titleText }">
-            <span>★ ANTHROPIC VENTURES ★</span><span>v4.0</span>
+            <span>★ ISPANAK VENTURES ★</span><span>v4.0</span>
           </div>
           <div class="px-6 pb-6 flex flex-col gap-6 pt-4">
             <div class="text-center" style="line-height:2.5">
@@ -68,7 +68,7 @@ Ship PROJECT: NEON — a cloud payments &amp; analytics platform. There's no dea
             <button @click="startGame()" class="pixel-btn-green py-4 text-lg tracking-widest">▶  START GAME</button>
           </div>
           <div class="pixel-title-bar px-4 py-2 text-center text-xs" :style="{ backgroundColor: theme.titleBarBg, color: theme.titleText }">
-            ANTHROPIC VENTURES © 2026
+            ISPANAK VENTURES © 2026
           </div>
         </div>
       </div>
@@ -138,7 +138,7 @@ Ship PROJECT: NEON — a cloud payments &amp; analytics platform. There's no dea
           <button @click="openManage()" class="pixel-btn" style="font-size:11px;padding:8px 10px">🏢 MANAGE</button>
           <button @click="showRiskCenter = true" class="pixel-btn" style="font-size:11px;padding:8px 10px">📋 LOG</button>
           <button @click="logger.download()" class="pixel-btn" style="font-size:11px;padding:8px 10px" title="GPAF oyun kaydını JSONL indir">⬇ LOG</button>
-          <button @click="logger.downloadAllSessions()" class="pixel-btn" style="font-size:11px;padding:8px 10px" title="Supabase’den toplanan tüm oturum loglarını JSONL indir">⬇ ALL LOGS</button>
+
           <button @click="showKnowledgeBase = true" class="pixel-btn" style="font-size:11px;padding:8px 10px">📖 GUIDE</button>
           <button @click="toggleTheme" class="pixel-btn" style="font-size:11px;padding:8px 10px">🎨</button>
           <ThemePanel :theme="theme" @update="(k,v)=>theme[k]=v" />
