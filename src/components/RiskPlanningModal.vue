@@ -115,7 +115,7 @@ const emit = defineEmits(['begin'])
 const PO = {
   name: 'Deniz',
   role: 'Product Owner',
-  sprite: '/employee2.png',
+  sprite: import.meta.env.BASE_URL + 'employee2.png',
 }
 
 // ─── PROJECT: NEON — a concrete project so the risks make sense ───

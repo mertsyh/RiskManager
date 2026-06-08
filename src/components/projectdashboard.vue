@@ -16,7 +16,7 @@
       <div ref="mapContainer" class="map-container">
 
         <!-- 1. Office background -->
-        <img src="/ofisgorsel2.png" class="bg-img" draggable="false" />
+        <img :src="baseUrl + 'ofisgorsel2.png'" class="bg-img" draggable="false" />
 
         <!-- 2. Danger vignette -->
         <div v-if="dangerLevel>0.3" class="danger-vignette"
@@ -34,7 +34,7 @@
                  :title="`${employees[i].name} · ${specName(employees[i])} · morale ${employees[i].morale}% — click to lift it`">
               <div v-if="employees[i].morale < 30" class="morale-alert">❗</div>
               <img
-                :src="'/'+getSprite(i)"
+                :src="baseUrl + getSprite(i)"
                 class="char-sprite"
                 :class="{ 'sprite-tired': employees[i].morale < 25, 'sprite-overtime': employees[i].overtime }"
                 draggable="false"
@@ -216,6 +216,8 @@
 
 <script setup>
 import { computed, ref, onMounted, onUnmounted } from 'vue'
+
+const baseUrl = import.meta.env.BASE_URL
 
 const props = defineProps([
   'tracks','overallPct','morale','day','milestones','dailyProgress','dailyCost',
