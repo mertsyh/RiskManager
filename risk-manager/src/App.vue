@@ -53,13 +53,7 @@ Ship PROJECT: NEON — a cloud payments &amp; analytics platform. There's no dea
       </div>
     </Transition>
 
-    <!-- ══════════ RISK PLANNING (KICKOFF) ══════════ -->
-    <Transition name="fade">
-      <RiskPlanningModal v-if="gs.status==='planning'"
-        :theme="theme" :project="project"
-        :pointsPerRisk="PLANNING_POINTS_PER_RISK"
-        @begin="beginProject" />
-    </Transition>
+
 
     <!-- ══════════ POST MORTEM (GAME OVER / VICTORY) ══════════ -->
     <Transition name="fade">
@@ -76,7 +70,7 @@ Ship PROJECT: NEON — a cloud payments &amp; analytics platform. There's no dea
     </Transition>
 
     <!-- ══════════ PLAYING ══════════ -->
-    <template v-if="gs.status !== 'menu' && gs.status !== 'planning'">
+    <template v-if="gs.status !== 'menu'">
 
       <!-- HUD BAR -->
       <header class="pixel-hud-bar flex items-center justify-between px-4 shrink-0" style="height:72px"
@@ -122,6 +116,7 @@ Ship PROJECT: NEON — a cloud payments &amp; analytics platform. There's no dea
         <div style="display:flex;align-items:center;gap:8px">
           <button @click="openManage()" class="pixel-btn" style="font-size:11px;padding:8px 10px">🏢 MANAGE</button>
           <button @click="showRiskCenter = true" class="pixel-btn" style="font-size:11px;padding:8px 10px">📋 LOG</button>
+          <button @click="logger.download()" class="pixel-btn" style="font-size:11px;padding:8px 10px" title="GPAF oyun kaydını JSONL indir">⬇ LOG</button>
           <button @click="showKnowledgeBase = true" class="pixel-btn" style="font-size:11px;padding:8px 10px">📖 GUIDE</button>
           <button @click="toggleTheme" class="pixel-btn" style="font-size:11px;padding:8px 10px">🎨</button>
           <ThemePanel :theme="theme" @update="(k,v)=>theme[k]=v" />
@@ -205,6 +200,7 @@ import { PERKS_BY_EMP, passiveMoraleFor } from './perks.js'
 import { newTheme } from './design.js'
 import { classifyRisk, evaluateResponse, applyMitigation, riskEmv, effortPointsFor, mitigationCostPerPoint, avoidProgressBonus, CLASSIFY_PROGRESS_BONUS, TUSLER_ANIMALS } from './tusler.js'
 import { computeEndScore } from './scoring.js'
+import * as logger from './logger.js'
 
 const originalTheme = {
   bgGrass:'#2d5a1b', hudBg:'#4a3018', chipGreen:'#2a6020', chipGreenText:'#a0e080',
@@ -527,6 +523,11 @@ function updateScore(amount) {
   gs.score = Math.max(0, gs.score + amount)
 }
 
+// GPAF score_update — güncel skor + bakiyeyi anlamlı geçişlerde loglar (gün sonu, risk, kredi, alışveriş, final).
+function logScore(reason) {
+  logger.scoreUpdate({ score: gs.score, balance: gs.money, day: gs.day, reason })
+}
+
 // Acil kredinin sabit skor bedeli (tutar × oran). Para anında eklenir, geri ödeme yok.
 const loanCost = Math.round(LOAN_AMOUNT * LOAN_POINT_RATE)
 
@@ -539,6 +540,7 @@ function takeLoan(amount = LOAN_AMOUNT) {
   gs.loanPenalty += cost
   spawnParticles(window.innerWidth / 2, window.innerHeight / 2, 16, 'hire')
   addLog(`🏦 Took a $${amount.toLocaleString()} loan — kept the cash, paid −${cost.toLocaleString()} score.`, 'warning')
+  logScore('loan')                      // GPAF score_update — bakiye/skor değişti
 }
 
 // Team morale (HUD + balance) is now the AVERAGE of the hired employees' individual morale.
@@ -572,6 +574,7 @@ function buyPerk(perkId) {
   syncTeamMorale()
   spawnParticles(window.innerWidth / 2, window.innerHeight / 2, 16, 'hire')
   addLog(`${perk.icon} ${e.name} got "${perk.name}" — +${perk.morale} morale (-$${perk.cost.toLocaleString()})`, 'success')
+  logScore('shop')                      // GPAF score_update — bakiye değişti
 }
 
 // Bir akışa (track) ilerleme ekler, o akışın hedefiyle sınırlar; gerçekten eklenen miktarı döndürür.
@@ -579,6 +582,10 @@ function addTrackProgress(key, n) {
   if (n <= 0) return 0
   const before = project[key]
   project[key] = Math.min(TRACK_TARGET[key], project[key] + n)
+  // Bir teslimat akışı hedefine ilk kez ulaştıysa GPAF level_complete say.
+  if (before < TRACK_TARGET[key] && project[key] >= TRACK_TARGET[key]) {
+    logger.levelComplete({ kind: 'track', track: key })
+  }
   return project[key] - before
 }
 
@@ -589,6 +596,7 @@ function checkMilestones() {
     if (!m.reached && p >= m.pct) {
       m.reached = true
       updateMoney(m.bonus)
+      logger.levelComplete({ kind: 'milestone', pct: m.pct, label: m.label })   // GPAF level_complete
       addLog(`🎯 ${m.pct}% milestone reached! ${m.label}`, 'milestone')
       spawnParticles(window.innerWidth/2, window.innerHeight/2, 20, 'crit')
       reached.push(m)
@@ -605,7 +613,11 @@ function checkGameEnd() {
   else if (gs.morale <= 0) { gameOverReason.value = 'The team quit!'; gs.status = 'gameover'; ended = true }
   // Zafer: ÜÇ teslimat akışı da kendi hedefine ulaştıysa (kapsamın tamamı teslim edildi).
   else if (TRACK_KEYS.every(k => project[k] >= TRACK_TARGET[k])) { gs.status = 'victory'; ended = true }
-  if (ended) finalizeScore()
+  if (ended) {
+    finalizeScore()
+    logScore('final')                                   // final score_update (folded competition total)
+    logger.endSession(gs.status === 'victory')          // GPAF session_end → payload.completed
+  }
   return ended
 }
 
@@ -700,6 +712,7 @@ function handleResolve({ guessKey, action = 'gamble', probPoints = 0, impactPoin
     const actionLabel = mitigated ? 'MITIGATED' : 'TOOK THE CHANCE'
     addLog(`${risk.icon} "${risk.name}" → ${actionLabel} (${bits.join(', ')})`, triggered ? 'warning' : 'success')
     if (riskOutcome.value) riskOutcome.value = { ...riskOutcome.value, phase: 'revealed', progressGain }
+    logScore('risk_resolved')           // GPAF score_update — risk sonucu yerleşti
     resolveTimer = null
   }, 1050)
 }
@@ -735,6 +748,7 @@ function buyUpgrade(id) {
   updateMoney(-u.cost)
   spawnParticles(window.innerWidth / 2, window.innerHeight / 2, 16, 'hire')
   addLog(`⚙️ Bought ${u.name} — ${u.category === 'all' ? 'all risks' : u.category} ${u.reduction ? '−' + u.reduction + '%' : ''}`, 'success')
+  logScore('shop')                      // GPAF score_update — bakiye değişti
 }
 
 // ─── PROCESS NEXT DAY ───
@@ -791,6 +805,7 @@ async function processNextDay() {
   lastDailyProgress.value = dp
   const reachedMs = checkMilestones()
   triggerFx('glitch', 300)
+  logScore('day_end')                   // GPAF score_update — gün işlendi (oyun bitse de loglanır)
 
   isProcessing.value = false
   if (checkGameEnd()) return
@@ -856,12 +871,14 @@ async function processNextDay() {
 
 // ─── GAME LIFECYCLE ───
 function startGame() {
-  // Menüden risk PLANLAMA ekranına geç — oyuncu PO ile konuşur ve risk register'ını oluşturur.
-  gs.status = 'planning'
+  // Directly start playing — skip the risk planning screen.
+  gs.status = 'playing'
+  syncTeamMorale()
+  logger.startSession()                 // GPAF session_start (new sessionId)
+  logScore('start')                     // baseline score_update
 }
 
-// PO planlama sohbeti bittiğinde çağrılır: doğru tanımlanan risklerin kategorilerini kaydet,
-// kazanılan planlama skorunu uygula (PO ekranında hesaplandı), oyunu başlat.
+// Kept for compatibility but no longer called from the UI.
 function beginProject(payload) {
   plannedCategories.value = payload?.categories || []
   updateScore(payload?.score || 0)
@@ -873,6 +890,7 @@ function beginProject(payload) {
 }
 
 function resetGame() {
+  logger.reset()                        // clear the previous session's GPAF buffer
   Object.assign(gs, { status:'menu', money:100000, day:1, morale:75, score:0, loans:0, loanPenalty:0 })
   Object.assign(project, { infra:0, security:0, product:0 })
   Object.assign(lastTrackProgress, { infra:0, security:0, product:0 })

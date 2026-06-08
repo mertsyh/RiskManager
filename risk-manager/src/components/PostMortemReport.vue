@@ -127,7 +127,10 @@
               <input v-model="playerName" type="text" placeholder="Adınız..." class="pixel-input px-3 py-2 text-sm bg-black border-2 text-white" style="border-color:#4a2060; outline:none; max-width:200px" maxlength="15">
               <button @click="saveScore" :disabled="!playerName.trim()" class="pixel-btn bg-[#4a2060] text-white py-2 px-4 text-sm border-2 disabled:opacity-50 disabled:cursor-not-allowed" style="border-color:#6a4080">KAYDET</button>
             </div>
-            <button @click="$emit('restart')" class="pixel-btn py-2 px-6 text-xs mt-2 text-gray-400">KAYDETMEDEN ÇIK</button>
+            <div class="flex gap-2 mt-2">
+              <button @click="$emit('restart')" class="pixel-btn py-2 px-6 text-xs text-gray-400">KAYDETMEDEN ÇIK</button>
+              <button @click="downloadGpaf()" class="pixel-btn py-2 px-4 text-[10px] text-gray-400" title="Bu oyunun GPAF kaydını JSONL indir">⬇ GPAF LOG</button>
+            </div>
           </div>
           <!-- Otherwise (loss, or already saved): read-only board + restart -->
           <div v-else class="flex flex-col gap-3">
@@ -146,10 +149,14 @@
                 <span class="w-16 text-right text-xs" :class="entry.days != null ? 'text-[#f0d060]' : 'text-[#e87060]'">{{ entry.days != null ? entry.days : 'DNF' }}</span>
               </div>
             </div>
-            <div class="text-center mt-2">
+            <div class="text-center mt-2 flex flex-col gap-2 items-center">
               <button @click="$emit('restart')" class="pixel-btn py-3 px-6 text-sm" :class="isVictory ? 'pixel-btn-green' : ''">
                 ↺ YENİ PROJE (RESTART)
               </button>
+              <div class="flex gap-2 justify-center">
+                <button @click="downloadGpaf()" class="pixel-btn py-2 px-3 text-[10px]" title="Bu oyunun GPAF kaydını JSONL indir">⬇ GPAF LOG (.jsonl)</button>
+                <button @click="downloadLeaderboard()" class="pixel-btn py-2 px-3 text-[10px]" title="Küresel liderlik tablosunu JSON indir">🏆 LİDERLİK JSON</button>
+              </div>
             </div>
           </div>
         </div>
@@ -162,6 +169,7 @@
 <script setup>
 import { computed, ref, onMounted } from 'vue'
 import { sortLeaderboard } from '../scoring.js'
+import { upsertLeaderboard, fetchLeaderboard, download as downloadGpaf, downloadLeaderboard } from '../logger.js'
 
 const playerName = ref('')
 const scoreSaved = ref(false)
@@ -170,30 +178,37 @@ const leaderboard = ref([])
 // v3: skor-öncelikli sıralama + kayıplar (DNF) da kaydedilir → eski gün-öncelikli v2'yle karışmasın.
 const LEADERBOARD_KEY = 'rm_leaderboard_v3'
 
-function saveScore() {
+// Sıralanmış küresel tabloyu (Supabase; yoksa yerel) çekip görünümü tazeler, bu oyunu işaretler.
+async function refreshBoard(currentName = null, currentScore = null) {
+  const rows = (await fetchLeaderboard({ limit: 10 })).filter(r => r && r.name)
+  const sorted = sortLeaderboard(rows).slice(0, 10)
+  let flagged = false
+  leaderboard.value = sorted.map(x => {
+    const isCurrent = currentName != null && !flagged && x.name === currentName && x.score === currentScore
+    if (isCurrent) flagged = true
+    return { ...x, isCurrent }
+  })
+}
+
+async function saveScore() {
   if (!playerName.value.trim()) return
   const name = playerName.value.trim().toUpperCase()
   const won = isVictory.value
   const days = won ? props.gs.day : null   // DNF kayıtlarının gün sıralaması yok
   const score = props.gs.score
+  // Yerel tablo (çevrimdışı yedek)
   const board = JSON.parse(localStorage.getItem(LEADERBOARD_KEY) || '[]')
   board.push({ name, days, score, won, date: new Date().toISOString() })
   const top = sortLeaderboard(board).slice(0, 10)   // keep top 10
   localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(top))
-
-  // Update view, flag this run (matched once)
-  let flagged = false
-  leaderboard.value = top.map(x => {
-    const isCurrent = !flagged && x.name === name && x.days === days && x.score === score
-    if (isCurrent) flagged = true
-    return { ...x, isCurrent }
-  })
   scoreSaved.value = true
+
+  // Paylaşılan DB: bu session'ın satırını yaz, sonra KÜRESEL tabloyu göster.
+  await upsertLeaderboard({ name, score, days, won, completed: won })
+  await refreshBoard(name, score)
 }
 
-onMounted(() => {
-  leaderboard.value = sortLeaderboard(JSON.parse(localStorage.getItem(LEADERBOARD_KEY) || '[]'))
-})
+onMounted(() => { refreshBoard() })
 
 const props = defineProps({
   status: String,
